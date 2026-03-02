@@ -119,6 +119,46 @@ body {
   color: var(--ink-soft);
 }
 
+.top-status-grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.top-status-card {
+  background: rgba(255, 250, 239, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.5rem 0.55rem;
+}
+
+.top-status-label {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.top-status-value {
+  margin: 0.2rem 0 0.4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.top-status-trend {
+  height: 18px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  gap: 0.12rem;
+}
+
+.top-status-trend > span {
+  border-radius: 3px 3px 0 0;
+  background: rgba(31, 122, 119, 0.45);
+}
+
 .screen-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -407,5 +447,9 @@ tr.selected-row {
 
   .duel-grid {
     grid-template-columns: 1fr;
+  }
+
+  .top-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

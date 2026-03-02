@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Sidebar } from "./components/Sidebar";
+import { TopStatusBar } from "./components/TopStatusBar";
 import { createHeartbeatMarketTick } from "./realtime/heartbeatEventFactory";
 import { buildGlobalRealtimeUrl } from "./realtime/globalRealtimeUrl";
 import { RealtimeSocketClient } from "./realtime/wsClient";
@@ -13,6 +14,7 @@ import { TerritoryScreen } from "./screens/TerritoryScreen";
 import { TradeScreen } from "./screens/TradeScreen";
 import { getOrCreatePlayerId } from "./session/playerSession";
 import { useAppStore } from "./state/useAppStore";
+import { buildTopStatusMetrics } from "./topbar/buildTopStatusMetrics";
 
 export default function App() {
   const activeScreen = useAppStore((state) => state.activeScreen);
@@ -23,6 +25,15 @@ export default function App() {
   const recentEvents = useAppStore((state) => state.recentEvents);
   const bootstrap = useAppStore((state) => state.bootstrap);
   const applyEventBatch = useAppStore((state) => state.applyEventBatch);
+  const statusMetrics = useMemo(
+    () =>
+      buildTopStatusMetrics({
+        dashboard,
+        online,
+        bufferedEvents: recentEvents.length
+      }),
+    [dashboard, online, recentEvents.length]
+  );
 
   const wsUrl = useMemo(() => {
     const base = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8080";
@@ -65,6 +76,7 @@ export default function App() {
             <span className="event-count">{recentEvents.length} buffered events</span>
           </div>
         </header>
+        <TopStatusBar metrics={statusMetrics} />
 
         {activeScreen === "dashboard" && <DashboardScreen snapshot={dashboard} marketSeries={marketSeries} online={online} />}
         {activeScreen === "trade" && <TradeScreen marketSeries={marketSeries} />}
