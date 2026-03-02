@@ -2,6 +2,8 @@ using GalacticTrader.Data;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
 using GalacticTrader.Services.Combat;
+using GalacticTrader.Services.Economy;
+using GalacticTrader.Services.Market;
 using GalacticTrader.Services.Navigation;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +36,8 @@ builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IRoutePlanningService, RoutePlanningService>();
 builder.Services.AddScoped<IAutopilotService, AutopilotService>();
 builder.Services.AddScoped<ICombatService, CombatService>();
+builder.Services.AddScoped<IEconomyService, EconomyService>();
+builder.Services.AddScoped<IMarketTransactionService, MarketTransactionService>();
 
 var app = builder.Build();
 
@@ -378,6 +382,88 @@ combat.MapPost("/{combatId:guid}/end", async (
 {
     var result = await combatService.EndCombatAsync(combatId, cancellationToken);
     return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+var economy = app.MapGroup("/api/economy")
+    .WithTags("Economy");
+
+economy.MapGet("/commodities/hierarchy", async (
+    IEconomyService economyService,
+    CancellationToken cancellationToken) =>
+{
+    var hierarchy = await economyService.GetCommodityHierarchyAsync(cancellationToken);
+    return Results.Ok(hierarchy);
+});
+
+economy.MapPost("/tick", async (
+    IEconomyService economyService,
+    CancellationToken cancellationToken) =>
+{
+    var tick = await economyService.ProcessMarketTickAsync(cancellationToken);
+    return Results.Ok(tick);
+});
+
+economy.MapPost("/market-shock", async (
+    MarketShockRequest request,
+    IEconomyService economyService,
+    CancellationToken cancellationToken) =>
+{
+    var triggered = await economyService.TriggerMarketShockAsync(request, cancellationToken);
+    return triggered ? Results.Accepted() : Results.BadRequest();
+});
+
+economy.MapPost("/price-preview", async (
+    PriceCalculationInput input,
+    IEconomyService economyService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await economyService.CalculatePriceAsync(input, cancellationToken);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+var market = app.MapGroup("/api/market")
+    .WithTags("Market");
+
+market.MapPost("/trade", async (
+    ExecuteTradeRequest request,
+    IMarketTransactionService tradeService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var result = await tradeService.ExecuteTradeAsync(request, cancellationToken);
+        return Results.Ok(result);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+market.MapPost("/trade/reverse", async (
+    ReverseTradeRequest request,
+    IMarketTransactionService tradeService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var result = await tradeService.ReverseTradeAsync(request, cancellationToken);
+        return result is null ? Results.NotFound() : Results.Ok(result);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+market.MapGet("/transactions/{playerId:guid}", async (
+    Guid playerId,
+    int? limit,
+    IMarketTransactionService tradeService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await tradeService.GetPlayerTransactionsAsync(playerId, limit ?? 50, cancellationToken);
+    return Results.Ok(result);
 });
 
 app.Run();
