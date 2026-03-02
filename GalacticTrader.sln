@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalacticTrader.IntegrationT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalacticTrader.Benchmarks", "tests\GalacticTrader.Benchmarks\GalacticTrader.Benchmarks.csproj", "{254C337E-2F65-4CF7-9FD2-B6025F2934E1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GalacticTrader.Desktop.Tests", "tests\GalacticTrader.Desktop.Tests\GalacticTrader.Desktop.Tests.csproj", "{FAFFF5A2-3790-4691-8B12-E4268566997E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -119,6 +121,18 @@ Global
 		{254C337E-2F65-4CF7-9FD2-B6025F2934E1}.Release|x64.Build.0 = Release|Any CPU
 		{254C337E-2F65-4CF7-9FD2-B6025F2934E1}.Release|x86.ActiveCfg = Release|Any CPU
 		{254C337E-2F65-4CF7-9FD2-B6025F2934E1}.Release|x86.Build.0 = Release|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Debug|x64.Build.0 = Debug|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Debug|x86.Build.0 = Debug|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Release|x64.ActiveCfg = Release|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Release|x64.Build.0 = Release|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Release|x86.ActiveCfg = Release|Any CPU
+		{FAFFF5A2-3790-4691-8B12-E4268566997E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -133,5 +147,6 @@ Global
 		{254AA0A1-CBC6-4692-8D3B-32F942F1BE86} = {2951E765-5F77-95BA-3D85-F41283DA5914}
 		{3B16F9FC-31EA-44FE-8603-ABB1E7E19F18} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{254C337E-2F65-4CF7-9FD2-B6025F2934E1} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{FAFFF5A2-3790-4691-8B12-E4268566997E} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

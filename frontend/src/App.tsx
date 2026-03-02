@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Sidebar } from "./components/Sidebar";
+import { createHeartbeatMarketTick } from "./realtime/heartbeatEventFactory";
+import { buildGlobalRealtimeUrl } from "./realtime/globalRealtimeUrl";
 import { RealtimeSocketClient } from "./realtime/wsClient";
 import { BattleResultsScreen } from "./screens/BattleResultsScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
@@ -8,18 +10,8 @@ import { MarketIntelligenceScreen } from "./screens/MarketIntelligenceScreen";
 import { ReputationServicesScreen } from "./screens/ReputationServicesScreen";
 import { RoutePlanningScreen } from "./screens/RoutePlanningScreen";
 import { TradeScreen } from "./screens/TradeScreen";
+import { getOrCreatePlayerId } from "./session/playerSession";
 import { useAppStore } from "./state/useAppStore";
-import type { RealtimeEvent } from "./types";
-
-function getOrCreatePlayerId(): string {
-  const existing = localStorage.getItem("gt-player-id");
-  if (existing) {
-    return existing;
-  }
-  const next = crypto.randomUUID();
-  localStorage.setItem("gt-player-id", next);
-  return next;
-}
 
 export default function App() {
   const activeScreen = useAppStore((state) => state.activeScreen);
@@ -30,11 +22,10 @@ export default function App() {
   const recentEvents = useAppStore((state) => state.recentEvents);
   const bootstrap = useAppStore((state) => state.bootstrap);
   const applyEventBatch = useAppStore((state) => state.applyEventBatch);
-  const setOnline = useAppStore((state) => state.setOnline);
 
   const wsUrl = useMemo(() => {
     const base = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8080";
-    return `${base}/api/communication/ws/global/global?playerId=${getOrCreatePlayerId()}`;
+    return buildGlobalRealtimeUrl(base, getOrCreatePlayerId());
   }, []);
 
   useEffect(() => {
@@ -45,28 +36,19 @@ export default function App() {
     const realtime = new RealtimeSocketClient(wsUrl, (batch) => applyEventBatch(batch));
     realtime.onStatus((isOnline) => {
       applyEventBatch([{ type: "connection.state", payload: { online: isOnline } }]);
-      setOnline(isOnline);
     });
     realtime.start();
 
     // Local heartbeat keeps dashboards fresh when backend stream is quiet.
     const pulse = window.setInterval(() => {
-      const syntheticEvent: RealtimeEvent = {
-        type: "market.tick",
-        payload: {
-          volatility: Math.random(),
-          topCommodity: "SynthFiber",
-          updatedAt: new Date().toISOString()
-        }
-      };
-      applyEventBatch([syntheticEvent]);
+      applyEventBatch([createHeartbeatMarketTick()]);
     }, 6_000);
 
     return () => {
       clearInterval(pulse);
       realtime.stop();
     };
-  }, [applyEventBatch, setOnline, wsUrl]);
+  }, [applyEventBatch, wsUrl]);
 
   return (
     <div className="app-shell">
