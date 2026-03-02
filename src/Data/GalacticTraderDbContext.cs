@@ -15,6 +15,7 @@ namespace GalacticTrader.Data
         // Players & Characters
         public DbSet<Player> Players { get; set; }
         public DbSet<Crew> Crew { get; set; }
+        public DbSet<UserAccount> UserAccounts { get; set; }
 
         // Ships & Fleet
         public DbSet<Ship> Ships { get; set; }
@@ -62,6 +63,24 @@ namespace GalacticTrader.Data
             modelBuilder.Entity<Player>()
                 .HasIndex(p => p.Username)
                 .IsUnique();
+
+            // Configure UserAccount
+            modelBuilder.Entity<UserAccount>()
+                .HasKey(u => u.Id);
+            modelBuilder.Entity<UserAccount>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+            modelBuilder.Entity<UserAccount>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+            modelBuilder.Entity<UserAccount>()
+                .HasIndex(u => u.KeycloakId)
+                .IsUnique();
+            modelBuilder.Entity<UserAccount>()
+                .Property(u => u.Roles)
+                .HasConversion(
+                    v => string.Join(",", v),
+                    v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList());
 
             // Configure Ship
             modelBuilder.Entity<Ship>()

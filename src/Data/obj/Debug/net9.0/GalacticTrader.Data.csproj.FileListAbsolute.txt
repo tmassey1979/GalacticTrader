@@ -1,0 +1,15 @@
+C:\code\GT\GalacticTrader\src\Data\bin\Debug\net9.0\GalacticTrader.Data.deps.json
+C:\code\GT\GalacticTrader\src\Data\bin\Debug\net9.0\GalacticTrader.Data.runtimeconfig.json
+C:\code\GT\GalacticTrader\src\Data\bin\Debug\net9.0\GalacticTrader.Data.dll
+C:\code\GT\GalacticTrader\src\Data\bin\Debug\net9.0\GalacticTrader.Data.pdb
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.csproj.AssemblyReference.cache
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.GeneratedMSBuildEditorConfig.editorconfig
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.AssemblyInfoInputs.cache
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.AssemblyInfo.cs
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.csproj.CoreCompileInputs.cache
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.sourcelink.json
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.dll
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\refint\GalacticTrader.Data.dll
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.pdb
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\GalacticTrader.Data.genruntimeconfig.cache
+C:\code\GT\GalacticTrader\src\Data\obj\Debug\net9.0\ref\GalacticTrader.Data.dll
