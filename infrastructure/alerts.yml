@@ -1,0 +1,29 @@
+groups:
+  - name: galactictrader-alerts
+    rules:
+      - alert: ApiLatencyHigh
+        expr: histogram_quantile(0.95, sum(rate(api_request_duration_seconds_bucket[5m])) by (le)) > 0.75
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API latency high"
+          description: "P95 API latency is above 750ms for 5 minutes."
+
+      - alert: CacheHitRatioLow
+        expr: redis_cache_hit_ratio < 0.40
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cache hit ratio low"
+          description: "Cache hit ratio stayed below 40% for 10 minutes."
+
+      - alert: CombatTickSlow
+        expr: histogram_quantile(0.95, sum(rate(combat_tick_duration_seconds_bucket[5m])) by (le)) > 0.20
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Combat tick processing degraded"
+          description: "P95 combat tick duration is above 200ms."

@@ -1,0 +1,88 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "rate(combat_tick_duration_seconds_count[5m])",
+          "refId": "A"
+        }
+      ],
+      "title": "Combat Tick Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(route_calculation_time_seconds_bucket[5m])) by (le))",
+          "refId": "A"
+        }
+      ],
+      "title": "Route Risk Computation P99",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(rate(api_request_duration_seconds_count{route=~\".*navigation.*\"}[5m])) by (route)",
+          "refId": "A"
+        }
+      ],
+      "title": "Navigation Endpoint Load",
+      "type": "heatmap"
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "galactictrader",
+    "risk"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-12h",
+    "to": "now"
+  },
+  "title": "Sector Risk Heatmap",
+  "uid": "gt-sector-risk",
+  "version": 1
+}

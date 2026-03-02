@@ -1,0 +1,50 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: "Container image tag"
+        required: true
+        default: "latest"
+      rollback_to:
+        description: "Optional rollback image tag"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare scripts
+        run: chmod +x scripts/*.sh
+
+      - name: Execute deployment plan (dry run)
+        env:
+          TARGET_ENV: ${{ inputs.environment }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          ROLLBACK_TO: ${{ inputs.rollback_to }}
+        run: |
+          if [[ -n "$ROLLBACK_TO" ]]; then
+            ./scripts/rollback.sh "$TARGET_ENV" "$ROLLBACK_TO" --dry-run
+          elif [[ "$TARGET_ENV" == "staging" ]]; then
+            ./scripts/deploy-staging.sh "$IMAGE_TAG" --dry-run
+          else
+            ./scripts/deploy-production.sh "$IMAGE_TAG" --dry-run
+          fi

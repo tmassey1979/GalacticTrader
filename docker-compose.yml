@@ -66,6 +66,7 @@ services:
       - "9090:9090"
     volumes:
       - ./infrastructure/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -84,6 +85,8 @@ services:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./infrastructure/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     depends_on:
       - prometheus
     networks:
@@ -91,6 +94,7 @@ services:
 
   # API Gateway
   api:
+    image: ${API_IMAGE:-galactictrader-api:local}
     build:
       context: .
       dockerfile: Dockerfile

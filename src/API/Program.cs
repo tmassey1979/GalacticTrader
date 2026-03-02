@@ -1,3 +1,4 @@
+using GalacticTrader.API.Telemetry;
 using GalacticTrader.Data;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
@@ -11,7 +12,9 @@ using GalacticTrader.Services.Navigation;
 using GalacticTrader.Services.Npc;
 using GalacticTrader.Services.Reputation;
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -36,7 +39,7 @@ else
         options.UseNpgsql(connectionString));
 }
 
-builder.Services.AddScoped<ICacheService, InMemoryCacheService>();
+builder.Services.AddSingleton<ICacheService, InMemoryCacheService>();
 builder.Services.AddScoped<ISectorRepository, SectorRepository>();
 builder.Services.AddScoped<IRouteRepository, RouteRepository>();
 builder.Services.AddScoped<IGraphValidationService, GraphValidationService>();
@@ -52,6 +55,7 @@ builder.Services.AddScoped<IFleetService, FleetService>();
 builder.Services.AddScoped<IReputationService, ReputationService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
+builder.Services.AddHostedService<TelemetryGaugeRefreshService>();
 
 var app = builder.Build();
 
@@ -65,6 +69,26 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseWebSockets();
 var channelSockets = new ConcurrentDictionary<Guid, (WebSocket Socket, ChannelType ChannelType, string ChannelKey)>();
+
+app.Use(async (context, next) =>
+{
+    var stopwatch = Stopwatch.StartNew();
+    await next();
+    stopwatch.Stop();
+
+    var route = context.GetEndpoint()?.DisplayName ?? context.Request.Path.Value ?? "unknown";
+    var durationSeconds = stopwatch.Elapsed.TotalSeconds;
+    var statusCode = context.Response.StatusCode.ToString();
+
+    PrometheusMetrics.ApiRequestDuration
+        .WithLabels(context.Request.Method, route, statusCode)
+        .Observe(durationSeconds);
+
+    // Captures high-level DB-bound request time for observability.
+    PrometheusMetrics.DbQueryDuration.Observe(durationSeconds);
+});
+
+app.MapMetrics("/metrics");
 
 var sectors = app.MapGroup("/api/navigation/sectors")
     .WithTags("Navigation - Sectors");
@@ -227,12 +251,15 @@ planning.MapGet("/{fromSectorId:guid}/{toSectorId:guid}", async (
     IRoutePlanningService planningService,
     CancellationToken cancellationToken) =>
 {
+    var stopwatch = Stopwatch.StartNew();
     var plan = await planningService.CalculateRouteAsync(
         fromSectorId,
         toSectorId,
         mode ?? TravelMode.Standard,
         string.IsNullOrWhiteSpace(algorithm) ? "dijkstra" : algorithm,
         cancellationToken);
+    stopwatch.Stop();
+    PrometheusMetrics.RouteCalculationDuration.Observe(stopwatch.Elapsed.TotalSeconds);
 
     return plan is null
         ? Results.NotFound(new { error = "No route found between the selected sectors." })
@@ -245,7 +272,10 @@ planning.MapGet("/{fromSectorId:guid}/{toSectorId:guid}/optimize", async (
     IRoutePlanningService planningService,
     CancellationToken cancellationToken) =>
 {
+    var stopwatch = Stopwatch.StartNew();
     var optimization = await planningService.GetOptimizedRoutesAsync(fromSectorId, toSectorId, cancellationToken);
+    stopwatch.Stop();
+    PrometheusMetrics.RouteCalculationDuration.Observe(stopwatch.Elapsed.TotalSeconds);
     return Results.Ok(optimization);
 });
 
@@ -377,7 +407,10 @@ combat.MapPost("/{combatId:guid}/tick", async (
     ICombatService combatService,
     CancellationToken cancellationToken) =>
 {
+    var stopwatch = Stopwatch.StartNew();
     var tick = await combatService.ProcessTickAsync(combatId, cancellationToken);
+    stopwatch.Stop();
+    PrometheusMetrics.CombatTickDuration.Observe(stopwatch.Elapsed.TotalSeconds);
     return tick is null ? Results.NotFound() : Results.Ok(tick);
 });
 
@@ -387,7 +420,10 @@ combat.MapPost("/{combatId:guid}/ticks", async (
     ICombatService combatService,
     CancellationToken cancellationToken) =>
 {
+    var stopwatch = Stopwatch.StartNew();
     var results = await combatService.ProcessTicksAsync(combatId, count ?? 1, cancellationToken);
+    stopwatch.Stop();
+    PrometheusMetrics.CombatTickDuration.Observe(stopwatch.Elapsed.TotalSeconds);
     return Results.Ok(results);
 });
 

@@ -3,8 +3,24 @@ namespace GalacticTrader.Services.Caching;
 using System.Collections.Concurrent;
 
 public sealed class InMemoryCacheService : ICacheService
+    , ICacheMetricsProvider
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _entries = new();
+    private long _cacheHits;
+    private long _cacheMisses;
+
+    public long CacheHits => Interlocked.Read(ref _cacheHits);
+    public long CacheMisses => Interlocked.Read(ref _cacheMisses);
+    public double HitRatio
+    {
+        get
+        {
+            var hits = CacheHits;
+            var misses = CacheMisses;
+            var total = hits + misses;
+            return total == 0 ? 1d : (double)hits / total;
+        }
+    }
 
     public Task<T> GetAsync<T>(string key)
     {
@@ -15,15 +31,18 @@ public sealed class InMemoryCacheService : ICacheService
 
         if (!_entries.TryGetValue(key, out var entry))
         {
+            Interlocked.Increment(ref _cacheMisses);
             return Task.FromResult(default(T)!);
         }
 
         if (entry.ExpiresAtUtc.HasValue && entry.ExpiresAtUtc.Value < DateTime.UtcNow)
         {
             _entries.TryRemove(key, out _);
+            Interlocked.Increment(ref _cacheMisses);
             return Task.FromResult(default(T)!);
         }
 
+        Interlocked.Increment(ref _cacheHits);
         return Task.FromResult((T)entry.Value);
     }
 
