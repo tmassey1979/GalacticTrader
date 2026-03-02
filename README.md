@@ -1,0 +1,207 @@
+# Galactic Trader - Backend Development Guide
+
+A deterministic, server-authoritative economic space simulation built with .NET 9, PostgreSQL, Redis, and Keycloak.
+
+## Prerequisites
+
+- .NET 9 SDK or later
+- Docker and Docker Compose
+- PostgreSQL 16+ (or use Docker)
+- Redis 7+ (or use Docker)
+- Git
+
+## Quick Start with Docker
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/tmassey1979/GalacticTrader.git
+   cd GalacticTrader
+   ```
+
+2. **Setup environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your desired passwords
+   ```
+
+3. **Start services**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Build and run the API**
+   ```bash
+   dotnet build
+   dotnet run --project src/API
+   ```
+
+   The API will be available at: `http://localhost:8080`
+
+## Services
+
+### Infrastructure Services
+
+- **PostgreSQL** (port 5432) - Primary database
+- **Redis** (port 6379) - Caching and session storage
+- **Keycloak** (port 8180) - Identity provider with OAuth2/OIDC
+- **Prometheus** (port 9090) - Metrics collection
+- **Grafana** (port 3000) - Dashboard visualization
+
+### Backend Services
+
+- **API Gateway** (port 8080) - Main REST API
+- **Navigation Service** - Route calculation and autopilot
+- **Combat Service** - Deterministic tick-based battles
+- **Economy Service** - Dynamic pricing engine
+- **Market Service** - Trade transactions
+- **NPC Service** - Autonomous agent behavior
+- **Fleet Service** - Ship and crew management
+- **Communication Service** - Text and voice channels
+- **Telemetry Service** - Metrics and observability
+
+## Project Structure
+
+```
+GalacticTrader/
+├── src/
+│   ├── API/                          # Web API Gateway
+│   ├── Services/                     # Business logic services
+│   ├── Data/                         # Entity Framework Core & repositories
+│   └── Shared/                       # Shared utilities
+├── tests/                            # Unit and integration tests
+├── infrastructure/                   # Docker, k8s configs
+├── Codex/                            # Architecture documentation
+├── Dockerfile                        # API container config
+├── docker-compose.yml                # Development environment
+├── global.json                       # .NET SDK version
+└── GalacticTrader.sln               # Solution file
+```
+
+## Development Workflow
+
+### Building the Solution
+
+```bash
+# Restore dependencies
+dotnet restore
+
+# Build debug version
+dotnet build
+
+# Build release version
+dotnet build -c Release
+```
+
+### Running the API
+
+```bash
+# Development mode with hot reload
+dotnet watch run --project src/API
+
+# Production mode
+dotnet run --project src/API -c Release
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+dotnet test
+
+# Run with coverage
+dotnet test /p:CollectCoverage=true
+```
+
+## Database Setup
+
+### Entity Framework Core Migrations
+
+```bash
+# Create a new migration
+dotnet ef migrations add MigrationName --project src/Data --startup-project src/API
+
+# Apply pending migrations
+dotnet ef database update --project src/Data --startup-project src/API
+
+# Remove last migration
+dotnet ef migrations remove --project src/Data --startup-project src/API
+```
+
+## API Documentation
+
+Once running, view the Swagger documentation at:
+- http://localhost:8080/swagger
+
+## Configuration
+
+### Environment Variables
+
+See `.env.example` for all configurable options:
+
+- `ASPNETCORE_ENVIRONMENT` - Development/Staging/Production
+- `ConnectionStrings__Default` - PostgreSQL connection string
+- `Redis__Connection` - Redis connection string
+- `Keycloak__ServerUrl` - Keycloak server URL
+
+## Docker Commands
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs -f api
+
+# Rebuild containers
+docker-compose build --no-cache
+
+# Remove volumes (warning: deletes data)
+docker-compose down -v
+```
+
+## Monitoring
+
+- **Prometheus**: http://localhost:9090 - View raw metrics
+- **Grafana**: http://localhost:3000 - View dashboards (admin/admin)
+
+## Performance Targets
+
+- Combat tick processing: < 50ms
+- Route calculation: < 20ms average
+- API p95 latency: < 150ms
+- Support 1000+ concurrent users
+- Deterministic simulation under load
+
+## Authentication
+
+The API uses OAuth2/OIDC via Keycloak. To authenticate:
+
+1. Obtain an access token from Keycloak
+2. Include it in API requests: `Authorization: Bearer {token}`
+
+## Contributing
+
+1. Create a feature branch
+2. Make changes and add tests
+3. Run tests locally: `dotnet test`
+4. Commit with descriptive messages
+5. Push to GitHub
+6. Open a Pull Request
+
+## Architecture Codex
+
+For complete architecture documentation, see:
+- [Full Codex](Codex/Galactic_Trader_Full_Codex.md)
+- [Architecture & Infrastructure](Codex/Galactic_Trader_Architecture_Infrastructure_Codex.md)
+- [User Interface](Codex/Galactic_Trader_User_Interface_Codex.md)
+
+## License
+
+Proprietary - All rights reserved
+
+## Support
+
+For issues and questions, open a GitHub issue or check the documentation.

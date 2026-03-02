@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: galactictrader-postgres
+    environment:
+      POSTGRES_USER: galactic_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ChangeMeInProduction}
+      POSTGRES_DB: galactictrader
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U galactic_admin -d galactictrader"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - galactictrader-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: galactictrader-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - galactictrader-network
+
+  # Keycloak Identity Provider
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: galactictrader-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/galactictrader
+      KC_DB_USERNAME: galactic_admin
+      KC_DB_PASSWORD: ${DB_PASSWORD:-ChangeMeInProduction}
+      KC_PROXY: edge
+      KC_HOSTNAME: localhost:8180
+    ports:
+      - "8180:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - galactictrader-network
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: galactictrader-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - galactictrader-network
+
+  # Grafana Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: galactictrader-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - galactictrader-network
+
+  # API Gateway
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: galactictrader-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080;https://+:8443
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=galactictrader;Username=galactic_admin;Password=${DB_PASSWORD:-ChangeMeInProduction}"
+      Redis__Connection: "redis:6379"
+      Keycloak__ServerUrl: "http://keycloak:8080"
+      Keycloak__Realm: "galactictrader"
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - galactictrader-network
+
+networks:
+  galactictrader-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

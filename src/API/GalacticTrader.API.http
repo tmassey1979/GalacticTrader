@@ -1,0 +1,6 @@
+@GalacticTrader.API_HostAddress = http://localhost:5014
+
+GET {{GalacticTrader.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

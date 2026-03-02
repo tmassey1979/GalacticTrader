@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "u05nfnVfy5Y=",
+  "success": true,
+  "projectFilePath": "C:\\code\\GT\\GalacticTrader\\src\\API\\GalacticTrader.API.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\temassey\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.13\\microsoft.aspnetcore.openapi.9.0.13.nupkg.sha512",
+    "C:\\Users\\temassey\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
