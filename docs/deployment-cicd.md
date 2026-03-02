@@ -4,6 +4,7 @@
 - `dotnet-ci.yml`: runs restore/build/test on pushes and pull requests.
 - `docker-publish.yml`: builds and pushes `ghcr.io/<owner>/galactictrader-api` and `ghcr.io/<owner>/galactictrader-gateway` on `main` and tags.
 - `deploy.yml`: manual deployment orchestration (`staging` or `production`) with optional rollback tag.
+- `nightly-backups.yml`: scheduled PostgreSQL and Redis backup job with retained artifacts.
 
 ## Registry
 - Container registry: GitHub Container Registry (`ghcr.io`).
@@ -25,6 +26,11 @@ PowerShell:
 ```
 
 See `docs/api-gateway.md` for route policy and runtime configuration details.
+
+## Resilience Runbook
+Operational procedures for backups, restore smoke tests, and graceful API shutdown:
+
+- `docs/resilience-runbook.md`
 
 ## Staging Deployment
 1. Copy `infrastructure/staging.env.example` to `infrastructure/staging.env`.

@@ -1,0 +1,57 @@
+name: nightly-backups
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup-and-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare backup scripts
+        run: chmod +x scripts/*.sh
+
+      - name: Start backup dependencies
+        run: docker compose up -d postgres redis
+
+      - name: Wait for PostgreSQL and Redis health
+        run: |
+          for service in postgres redis; do
+            container_id="$(docker compose ps -q "$service")"
+            for i in $(seq 1 30); do
+              status="$(docker inspect -f '{{.State.Health.Status}}' "$container_id")"
+              if [ "$status" = "healthy" ]; then
+                echo "$service is healthy"
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "$service did not become healthy in time"
+                exit 1
+              fi
+              sleep 2
+            done
+          done
+
+      - name: Run PostgreSQL backup
+        run: ./scripts/backup-postgres.sh
+
+      - name: Run Redis backup
+        run: ./scripts/backup-redis.sh
+
+      - name: Upload backup artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-backups
+          path: |
+            backups/postgres/*.sql.gz
+            backups/redis/*.rdb
+          if-no-files-found: error
+          retention-days: 14

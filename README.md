@@ -201,6 +201,14 @@ docker-compose build --no-cache
 docker-compose down -v
 ```
 
+## Backup and Resilience
+
+- Nightly backup workflow: `.github/workflows/nightly-backups.yml`
+- Runbook: [docs/resilience-runbook.md](docs/resilience-runbook.md)
+- Local verification scripts:
+  - `./scripts/verify-resilience.sh` or `./scripts/verify-resilience.ps1`
+  - `./scripts/recovery-smoke.sh` or `./scripts/recovery-smoke.ps1`
+
 ## Monitoring
 
 - **Prometheus**: http://localhost:9090 - View raw metrics
