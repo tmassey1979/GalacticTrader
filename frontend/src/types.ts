@@ -7,6 +7,7 @@ export type ScreenKey =
   | "reputation"
   | "territory"
   | "analytics"
+  | "settings"
   | "intelligence";
 
 export type RealtimeEvent =

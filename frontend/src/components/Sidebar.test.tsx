@@ -10,9 +10,11 @@ describe("Sidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Trade" }));
     fireEvent.click(screen.getByRole("button", { name: "Territory" }));
     fireEvent.click(screen.getByRole("button", { name: "Analytics" }));
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
 
     expect(onChange).toHaveBeenCalledWith("trade");
     expect(onChange).toHaveBeenCalledWith("territory");
     expect(onChange).toHaveBeenCalledWith("analytics");
+    expect(onChange).toHaveBeenCalledWith("settings");
   });
 });

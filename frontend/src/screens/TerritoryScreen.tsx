@@ -1,6 +1,6 @@
+import { downloadCsv } from "../export/downloadCsv";
 import { useMemo, useState } from "react";
 import { buildTerritoryCsv } from "../territory/territoryCsv";
-import { downloadCsv } from "../territory/downloadCsv";
 import type { TerritoryHeat } from "../territory/TerritoryZone";
 import { territoryZones } from "../territory/territoryZones";
 

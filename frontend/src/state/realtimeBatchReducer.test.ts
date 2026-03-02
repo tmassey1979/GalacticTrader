@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { defaultPreferences } from "../preferences/defaultPreferences";
 import type { AppStateData } from "./storeTypes";
 import { reduceRealtimeBatch } from "./realtimeBatchReducer";
 
@@ -16,7 +17,8 @@ function createBaseState(): AppStateData {
     marketSeries: [],
     recentEvents: [],
     online: true,
-    pendingOutbound: 0
+    pendingOutbound: 0,
+    preferences: defaultPreferences
   };
 }
 

@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { downloadCsv } from "../export/downloadCsv";
 import { TerritoryScreen } from "./TerritoryScreen";
-import { downloadCsv } from "../territory/downloadCsv";
 
-vi.mock("../territory/downloadCsv", () => ({
+vi.mock("../export/downloadCsv", () => ({
   downloadCsv: vi.fn()
 }));
 

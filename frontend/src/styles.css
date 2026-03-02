@@ -87,6 +87,14 @@ body {
   animation: fade-in 0.5s ease;
 }
 
+.content.compact-density {
+  gap: 0.7rem;
+}
+
+.content.compact-density .panel {
+  padding: 0.65rem;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -342,6 +350,17 @@ tr.selected-row {
 .stack {
   display: grid;
   gap: 0.5rem;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.settings-row > select {
+  min-width: 170px;
 }
 
 .duel-grid {

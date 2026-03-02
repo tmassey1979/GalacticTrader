@@ -9,7 +9,8 @@ const screens: Array<{ key: ScreenKey; label: string }> = [
   { key: "reputation", label: "Reputation" },
   { key: "territory", label: "Territory" },
   { key: "analytics", label: "Analytics" },
-  { key: "intelligence", label: "Market Intel" }
+  { key: "intelligence", label: "Market Intel" },
+  { key: "settings", label: "Settings" }
 ];
 
 type Props = {
