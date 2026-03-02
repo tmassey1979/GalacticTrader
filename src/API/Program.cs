@@ -1,6 +1,7 @@
 using GalacticTrader.Data;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
+using GalacticTrader.Services.Combat;
 using GalacticTrader.Services.Navigation;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,6 +33,7 @@ builder.Services.AddScoped<ISectorService, SectorService>();
 builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IRoutePlanningService, RoutePlanningService>();
 builder.Services.AddScoped<IAutopilotService, AutopilotService>();
+builder.Services.AddScoped<ICombatService, CombatService>();
 
 var app = builder.Build();
 
@@ -308,6 +310,74 @@ autopilot.MapPost("/{sessionId:guid}/cancel", async (
 {
     var cancelled = await autopilotService.CancelAsync(sessionId, cancellationToken);
     return cancelled ? Results.NoContent() : Results.NotFound();
+});
+
+var combat = app.MapGroup("/api/combat")
+    .WithTags("Combat");
+
+combat.MapPost("/start", async (
+    StartCombatRequest request,
+    ICombatService combatService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var started = await combatService.StartCombatAsync(request, cancellationToken);
+        return Results.Created($"/api/combat/{started.CombatId}", started);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+combat.MapGet("/active", async (ICombatService combatService, CancellationToken cancellationToken) =>
+{
+    var active = await combatService.GetActiveCombatsAsync(cancellationToken);
+    return Results.Ok(active);
+});
+
+combat.MapGet("/logs", async (int? limit, ICombatService combatService, CancellationToken cancellationToken) =>
+{
+    var logs = await combatService.GetRecentCombatLogsAsync(limit ?? 50, cancellationToken);
+    return Results.Ok(logs);
+});
+
+combat.MapGet("/{combatId:guid}", async (
+    Guid combatId,
+    ICombatService combatService,
+    CancellationToken cancellationToken) =>
+{
+    var state = await combatService.GetCombatAsync(combatId, cancellationToken);
+    return state is null ? Results.NotFound() : Results.Ok(state);
+});
+
+combat.MapPost("/{combatId:guid}/tick", async (
+    Guid combatId,
+    ICombatService combatService,
+    CancellationToken cancellationToken) =>
+{
+    var tick = await combatService.ProcessTickAsync(combatId, cancellationToken);
+    return tick is null ? Results.NotFound() : Results.Ok(tick);
+});
+
+combat.MapPost("/{combatId:guid}/ticks", async (
+    Guid combatId,
+    int? count,
+    ICombatService combatService,
+    CancellationToken cancellationToken) =>
+{
+    var results = await combatService.ProcessTicksAsync(combatId, count ?? 1, cancellationToken);
+    return Results.Ok(results);
+});
+
+combat.MapPost("/{combatId:guid}/end", async (
+    Guid combatId,
+    ICombatService combatService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await combatService.EndCombatAsync(combatId, cancellationToken);
+    return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
 app.Run();
