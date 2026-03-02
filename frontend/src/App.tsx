@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { EventFeed } from "./components/EventFeed";
 import { Sidebar } from "./components/Sidebar";
 import { TopStatusBar } from "./components/TopStatusBar";
 import { buildAnalyticsCsv } from "./export/buildAnalyticsCsv";
@@ -140,6 +141,7 @@ export default function App() {
         {activeScreen === "settings" && (
           <SettingsScreen preferences={preferences} onChange={handlePreferencesChange} onExportSelectedCsv={handleExportSelectedCsv} />
         )}
+        <EventFeed events={recentEvents} />
       </main>
     </div>
   );

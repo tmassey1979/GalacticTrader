@@ -431,6 +431,33 @@ tr.selected-row {
   gap: 0.25rem;
 }
 
+.event-feed {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 0.8rem;
+}
+
+.event-feed-list {
+  margin: 0.65rem 0 0;
+  padding-left: 1rem;
+  max-height: 180px;
+  overflow: auto;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.event-row {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.event-row span {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
 @keyframes nav-in {
   to {
     opacity: 1;
