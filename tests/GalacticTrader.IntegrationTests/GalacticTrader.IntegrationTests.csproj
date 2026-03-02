@@ -5,16 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <CoverageIncludeFilters>[GalacticTrader.Services]GalacticTrader.Services.Navigation.*,[GalacticTrader.Services]GalacticTrader.Services.Combat.*,[GalacticTrader.Services]GalacticTrader.Services.Economy.*,[GalacticTrader.Services]GalacticTrader.Services.Market.*,[GalacticTrader.Services]GalacticTrader.Services.Npc.*,[GalacticTrader.Services]GalacticTrader.Services.Fleet.*</CoverageIncludeFilters>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(CollectCoverage)' == 'true'">
-    <Include>$(CoverageIncludeFilters)</Include>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="coverlet.msbuild" Version="6.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
@@ -22,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Data\GalacticTrader.Data.csproj" />
-    <ProjectReference Include="..\..\src\Services\GalacticTrader.Services.csproj" />
+    <ProjectReference Include="..\\..\\src\\API\\GalacticTrader.API.csproj" />
+    <ProjectReference Include="..\\..\\src\\Data\\GalacticTrader.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

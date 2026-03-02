@@ -46,6 +46,45 @@ public sealed class EconomyAndMarketServiceTests
     }
 
     [Fact]
+    public async Task GetCommodityHierarchyAsync_ReturnsTieredCommodityItems()
+    {
+        await using var dbContext = CreateDbContext();
+        var seeded = await SeedMarketDataAsync(dbContext);
+        var economy = new EconomyService(dbContext, NullLogger<EconomyService>.Instance);
+
+        var hierarchy = await economy.GetCommodityHierarchyAsync();
+
+        var item = hierarchy.Single(entry => entry.CommodityId == seeded.CommodityId);
+        Assert.Equal("Refined Metals", item.Name);
+        Assert.False(string.IsNullOrWhiteSpace(item.HierarchyTier));
+    }
+
+    [Fact]
+    public async Task TriggerMarketShockAsync_ValidatesMarketId()
+    {
+        await using var dbContext = CreateDbContext();
+        var seeded = await SeedMarketDataAsync(dbContext);
+        var economy = new EconomyService(dbContext, NullLogger<EconomyService>.Instance);
+
+        var invalid = await economy.TriggerMarketShockAsync(new MarketShockRequest
+        {
+            MarketId = Guid.Empty,
+            Intensity = 0.2f,
+            Reason = "invalid"
+        });
+
+        var valid = await economy.TriggerMarketShockAsync(new MarketShockRequest
+        {
+            MarketId = seeded.MarketId,
+            Intensity = 0.3f,
+            Reason = "volatility"
+        });
+
+        Assert.False(invalid);
+        Assert.True(valid);
+    }
+
+    [Fact]
     public async Task ExecuteTradeAsync_BuyAndReverse_UpdatesTransactionStatus()
     {
         await using var dbContext = CreateDbContext();

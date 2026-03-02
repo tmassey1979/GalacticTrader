@@ -1,4 +1,5 @@
 using GalacticTrader.API.Telemetry;
+using GalacticTrader.API.Swagger;
 using GalacticTrader.Data;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
@@ -6,12 +7,14 @@ using GalacticTrader.Services.Communication;
 using GalacticTrader.Services.Combat;
 using GalacticTrader.Services.Economy;
 using GalacticTrader.Services.Fleet;
+using GalacticTrader.Services.Auth;
 using GalacticTrader.Services.Leaderboard;
 using GalacticTrader.Services.Market;
 using GalacticTrader.Services.Navigation;
 using GalacticTrader.Services.Npc;
 using GalacticTrader.Services.Reputation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Prometheus;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -22,7 +25,40 @@ using System.Text.Json;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Galactic Trader API",
+        Version = "v1",
+        Description = "Server-authoritative simulation API for navigation, trading, combat, fleet, reputation, and communication."
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Paste the bearer token in this format: Bearer {token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecurityScheme
+        {
+            Reference = new OpenApiReference
+            {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+            }
+        }] = Array.Empty<string>()
+    });
+
+    options.OperationFilter<DefaultErrorResponsesOperationFilter>();
+    options.SchemaFilter<SwaggerExampleSchemaFilter>();
+});
 builder.Services.AddOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("Default")
@@ -55,19 +91,23 @@ builder.Services.AddScoped<IFleetService, FleetService>();
 builder.Services.AddScoped<IReputationService, ReputationService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
+builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IVoiceService, VoiceService>();
 builder.Services.AddHostedService<TelemetryGaugeRefreshService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHttpsRedirection();
+}
 app.UseWebSockets();
 var channelSockets = new ConcurrentDictionary<Guid, (WebSocket Socket, ChannelType ChannelType, string ChannelKey)>();
 
@@ -90,6 +130,89 @@ app.Use(async (context, next) =>
 });
 
 app.MapMetrics("/metrics");
+
+var auth = app.MapGroup("/api/auth")
+    .WithTags("Authentication");
+
+auth.MapPost("/register", async (
+    RegisterPlayerApiRequest request,
+    IAuthService authService,
+    CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Username) ||
+        request.Username.Trim().Length < 3)
+    {
+        return Results.BadRequest(new { error = "Username must be at least 3 characters long." });
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
+    {
+        return Results.BadRequest(new { error = "A valid email address is required." });
+    }
+
+    if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
+    {
+        return Results.BadRequest(new { error = "Password must be at least 8 characters long." });
+    }
+
+    try
+    {
+        var created = await authService.RegisterAsync(
+            new RegisterPlayerRequest(request.Username, request.Email, request.Password),
+            cancellationToken);
+        return Results.Created($"/api/auth/players/{created.PlayerId}", created);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.Conflict(new { error = exception.Message });
+    }
+})
+    .WithOpenApi(operation =>
+    {
+        operation.Summary = "Register a player account";
+        operation.Description = "Creates a test/dev player identity and stores credentials in the in-memory auth provider.";
+        return operation;
+    });
+
+auth.MapPost("/login", async (
+    LoginPlayerApiRequest request,
+    IAuthService authService,
+    CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+    {
+        return Results.BadRequest(new { error = "Username and password are required." });
+    }
+
+    var loginResult = await authService.LoginAsync(
+        new LoginPlayerRequest(request.Username, request.Password),
+        cancellationToken);
+
+    return loginResult is null
+        ? Results.Unauthorized()
+        : Results.Ok(loginResult);
+})
+    .WithOpenApi(operation =>
+    {
+        operation.Summary = "Authenticate and get bearer token";
+        operation.Description = "Validates credentials and returns a temporary bearer token suitable for API calls.";
+        return operation;
+    });
+
+auth.MapGet("/validate", async (
+    string token,
+    IAuthService authService,
+    CancellationToken cancellationToken) =>
+{
+    var session = await authService.ValidateTokenAsync(token, cancellationToken);
+    return session is null ? Results.Unauthorized() : Results.Ok(session);
+})
+    .WithOpenApi(operation =>
+    {
+        operation.Summary = "Validate bearer token";
+        operation.Description = "Returns the active session when a bearer token is still valid.";
+        return operation;
+    });
 
 var sectors = app.MapGroup("/api/navigation/sectors")
     .WithTags("Navigation - Sectors");
@@ -1125,3 +1248,7 @@ public sealed record CreateSectorRequest(string Name, float X, float Y, float Z)
 public sealed record UpdateSectorRequest(int? SecurityLevel, int? HazardRating, Guid? FactionId);
 public sealed record CreateRouteRequest(Guid FromSectorId, Guid ToSectorId, string LegalStatus, string WarpGateType);
 public sealed record UpdateRouteRequest(string? LegalStatus, float? BaseRiskScore);
+public sealed record RegisterPlayerApiRequest(string Username, string Email, string Password);
+public sealed record LoginPlayerApiRequest(string Username, string Password);
+
+public partial class Program;

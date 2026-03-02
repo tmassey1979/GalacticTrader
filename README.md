@@ -1,6 +1,8 @@
-# Galactic Trader - Backend Development Guide
+# Galactic Trader - Backend and Desktop Development Guide
 
 A deterministic, server-authoritative economic space simulation built with .NET 9, PostgreSQL, Redis, and Keycloak.
+
+The primary client is now a WPF desktop UI with a 3D tactical starmap in `src/Desktop`.
 
 ## Prerequisites
 
@@ -59,6 +61,10 @@ A deterministic, server-authoritative economic space simulation built with .NET 
 - **Communication Service** - Text and voice channels
 - **Telemetry Service** - Metrics and observability
 
+### Desktop Client
+
+- **WPF Desktop UI** - Command interface with `Viewport3D` starmap
+
 ## Project Structure
 
 ```
@@ -112,6 +118,17 @@ dotnet test
 dotnet test /p:CollectCoverage=true
 ```
 
+```bash
+# Run integration tests only
+dotnet test tests/GalacticTrader.IntegrationTests
+
+# Run benchmark suite
+dotnet run --project tests/GalacticTrader.Benchmarks -c Release -- --job short
+
+# Run Playwright E2E critical flows
+cd tests/e2e && npm install && npm test
+```
+
 ## Database Setup
 
 ### Entity Framework Core Migrations
@@ -131,6 +148,7 @@ dotnet ef migrations remove --project src/Data --startup-project src/API
 
 Once running, view the Swagger documentation at:
 - http://localhost:8080/swagger
+- See [docs/api-openapi.md](docs/api-openapi.md) for auth, examples, error codes, and SDK generation.
 
 ## Configuration
 
@@ -177,10 +195,12 @@ docker-compose down -v
 
 ## Authentication
 
-The API uses OAuth2/OIDC via Keycloak. To authenticate:
+Production authentication is expected through Keycloak OAuth2/OIDC.
 
-1. Obtain an access token from Keycloak
-2. Include it in API requests: `Authorization: Bearer {token}`
+For development and test automation, use the built-in auth endpoints:
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/validate`
 
 ## Contributing
 
@@ -197,6 +217,7 @@ For complete architecture documentation, see:
 - [Full Codex](Codex/Galactic_Trader_Full_Codex.md)
 - [Architecture & Infrastructure](Codex/Galactic_Trader_Architecture_Infrastructure_Codex.md)
 - [User Interface](Codex/Galactic_Trader_User_Interface_Codex.md)
+- [Current architecture guide](docs/architecture.md)
 
 ## License
 

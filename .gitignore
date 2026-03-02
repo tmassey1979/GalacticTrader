@@ -97,3 +97,16 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# .NET build outputs
+**/bin/
+**/obj/
+
+# Test and benchmark artifacts
+**/coverage.cobertura.xml
+BenchmarkDotNet.Artifacts/
+
+# Node artifacts
+**/node_modules/
+**/dist/
+**/test-results/

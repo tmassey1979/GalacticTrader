@@ -1,0 +1,39 @@
+name: benchmarks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark-services:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore GalacticTrader.sln
+
+      - name: Run Benchmarks
+        run: >
+          dotnet run --project tests/GalacticTrader.Benchmarks/GalacticTrader.Benchmarks.csproj -c Release --
+          --job short
+          --warmupCount 1
+          --iterationCount 3
+
+      - name: Upload Benchmark Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: tests/GalacticTrader.Benchmarks/BenchmarkDotNet.Artifacts
+          if-no-files-found: warn

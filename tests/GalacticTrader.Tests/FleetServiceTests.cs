@@ -98,6 +98,68 @@ public sealed class FleetServiceTests
         Assert.InRange(result.ExpectedLossPercent, 2, 70);
     }
 
+    [Fact]
+    public async Task GetShipTemplatesAsync_ReturnsKnownTemplates()
+    {
+        await using var dbContext = CreateDbContext();
+        var service = new FleetService(dbContext);
+
+        var templates = await service.GetShipTemplatesAsync();
+
+        Assert.Contains(templates, template => template.Key.Equals("scout", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(templates, template => template.Key.Equals("escort", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task GetPlayerShipsAndGetShipAsync_ReturnPurchasedShip()
+    {
+        await using var dbContext = CreateDbContext();
+        var player = await SeedPlayerAsync(dbContext, 1_000_000m);
+        var service = new FleetService(dbContext);
+
+        var purchased = await service.PurchaseShipAsync(new PurchaseShipRequest
+        {
+            PlayerId = player.Id,
+            TemplateKey = "scout",
+            Name = "Scout One"
+        });
+
+        Assert.NotNull(purchased);
+
+        var ships = await service.GetPlayerShipsAsync(player.Id);
+        var fetched = await service.GetShipAsync(purchased!.Id);
+
+        Assert.Single(ships);
+        Assert.NotNull(fetched);
+        Assert.Equal(purchased.Id, fetched!.Id);
+    }
+
+    [Fact]
+    public async Task FireCrewAsync_RemovesCrewRecord()
+    {
+        await using var dbContext = CreateDbContext();
+        var player = await SeedPlayerAsync(dbContext, 300_000m);
+        var ship = await SeedShipAsync(dbContext, player.Id, crewSlots: 3);
+        var service = new FleetService(dbContext);
+
+        var crew = await service.HireCrewAsync(new HireCrewRequest
+        {
+            PlayerId = player.Id,
+            ShipId = ship.Id,
+            Name = "Ari",
+            Role = "Navigator",
+            Salary = 2200m
+        });
+
+        Assert.NotNull(crew);
+
+        var fired = await service.FireCrewAsync(crew!.Id);
+        var firedAgain = await service.FireCrewAsync(crew.Id);
+
+        Assert.True(fired);
+        Assert.False(firedAgain);
+    }
+
     private static async Task<Player> SeedPlayerAsync(GalacticTraderDbContext dbContext, decimal credits)
     {
         var player = new Player
