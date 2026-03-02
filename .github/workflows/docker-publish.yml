@@ -31,7 +31,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker metadata
-        id: meta
+        id: meta_api
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/galactictrader-api
@@ -40,11 +40,30 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=tag
 
-      - name: Build and push image
+      - name: Build and push API image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_api.outputs.tags }}
+          labels: ${{ steps.meta_api.outputs.labels }}
+
+      - name: Docker metadata (gateway)
+        id: meta_gateway
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/galactictrader-gateway
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=tag
+
+      - name: Build and push Gateway image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.gateway
+          push: true
+          tags: ${{ steps.meta_gateway.outputs.tags }}
+          labels: ${{ steps.meta_gateway.outputs.labels }}

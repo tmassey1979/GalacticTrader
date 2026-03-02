@@ -17,6 +17,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
     networks:
       - galactictrader-network
 
@@ -24,6 +25,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: galactictrader-redis
+    command: ["redis-server", "--appendonly", "yes", "--save", "900", "1", "--save", "300", "10", "--save", "60", "10000"]
     ports:
       - "6379:6379"
     volumes:
@@ -33,6 +35,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
     networks:
       - galactictrader-network
 
@@ -55,6 +58,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
     networks:
       - galactictrader-network
 
@@ -71,6 +75,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
     networks:
       - galactictrader-network
 
@@ -89,6 +94,7 @@ services:
       - ./infrastructure/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
     depends_on:
       - prometheus
+    restart: unless-stopped
     networks:
       - galactictrader-network
 
@@ -109,10 +115,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
     networks:
       - galactictrader-network
 
-  # API Gateway
+  # Backend API
   api:
     image: ${API_IMAGE:-galactictrader-api:local}
     build:
@@ -144,6 +151,34 @@ services:
         condition: service_started
       vault:
         condition: service_started
+    restart: unless-stopped
+    networks:
+      - galactictrader-network
+
+  # API Gateway
+  gateway:
+    image: ${GATEWAY_IMAGE:-galactictrader-gateway:local}
+    build:
+      context: .
+      dockerfile: Dockerfile.gateway
+    container_name: galactictrader-gateway
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8081
+      Gateway__ApiBaseUrl: "http://api:8080"
+      Gateway__Jwt__Authority: "http://keycloak:8080/realms/galactictrader"
+      Gateway__Jwt__Audience: "account"
+      Gateway__Jwt__RequireHttpsMetadata: "false"
+      Gateway__RateLimit__PermitLimit: "300"
+      Gateway__RateLimit__WindowSeconds: "60"
+    ports:
+      - "8081:8081"
+    depends_on:
+      api:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
     networks:
       - galactictrader-network
 

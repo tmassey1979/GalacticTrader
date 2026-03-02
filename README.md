@@ -48,10 +48,12 @@ The primary client is now a WPF desktop UI with a 3D tactical starmap in `src/De
 - **Keycloak** (port 8180) - Identity provider with OAuth2/OIDC
 - **Prometheus** (port 9090) - Metrics collection
 - **Grafana** (port 3000) - Dashboard visualization
+- **Vault** (port 8200) - Secret bootstrap for API/Gateway
+- **Gateway** (port 8081) - API entrypoint with JWT validation and rate limiting
+- **API** (port 8080) - Backend application service behind gateway
 
 ### Backend Services
 
-- **API Gateway** (port 8080) - Main REST API
 - **Navigation Service** - Route calculation and autopilot
 - **Combat Service** - Deterministic tick-based battles
 - **Economy Service** - Dynamic pricing engine
@@ -109,6 +111,12 @@ dotnet watch run --project src/API
 dotnet run --project src/API -c Release
 ```
 
+### Running the Gateway
+
+```bash
+dotnet run --project src/Gateway
+```
+
 ### Running the Desktop UI
 
 ```bash
@@ -155,7 +163,9 @@ dotnet ef migrations remove --project src/Data --startup-project src/API
 
 Once running, view the Swagger documentation at:
 - http://localhost:8080/swagger
+- Through gateway: http://localhost:8081/swagger
 - See [docs/api-openapi.md](docs/api-openapi.md) for auth, examples, error codes, and SDK generation.
+- Gateway routes and smoke checks: [docs/api-gateway.md](docs/api-gateway.md)
 
 ## Configuration
 

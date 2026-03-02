@@ -50,6 +50,9 @@ jobs:
       - name: Integration Tests
         run: dotnet test tests/GalacticTrader.IntegrationTests/GalacticTrader.IntegrationTests.csproj --configuration Release --no-build --verbosity normal
 
+      - name: Gateway Integration Tests
+        run: dotnet test tests/GalacticTrader.Gateway.Tests/GalacticTrader.Gateway.Tests.csproj --configuration Release --no-build --verbosity normal
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

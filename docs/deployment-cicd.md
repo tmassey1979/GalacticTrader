@@ -2,12 +2,29 @@
 
 ## Workflows
 - `dotnet-ci.yml`: runs restore/build/test on pushes and pull requests.
-- `docker-publish.yml`: builds and pushes `ghcr.io/<owner>/galactictrader-api` on `main` and tags.
+- `docker-publish.yml`: builds and pushes `ghcr.io/<owner>/galactictrader-api` and `ghcr.io/<owner>/galactictrader-gateway` on `main` and tags.
 - `deploy.yml`: manual deployment orchestration (`staging` or `production`) with optional rollback tag.
 
 ## Registry
 - Container registry: GitHub Container Registry (`ghcr.io`).
-- Image naming: `ghcr.io/<owner>/galactictrader-api:<tag>`.
+- Image naming:
+  - `ghcr.io/<owner>/galactictrader-api:<tag>`
+  - `ghcr.io/<owner>/galactictrader-gateway:<tag>`
+
+## Gateway Smoke Checks
+After deploying the stack:
+
+```bash
+./scripts/smoke-gateway.sh
+```
+
+PowerShell:
+
+```powershell
+./scripts/smoke-gateway.ps1
+```
+
+See `docs/api-gateway.md` for route policy and runtime configuration details.
 
 ## Staging Deployment
 1. Copy `infrastructure/staging.env.example` to `infrastructure/staging.env`.
