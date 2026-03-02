@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -13,6 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U galactic_admin -d galactictrader"]
       interval: 10s
@@ -45,11 +44,12 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_PASSWORD:-admin}
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/galactictrader
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: galactic_admin
       KC_DB_PASSWORD: ${DB_PASSWORD:-ChangeMeInProduction}
       KC_PROXY: edge
       KC_HOSTNAME: localhost:8180
+    command: ["start-dev"]
     ports:
       - "8180:8080"
     depends_on:
@@ -80,7 +80,7 @@ services:
     container_name: galactictrader-grafana
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
-      GF_INSTALL_PLUGINS: grafana-piechart-panel
+      GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS:-}
     ports:
       - "3000:3000"
     volumes:
@@ -105,7 +105,7 @@ services:
     ports:
       - "8200:8200"
     healthcheck:
-      test: ["CMD", "vault", "status"]
+      test: ["CMD-SHELL", "VAULT_ADDR=http://127.0.0.1:8200 vault status"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -121,7 +121,7 @@ services:
     container_name: galactictrader-api
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080;https://+:8443
+      ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=galactictrader;Username=galactic_admin;Password=${DB_PASSWORD:-ChangeMeInProduction}"
       Redis__Connection: "redis:6379"
       Keycloak__ServerUrl: "http://keycloak:8080"
@@ -135,7 +135,6 @@ services:
       Vault__KvVersion: ${VAULT_KV_VERSION:-2}
     ports:
       - "8080:8080"
-      - "8443:8443"
     depends_on:
       postgres:
         condition: service_healthy
