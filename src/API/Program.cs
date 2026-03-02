@@ -5,6 +5,7 @@ using GalacticTrader.Services.Combat;
 using GalacticTrader.Services.Economy;
 using GalacticTrader.Services.Market;
 using GalacticTrader.Services.Navigation;
+using GalacticTrader.Services.Npc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +39,7 @@ builder.Services.AddScoped<IAutopilotService, AutopilotService>();
 builder.Services.AddScoped<ICombatService, CombatService>();
 builder.Services.AddScoped<IEconomyService, EconomyService>();
 builder.Services.AddScoped<IMarketTransactionService, MarketTransactionService>();
+builder.Services.AddScoped<INpcService, NpcService>();
 
 var app = builder.Build();
 
@@ -464,6 +466,93 @@ market.MapGet("/transactions/{playerId:guid}", async (
 {
     var result = await tradeService.GetPlayerTransactionsAsync(playerId, limit ?? 50, cancellationToken);
     return Results.Ok(result);
+});
+
+var npc = app.MapGroup("/api/npc")
+    .WithTags("NPC");
+
+npc.MapPost("/agents", async (
+    CreateNpcRequest request,
+    INpcService npcService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var created = await npcService.CreateAgentAsync(request, cancellationToken);
+        return Results.Created($"/api/npc/agents/{created.Id}", created);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+npc.MapGet("/agents", async (INpcService npcService, CancellationToken cancellationToken) =>
+{
+    var agents = await npcService.GetAgentsAsync(cancellationToken);
+    return Results.Ok(agents);
+});
+
+npc.MapGet("/agents/{agentId:guid}", async (
+    Guid agentId,
+    INpcService npcService,
+    CancellationToken cancellationToken) =>
+{
+    var agent = await npcService.GetAgentAsync(agentId, cancellationToken);
+    return agent is null ? Results.NotFound() : Results.Ok(agent);
+});
+
+npc.MapPost("/agents/{agentId:guid}/tick", async (
+    Guid agentId,
+    INpcService npcService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await npcService.ProcessDecisionTickAsync(agentId, cancellationToken);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+npc.MapPost("/tick-all", async (INpcService npcService, CancellationToken cancellationToken) =>
+{
+    var result = await npcService.ProcessAllDecisionTicksAsync(cancellationToken);
+    return Results.Ok(result);
+});
+
+npc.MapPost("/agents/{agentId:guid}/fleet/spawn", async (
+    Guid agentId,
+    int? ships,
+    INpcService npcService,
+    CancellationToken cancellationToken) =>
+{
+    var summary = await npcService.SpawnFleetAsync(agentId, ships ?? 3, cancellationToken);
+    return summary is null ? Results.NotFound() : Results.Ok(summary);
+});
+
+npc.MapPost("/agents/{agentId:guid}/route/{targetSectorId:guid}", async (
+    Guid agentId,
+    Guid targetSectorId,
+    INpcService npcService,
+    CancellationToken cancellationToken) =>
+{
+    var planned = await npcService.PlanRouteAsync(agentId, targetSectorId, cancellationToken);
+    return planned ? Results.Accepted() : Results.BadRequest(new { error = "Route planning failed." });
+});
+
+npc.MapPost("/agents/{agentId:guid}/move", async (
+    Guid agentId,
+    INpcService npcService,
+    CancellationToken cancellationToken) =>
+{
+    var moved = await npcService.ProcessFleetMovementAsync(agentId, cancellationToken);
+    return moved ? Results.Accepted() : Results.BadRequest(new { error = "Movement processing failed." });
+});
+
+npc.MapPost("/agents/{agentId:guid}/trade", async (
+    Guid agentId,
+    INpcService npcService,
+    CancellationToken cancellationToken) =>
+{
+    var margin = await npcService.ExecuteNpcTradeAsync(agentId, cancellationToken);
+    return margin.HasValue ? Results.Ok(new { margin = margin.Value }) : Results.NotFound();
 });
 
 app.Run();
