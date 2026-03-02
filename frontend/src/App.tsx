@@ -4,6 +4,7 @@ import { TopStatusBar } from "./components/TopStatusBar";
 import { createHeartbeatMarketTick } from "./realtime/heartbeatEventFactory";
 import { buildGlobalRealtimeUrl } from "./realtime/globalRealtimeUrl";
 import { RealtimeSocketClient } from "./realtime/wsClient";
+import { AnalyticsScreen } from "./screens/AnalyticsScreen";
 import { BattleResultsScreen } from "./screens/BattleResultsScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
 import { FleetManagementScreen } from "./screens/FleetManagementScreen";
@@ -85,6 +86,7 @@ export default function App() {
         {activeScreen === "battle" && <BattleResultsScreen />}
         {activeScreen === "reputation" && <ReputationServicesScreen />}
         {activeScreen === "territory" && <TerritoryScreen />}
+        {activeScreen === "analytics" && <AnalyticsScreen />}
         {activeScreen === "intelligence" && <MarketIntelligenceScreen />}
       </main>
     </div>

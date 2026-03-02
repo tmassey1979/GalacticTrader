@@ -6,6 +6,7 @@ export type ScreenKey =
   | "battle"
   | "reputation"
   | "territory"
+  | "analytics"
   | "intelligence";
 
 export type RealtimeEvent =
