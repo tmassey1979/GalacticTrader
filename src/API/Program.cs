@@ -4,6 +4,7 @@ using GalacticTrader.API.Secrets;
 using GalacticTrader.Data;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
+using GalacticTrader.Services.Admin;
 using GalacticTrader.Services.Communication;
 using GalacticTrader.Services.Combat;
 using GalacticTrader.Services.Economy;
@@ -93,6 +94,7 @@ builder.Services.AddScoped<IFleetService, FleetService>();
 builder.Services.AddScoped<IReputationService, ReputationService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
+builder.Services.AddSingleton<IBalanceControlService, BalanceControlService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IVoiceService, VoiceService>();
 builder.Services.AddHostedService<TelemetryGaugeRefreshService>();
@@ -978,6 +980,88 @@ leaderboards.MapPost("/{leaderboardType}/reset", async (
     }
 });
 
+static bool IsAdminAuthorized(HttpContext context, IConfiguration configuration)
+{
+    var expectedKey = configuration["Admin:Key"]
+        ?? configuration["Admin__Key"]
+        ?? "dev-admin-key";
+
+    if (!context.Request.Headers.TryGetValue("X-Admin-Key", out var providedKey))
+    {
+        return false;
+    }
+
+    return string.Equals(providedKey.ToString(), expectedKey, StringComparison.Ordinal);
+}
+
+var adminBalance = app.MapGroup("/api/admin/balance")
+    .WithTags("Admin - Balance Controls");
+
+adminBalance.MapGet("/state", (HttpContext context, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+{
+    if (!IsAdminAuthorized(context, configuration))
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(balanceControlService.GetSnapshot());
+});
+
+adminBalance.MapPost("/tax", (HttpContext context, UpdateTaxRateRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+{
+    if (!IsAdminAuthorized(context, configuration))
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(balanceControlService.SetTaxRate(request.TaxRatePercent));
+});
+
+adminBalance.MapPost("/pirates", (HttpContext context, UpdatePirateIntensityRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+{
+    if (!IsAdminAuthorized(context, configuration))
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(balanceControlService.SetPirateIntensity(request.IntensityPercent));
+});
+
+adminBalance.MapPost("/liquidity", (HttpContext context, LiquidityAdjustmentRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+{
+    if (!IsAdminAuthorized(context, configuration))
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(balanceControlService.ApplyLiquidityAdjustment(request.DeltaPercent, request.Reason ?? "manual"));
+});
+
+adminBalance.MapPost("/instability", (HttpContext context, SectorInstabilityRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+{
+    if (!IsAdminAuthorized(context, configuration))
+    {
+        return Results.Unauthorized();
+    }
+
+    if (request.SectorId == Guid.Empty)
+    {
+        return Results.BadRequest(new { error = "sectorId is required." });
+    }
+
+    return Results.Ok(balanceControlService.TriggerSectorInstability(request.SectorId, request.Reason ?? "manual"));
+});
+
+adminBalance.MapPost("/correction", (HttpContext context, EconomicCorrectionRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+{
+    if (!IsAdminAuthorized(context, configuration))
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(balanceControlService.TriggerEconomicCorrection(request.AdjustmentPercent, request.Reason ?? "manual"));
+});
+
 var communication = app.MapGroup("/api/communication")
     .WithTags("Communication");
 
@@ -1252,5 +1336,10 @@ public sealed record CreateRouteRequest(Guid FromSectorId, Guid ToSectorId, stri
 public sealed record UpdateRouteRequest(string? LegalStatus, float? BaseRiskScore);
 public sealed record RegisterPlayerApiRequest(string Username, string Email, string Password);
 public sealed record LoginPlayerApiRequest(string Username, string Password);
+public sealed record UpdateTaxRateRequest(decimal TaxRatePercent);
+public sealed record UpdatePirateIntensityRequest(int IntensityPercent);
+public sealed record LiquidityAdjustmentRequest(decimal DeltaPercent, string? Reason);
+public sealed record SectorInstabilityRequest(Guid SectorId, string? Reason);
+public sealed record EconomicCorrectionRequest(decimal AdjustmentPercent, string? Reason);
 
 public partial class Program;
