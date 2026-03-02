@@ -55,6 +55,7 @@ builder.Services.AddScoped<IFleetService, FleetService>();
 builder.Services.AddScoped<IReputationService, ReputationService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
+builder.Services.AddSingleton<IVoiceService, VoiceService>();
 builder.Services.AddHostedService<TelemetryGaugeRefreshService>();
 
 var app = builder.Build();
@@ -903,6 +904,96 @@ communication.MapGet("/messages/{channelType}/{channelKey}", async (
 
     var messages = await communicationService.GetRecentMessagesAsync(parsedChannelType, channelKey, limit ?? 50, cancellationToken);
     return Results.Ok(messages);
+});
+
+var voice = communication.MapGroup("/voice");
+
+voice.MapPost("/channels", async (
+    CreateVoiceChannelRequest request,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var channel = await voiceService.CreateChannelAsync(request, cancellationToken);
+    return Results.Created($"/api/communication/voice/channels/{channel.ChannelId}", channel);
+});
+
+voice.MapGet("/channels/{channelId:guid}", async (
+    Guid channelId,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var channel = await voiceService.GetChannelAsync(channelId, cancellationToken);
+    return channel is null ? Results.NotFound() : Results.Ok(channel);
+});
+
+voice.MapPost("/channels/{channelId:guid}/join", async (
+    Guid channelId,
+    JoinVoiceChannelRequest request,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var joined = await voiceService.JoinChannelAsync(channelId, request, cancellationToken);
+    return joined is null ? Results.NotFound() : Results.Ok(joined);
+});
+
+voice.MapPost("/channels/{channelId:guid}/leave/{playerId:guid}", async (
+    Guid channelId,
+    Guid playerId,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var left = await voiceService.LeaveChannelAsync(channelId, playerId, cancellationToken);
+    return left ? Results.NoContent() : Results.NotFound();
+});
+
+voice.MapPost("/channels/{channelId:guid}/signal", async (
+    Guid channelId,
+    VoiceSignalRequest request,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var signal = await voiceService.PublishSignalAsync(channelId, request, cancellationToken);
+    return signal is null ? Results.NotFound() : Results.Ok(signal);
+});
+
+voice.MapGet("/channels/{channelId:guid}/signals/{playerId:guid}", async (
+    Guid channelId,
+    Guid playerId,
+    int? limit,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var signals = await voiceService.DequeueSignalsAsync(channelId, playerId, limit ?? 50, cancellationToken);
+    return Results.Ok(signals);
+});
+
+voice.MapPost("/channels/{channelId:guid}/activity", async (
+    Guid channelId,
+    VoiceActivityRequest request,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var activity = await voiceService.UpdateActivityAsync(channelId, request, cancellationToken);
+    return activity is null ? Results.NotFound() : Results.Ok(activity);
+});
+
+voice.MapPost("/channels/{channelId:guid}/spatial-audio", async (
+    Guid channelId,
+    SpatialAudioRequest request,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var mix = await voiceService.CalculateSpatialMixAsync(channelId, request, cancellationToken);
+    return mix is null ? Results.NotFound() : Results.Ok(mix);
+});
+
+voice.MapGet("/channels/{channelId:guid}/qos", async (
+    Guid channelId,
+    IVoiceService voiceService,
+    CancellationToken cancellationToken) =>
+{
+    var qos = await voiceService.GetQosSnapshotAsync(channelId, cancellationToken);
+    return qos is null ? Results.NotFound() : Results.Ok(qos);
 });
 
 communication.Map("/ws/{channelType}/{channelKey}", async (
