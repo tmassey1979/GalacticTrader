@@ -1,43 +1,56 @@
-type TerritoryZone = {
-  system: string;
-  control: string;
-  protection: string;
-  output: string;
-  conflictHeat: "low" | "med" | "high";
-};
+import { useMemo, useState } from "react";
+import { buildTerritoryCsv } from "../territory/territoryCsv";
+import { downloadCsv } from "../territory/downloadCsv";
+import type { TerritoryHeat } from "../territory/TerritoryZone";
+import { territoryZones } from "../territory/territoryZones";
 
-const territoryZones: TerritoryZone[] = [
-  {
-    system: "Vega Reach",
-    control: "Merchant League",
-    protection: "Escort Grid Alpha",
-    output: "$1.8M/day",
-    conflictHeat: "low"
-  },
-  {
-    system: "Orion Gate",
-    control: "Independent Council",
-    protection: "Rapid Response Wing",
-    output: "$1.2M/day",
-    conflictHeat: "med"
-  },
-  {
-    system: "Draco Fringe",
-    control: "Disputed",
-    protection: "Contract Patrol",
-    output: "$0.7M/day",
-    conflictHeat: "high"
-  }
-];
+type TerritoryAction = "fleet" | "tax" | "incentive";
 
 export function TerritoryScreen() {
+  const [heatFilter, setHeatFilter] = useState<TerritoryHeat | "all">("all");
+  const [selectedSystem, setSelectedSystem] = useState<string>(territoryZones[0]?.system ?? "");
+  const [lastAction, setLastAction] = useState<string>("No action executed yet.");
+
+  const visibleZones = useMemo(
+    () => territoryZones.filter((zone) => heatFilter === "all" || zone.conflictHeat === heatFilter),
+    [heatFilter]
+  );
+
+  function runAction(action: TerritoryAction) {
+    const actionLabel = action === "fleet" ? "Protection fleet assigned" : action === "tax" ? "Tax policy adjusted" : "Trade incentive offered";
+    setLastAction(`${actionLabel} in ${selectedSystem}.`);
+  }
+
+  function exportCsv() {
+    const csv = buildTerritoryCsv(visibleZones);
+    downloadCsv("territory-zones.csv", csv);
+  }
+
   return (
     <section className="screen-grid" aria-label="territory-screen">
       <article className="panel wide">
         <header className="panel-header">
           <h2>Controlled Systems</h2>
-          <button className="ghost-button">Open Conflict Heatmap</button>
+          <button className="ghost-button" onClick={exportCsv}>
+            Export Territory CSV
+          </button>
         </header>
+
+        <div className="chip-row">
+          <button className={`ghost-button ${heatFilter === "all" ? "active-filter" : ""}`} onClick={() => setHeatFilter("all")}>
+            All
+          </button>
+          <button className={`ghost-button ${heatFilter === "low" ? "active-filter" : ""}`} onClick={() => setHeatFilter("low")}>
+            Low Heat
+          </button>
+          <button className={`ghost-button ${heatFilter === "med" ? "active-filter" : ""}`} onClick={() => setHeatFilter("med")}>
+            Medium Heat
+          </button>
+          <button className={`ghost-button ${heatFilter === "high" ? "active-filter" : ""}`} onClick={() => setHeatFilter("high")}>
+            High Heat
+          </button>
+        </div>
+
         <div className="table-wrap">
           <table>
             <thead>
@@ -50,8 +63,8 @@ export function TerritoryScreen() {
               </tr>
             </thead>
             <tbody>
-              {territoryZones.map((zone) => (
-                <tr key={zone.system}>
+              {visibleZones.map((zone) => (
+                <tr key={zone.system} className={selectedSystem === zone.system ? "selected-row" : ""} onClick={() => setSelectedSystem(zone.system)}>
                   <td>{zone.system}</td>
                   <td>{zone.control}</td>
                   <td>{zone.protection}</td>
@@ -68,10 +81,17 @@ export function TerritoryScreen() {
 
       <article className="panel">
         <h3>Protection Actions</h3>
+        <p className="kpi-hint">Selected: {selectedSystem}</p>
         <div className="stack">
-          <button className="action-button">Assign Protection Fleet</button>
-          <button className="ghost-button">Adjust Taxation Policy</button>
-          <button className="ghost-button">Offer Trade Incentive</button>
+          <button className="action-button" onClick={() => runAction("fleet")}>
+            Assign Protection Fleet
+          </button>
+          <button className="ghost-button" onClick={() => runAction("tax")}>
+            Adjust Taxation Policy
+          </button>
+          <button className="ghost-button" onClick={() => runAction("incentive")}>
+            Offer Trade Incentive
+          </button>
         </div>
       </article>
 
@@ -82,6 +102,9 @@ export function TerritoryScreen() {
           <li>Core system tariff compliance stable</li>
           <li>Draco Fringe diplomatic event pending</li>
         </ul>
+        <p className="kpi-hint" aria-label="territory-last-action">
+          {lastAction}
+        </p>
       </article>
     </section>
   );

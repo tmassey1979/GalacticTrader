@@ -259,6 +259,11 @@ th {
   color: var(--ink);
 }
 
+.ghost-button.active-filter {
+  border-color: rgba(31, 122, 119, 0.6);
+  background: rgba(31, 122, 119, 0.14);
+}
+
 .action-button {
   background: var(--accent-teal);
   border-color: transparent;
@@ -288,6 +293,10 @@ th {
 
 .chip.territory-high {
   background: rgba(155, 67, 42, 0.2);
+}
+
+tr.selected-row {
+  background: rgba(31, 122, 119, 0.08);
 }
 
 .stack {
