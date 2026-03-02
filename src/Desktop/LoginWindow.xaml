@@ -1,0 +1,168 @@
+<Window x:Class="GalacticTrader.Desktop.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Galactic Trader Access"
+        Width="620"
+        Height="520"
+        MinWidth="560"
+        MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#081428">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Command Authentication"
+                       Foreground="#EAF2FF"
+                       FontSize="28"
+                       FontWeight="SemiBold" />
+            <TextBlock Text="Sign in or create a user account before launching command view."
+                       Margin="0,6,0,4"
+                       Foreground="#9DB7E2"
+                       TextWrapping="Wrap" />
+            <TextBlock x:Name="ApiBaseUrlText"
+                       Foreground="#74A7FF"
+                       FontFamily="Consolas" />
+        </StackPanel>
+
+        <TabControl x:Name="AuthTabs"
+                    Grid.Row="1"
+                    Margin="0,16,0,0"
+                    Background="#0D1A33"
+                    BorderBrush="#2E4A75"
+                    Foreground="#EAF2FF">
+            <TabItem Header="Login">
+                <Grid Margin="18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Username"
+                               Foreground="#B9CBE8" />
+                    <TextBox x:Name="LoginUsernameText"
+                             Grid.Row="1"
+                             Margin="0,6,0,14"
+                             Height="34"
+                             Padding="8,6"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF" />
+
+                    <TextBlock Grid.Row="2"
+                               Text="Password"
+                               Foreground="#B9CBE8" />
+                    <PasswordBox x:Name="LoginPasswordBox"
+                                 Grid.Row="3"
+                                 Margin="0,6,0,14"
+                                 Height="34"
+                                 Padding="8,6"
+                                 Background="#101F39"
+                                 BorderBrush="#2E4A75"
+                                 Foreground="#EAF2FF" />
+
+                    <Button x:Name="LoginButton"
+                            Grid.Row="4"
+                            Height="36"
+                            HorizontalAlignment="Left"
+                            MinWidth="150"
+                            Background="#1F6FEB"
+                            BorderBrush="#4A89F6"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            Content="Login"
+                            Click="OnLoginClick" />
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Add User">
+                <Grid Margin="18">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Username"
+                               Foreground="#B9CBE8" />
+                    <TextBox x:Name="RegisterUsernameText"
+                             Grid.Row="1"
+                             Margin="0,6,0,14"
+                             Height="34"
+                             Padding="8,6"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF" />
+
+                    <TextBlock Grid.Row="2"
+                               Text="Email"
+                               Foreground="#B9CBE8" />
+                    <TextBox x:Name="RegisterEmailText"
+                             Grid.Row="3"
+                             Margin="0,6,0,14"
+                             Height="34"
+                             Padding="8,6"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF" />
+
+                    <TextBlock Grid.Row="4"
+                               Text="Password"
+                               Foreground="#B9CBE8" />
+                    <PasswordBox x:Name="RegisterPasswordBox"
+                                 Grid.Row="5"
+                                 Margin="0,6,0,14"
+                                 Height="34"
+                                 Padding="8,6"
+                                 Background="#101F39"
+                                 BorderBrush="#2E4A75"
+                                 Foreground="#EAF2FF" />
+
+                    <Button x:Name="RegisterButton"
+                            Grid.Row="6"
+                            Height="36"
+                            HorizontalAlignment="Left"
+                            MinWidth="150"
+                            Background="#00A86B"
+                            BorderBrush="#20C284"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            Content="Create User"
+                            Click="OnRegisterClick" />
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <DockPanel Grid.Row="2"
+                   Margin="0,16,0,0"
+                   LastChildFill="False">
+            <TextBlock x:Name="StatusText"
+                       DockPanel.Dock="Left"
+                       VerticalAlignment="Center"
+                       Foreground="#9DB7E2"
+                       TextWrapping="Wrap"
+                       Width="430" />
+            <Button x:Name="CancelButton"
+                    DockPanel.Dock="Right"
+                    MinWidth="120"
+                    Height="34"
+                    Background="#2D3D57"
+                    BorderBrush="#4C607F"
+                    Foreground="#EAF2FF"
+                    Content="Cancel"
+                    Click="OnCancelClick" />
+        </DockPanel>
+    </Grid>
+</Window>

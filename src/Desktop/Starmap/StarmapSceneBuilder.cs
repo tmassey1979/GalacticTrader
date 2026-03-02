@@ -8,7 +8,11 @@ public static class StarmapSceneBuilder
     {
         var stars = StarCatalogBuilder.CreateStars();
         var routes = RouteNetworkBuilder.CreateRoutes(stars);
+        return Build(stars, routes);
+    }
 
+    public static StarmapScene Build(IReadOnlyList<StarNode> stars, IReadOnlyList<RouteSegment> routes)
+    {
         var scene = new Model3DGroup();
         foreach (var route in routes)
         {

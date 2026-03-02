@@ -8,15 +8,22 @@ namespace GalacticTrader.Desktop;
 public partial class MainWindow : Window
 {
     private readonly OrbitCameraController _cameraController = new();
+    private readonly StarmapScene _scene;
     private bool _isOrbiting;
     private Point _lastMousePoint;
     private bool _isUpdatingSliders;
 
-    public MainWindow()
+    public MainWindow(StarmapScene scene, string? username = null)
     {
+        _scene = scene;
         InitializeComponent();
-        BuildStarmap();
+        BuildStarmap(_scene);
         ApplyCamera(updateSliders: true);
+
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            Title = $"Galactic Trader Command - {username}";
+        }
 
         StarViewport.MouseLeftButtonDown += OnViewportMouseLeftButtonDown;
         StarViewport.MouseLeftButtonUp += OnViewportMouseLeftButtonUp;
@@ -24,9 +31,8 @@ public partial class MainWindow : Window
         StarViewport.MouseWheel += OnViewportMouseWheel;
     }
 
-    private void BuildStarmap()
+    private void BuildStarmap(StarmapScene scene)
     {
-        var scene = StarmapSceneBuilder.Build();
         RouteList.ItemsSource = scene.Routes;
         SceneModels.Content = scene.Models;
     }

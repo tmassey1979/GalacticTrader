@@ -44,6 +44,9 @@ jobs:
       - name: Desktop Frontend Tests
         run: dotnet test tests/GalacticTrader.Desktop.Tests/GalacticTrader.Desktop.Tests.csproj --configuration Release --no-build --verbosity normal
 
+      - name: Map Generator Frontend Tests
+        run: dotnet test tests/GalacticTrader.MapGenerator.Tests/GalacticTrader.MapGenerator.Tests.csproj --configuration Release --no-build --verbosity normal
+
       - name: Integration Tests
         run: dotnet test tests/GalacticTrader.IntegrationTests/GalacticTrader.IntegrationTests.csproj --configuration Release --no-build --verbosity normal
 
