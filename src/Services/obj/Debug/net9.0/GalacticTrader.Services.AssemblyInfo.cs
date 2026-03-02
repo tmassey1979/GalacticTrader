@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GalacticTrader.Services")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e27c2af8060ddf1ee6eb72c423db0aa911e93135")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4de5c492771ccc0deaf9176697aba70ab8d800ba")]
 [assembly: System.Reflection.AssemblyProductAttribute("GalacticTrader.Services")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GalacticTrader.Services")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -215,7 +215,11 @@
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
-            "projectReferences": {}
+            "projectReferences": {
+              "C:\\code\\GT\\GalacticTrader\\src\\Data\\GalacticTrader.Data.csproj": {
+                "projectPath": "C:\\code\\GT\\GalacticTrader\\src\\Data\\GalacticTrader.Data.csproj"
+              }
+            }
           }
         },
         "warningProperties": {
@@ -233,6 +237,20 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
+          "dependencies": {
+            "Microsoft.Extensions.Caching.StackExchangeRedis": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "Microsoft.Extensions.Diagnostics.HealthChecks": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
+            "StackExchange.Redis": {
+              "target": "Package",
+              "version": "[2.6.122, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
