@@ -31,6 +31,7 @@ builder.Services.AddScoped<IGraphValidationService, GraphValidationService>();
 builder.Services.AddScoped<ISectorService, SectorService>();
 builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IRoutePlanningService, RoutePlanningService>();
+builder.Services.AddScoped<IAutopilotService, AutopilotService>();
 
 var app = builder.Build();
 
@@ -224,6 +225,89 @@ planning.MapGet("/{fromSectorId:guid}/{toSectorId:guid}/optimize", async (
 {
     var optimization = await planningService.GetOptimizedRoutesAsync(fromSectorId, toSectorId, cancellationToken);
     return Results.Ok(optimization);
+});
+
+var autopilot = app.MapGroup("/api/navigation/autopilot")
+    .WithTags("Navigation - Autopilot");
+
+autopilot.MapPost("/start", async (
+    StartAutopilotRequest request,
+    IAutopilotService autopilotService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var session = await autopilotService.StartAutopilotAsync(request, cancellationToken);
+        return Results.Created($"/api/navigation/autopilot/{session.SessionId}", session);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+autopilot.MapGet("/{sessionId:guid}", async (
+    Guid sessionId,
+    IAutopilotService autopilotService,
+    CancellationToken cancellationToken) =>
+{
+    var session = await autopilotService.GetSessionAsync(sessionId, cancellationToken);
+    return session is null ? Results.NotFound() : Results.Ok(session);
+});
+
+autopilot.MapGet("/active", async (IAutopilotService autopilotService, CancellationToken cancellationToken) =>
+{
+    var sessions = await autopilotService.GetActiveSessionsAsync(cancellationToken);
+    return Results.Ok(sessions);
+});
+
+autopilot.MapPost("/{sessionId:guid}/tick", async (
+    Guid sessionId,
+    int? seconds,
+    IAutopilotService autopilotService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await autopilotService.ProcessTickAsync(sessionId, seconds ?? 1, cancellationToken);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+autopilot.MapPost("/tick-active", async (
+    int? seconds,
+    IAutopilotService autopilotService,
+    CancellationToken cancellationToken) =>
+{
+    var results = await autopilotService.ProcessActiveTicksAsync(seconds ?? 1, cancellationToken);
+    return Results.Ok(results);
+});
+
+autopilot.MapPost("/{sessionId:guid}/transition", async (
+    Guid sessionId,
+    TransitionTravelModeRequest request,
+    IAutopilotService autopilotService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var session = await autopilotService.TransitionTravelModeAsync(
+            sessionId,
+            request.TargetMode,
+            request.Reason,
+            cancellationToken);
+        return session is null ? Results.NotFound() : Results.Ok(session);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+autopilot.MapPost("/{sessionId:guid}/cancel", async (
+    Guid sessionId,
+    IAutopilotService autopilotService,
+    CancellationToken cancellationToken) =>
+{
+    var cancelled = await autopilotService.CancelAsync(sessionId, cancellationToken);
+    return cancelled ? Results.NoContent() : Results.NotFound();
 });
 
 app.Run();

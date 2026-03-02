@@ -1,6 +1,5 @@
 namespace GalacticTrader.Services.Navigation;
 
-using GalacticTrader.Data.Models;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
 using Microsoft.Extensions.Logging;
@@ -53,6 +52,10 @@ public sealed class RoutePlanningService : IRoutePlanningService
                 RiskMultiplier = 0.50
             }
         };
+
+    private static readonly Lock GraphLock = new();
+    private static RouteGraphSnapshot? CachedGraphSnapshot;
+    private static DateTime CachedGraphSnapshotAtUtc = DateTime.MinValue;
 
     private readonly IRouteRepository _routeRepository;
     private readonly ISectorRepository _sectorRepository;
@@ -114,40 +117,29 @@ public sealed class RoutePlanningService : IRoutePlanningService
             return cachedPlan;
         }
 
-        var sectorsTask = _sectorRepository.GetAllAsync(cancellationToken);
-        var routesTask = _routeRepository.GetAllAsync(cancellationToken);
-        await Task.WhenAll(sectorsTask, routesTask);
-
-        var sectors = sectorsTask.Result;
-        var routes = routesTask.Result;
-        var profile = ModeProfiles[travelMode];
-
-        var sectorsById = sectors.ToDictionary(sector => sector.Id);
-        if (!sectorsById.ContainsKey(fromSectorId) || !sectorsById.ContainsKey(toSectorId))
+        var graph = await GetGraphSnapshotAsync(cancellationToken);
+        if (!graph.SectorsById.ContainsKey(fromSectorId) || !graph.SectorsById.ContainsKey(toSectorId))
         {
-            return null;
+            graph = await GetGraphSnapshotAsync(cancellationToken, forceRefresh: true);
+            if (!graph.SectorsById.ContainsKey(fromSectorId) || !graph.SectorsById.ContainsKey(toSectorId))
+            {
+                return null;
+            }
         }
 
-        var routesById = routes.ToDictionary(route => route.Id);
+        var profile = ModeProfiles[travelMode];
         var pathResult = normalizedAlgorithm == "astar"
-            ? RunAStar(fromSectorId, toSectorId, sectorsById, routes, profile)
-            : RunDijkstra(fromSectorId, toSectorId, routes, profile);
+            ? RunAStar(fromSectorId, toSectorId, graph, profile)
+            : RunDijkstra(fromSectorId, toSectorId, graph, profile);
 
         if (pathResult is null)
         {
             return null;
         }
 
-        var plan = BuildRoutePlan(
-            fromSectorId,
-            toSectorId,
-            normalizedAlgorithm,
-            profile,
-            pathResult,
-            routesById,
-            sectorsById);
-
+        var plan = BuildRoutePlan(fromSectorId, toSectorId, normalizedAlgorithm, profile, pathResult, graph);
         await _cache.SetAsync(cacheKey, plan, TimeSpan.FromMinutes(15));
+
         _logger.LogInformation(
             "Calculated route plan from {FromSectorId} to {ToSectorId} using {Algorithm} in {Mode} mode.",
             fromSectorId,
@@ -202,16 +194,75 @@ public sealed class RoutePlanningService : IRoutePlanningService
         return optimization;
     }
 
-    private static PathResult? RunDijkstra(
-        Guid fromSectorId,
-        Guid toSectorId,
-        IReadOnlyCollection<Route> routes,
-        TravelModeProfile profile)
+    private async Task<RouteGraphSnapshot> GetGraphSnapshotAsync(
+        CancellationToken cancellationToken,
+        bool forceRefresh = false)
     {
-        var adjacency = routes
+        lock (GraphLock)
+        {
+            if (!forceRefresh &&
+                CachedGraphSnapshot is not null &&
+                DateTime.UtcNow - CachedGraphSnapshotAtUtc < TimeSpan.FromSeconds(30))
+            {
+                return CachedGraphSnapshot;
+            }
+        }
+
+        var sectorsTask = _sectorRepository.GetAllAsync(cancellationToken);
+        var routesTask = _routeRepository.GetAllAsync(cancellationToken);
+        await Task.WhenAll(sectorsTask, routesTask);
+
+        var sectorsById = sectorsTask.Result.ToDictionary(
+            sector => sector.Id,
+            sector => new SectorNode
+            {
+                Id = sector.Id,
+                Name = sector.Name,
+                X = sector.X,
+                Y = sector.Y,
+                Z = sector.Z,
+                HazardRating = sector.HazardRating
+            });
+
+        var edges = routesTask.Result.Select(route => new RouteEdge
+        {
+            Id = route.Id,
+            FromSectorId = route.FromSectorId,
+            ToSectorId = route.ToSectorId,
+            TravelTimeSeconds = route.TravelTimeSeconds,
+            FuelCost = route.FuelCost,
+            BaseRiskScore = route.BaseRiskScore,
+            LegalStatus = route.LegalStatus,
+            HasAnomalies = route.HasAnomalies
+        }).ToList();
+
+        var adjacency = edges
             .GroupBy(route => route.FromSectorId)
             .ToDictionary(group => group.Key, group => group.ToList());
 
+        var routesById = edges.ToDictionary(route => route.Id);
+        var snapshot = new RouteGraphSnapshot
+        {
+            SectorsById = sectorsById,
+            RoutesById = routesById,
+            OutboundAdjacency = adjacency
+        };
+
+        lock (GraphLock)
+        {
+            CachedGraphSnapshot = snapshot;
+            CachedGraphSnapshotAtUtc = DateTime.UtcNow;
+        }
+
+        return snapshot;
+    }
+
+    private static PathResult? RunDijkstra(
+        Guid fromSectorId,
+        Guid toSectorId,
+        RouteGraphSnapshot graph,
+        TravelModeProfile profile)
+    {
         var distances = new Dictionary<Guid, double> { [fromSectorId] = 0d };
         var previousSector = new Dictionary<Guid, Guid>();
         var previousRoute = new Dictionary<Guid, Guid>();
@@ -232,7 +283,7 @@ public sealed class RoutePlanningService : IRoutePlanningService
                 continue;
             }
 
-            if (!adjacency.TryGetValue(currentSectorId, out var outgoingRoutes))
+            if (!graph.OutboundAdjacency.TryGetValue(currentSectorId, out var outgoingRoutes))
             {
                 continue;
             }
@@ -260,18 +311,13 @@ public sealed class RoutePlanningService : IRoutePlanningService
     private static PathResult? RunAStar(
         Guid fromSectorId,
         Guid toSectorId,
-        IReadOnlyDictionary<Guid, Sector> sectorsById,
-        IReadOnlyCollection<Route> routes,
+        RouteGraphSnapshot graph,
         TravelModeProfile profile)
     {
-        var adjacency = routes
-            .GroupBy(route => route.FromSectorId)
-            .ToDictionary(group => group.Key, group => group.ToList());
-
         var gScore = new Dictionary<Guid, double> { [fromSectorId] = 0d };
         var fScore = new Dictionary<Guid, double>
         {
-            [fromSectorId] = Heuristic(fromSectorId, toSectorId, sectorsById, profile)
+            [fromSectorId] = Heuristic(fromSectorId, toSectorId, graph.SectorsById, profile)
         };
         var previousSector = new Dictionary<Guid, Guid>();
         var previousRoute = new Dictionary<Guid, Guid>();
@@ -287,7 +333,7 @@ public sealed class RoutePlanningService : IRoutePlanningService
                 break;
             }
 
-            if (!adjacency.TryGetValue(currentSectorId, out var outgoingRoutes))
+            if (!graph.OutboundAdjacency.TryGetValue(currentSectorId, out var outgoingRoutes))
             {
                 continue;
             }
@@ -307,7 +353,7 @@ public sealed class RoutePlanningService : IRoutePlanningService
                 previousRoute[neighbor] = route.Id;
                 gScore[neighbor] = tentativeGScore;
 
-                var nextFScore = tentativeGScore + Heuristic(neighbor, toSectorId, sectorsById, profile);
+                var nextFScore = tentativeGScore + Heuristic(neighbor, toSectorId, graph.SectorsById, profile);
                 fScore[neighbor] = nextFScore;
                 openSet.Enqueue(neighbor, nextFScore);
             }
@@ -359,7 +405,7 @@ public sealed class RoutePlanningService : IRoutePlanningService
     private static double Heuristic(
         Guid fromSectorId,
         Guid toSectorId,
-        IReadOnlyDictionary<Guid, Sector> sectorsById,
+        IReadOnlyDictionary<Guid, SectorNode> sectorsById,
         TravelModeProfile profile)
     {
         var from = sectorsById[fromSectorId];
@@ -370,11 +416,11 @@ public sealed class RoutePlanningService : IRoutePlanningService
         var dz = from.Z - to.Z;
         var distance = Math.Sqrt((dx * dx) + (dy * dy) + (dz * dz));
 
-        // Use a tiny admissible lower-bound heuristic to preserve optimality.
+        // Tiny admissible lower-bound heuristic to preserve optimality.
         return distance * 0.001d * profile.FuelMultiplier;
     }
 
-    private static double ComputeRouteCost(Route route, TravelModeProfile profile)
+    private static double ComputeRouteCost(RouteEdge route, TravelModeProfile profile)
     {
         var timeCost = route.TravelTimeSeconds * profile.TimeMultiplier;
         var fuelCost = route.FuelCost * 10d * profile.FuelMultiplier;
@@ -392,18 +438,17 @@ public sealed class RoutePlanningService : IRoutePlanningService
         string algorithm,
         TravelModeProfile profile,
         PathResult pathResult,
-        IReadOnlyDictionary<Guid, Route> routesById,
-        IReadOnlyDictionary<Guid, Sector> sectorsById)
+        RouteGraphSnapshot graph)
     {
         var hops = pathResult.RoutePath
-            .Select(routeId => routesById[routeId])
+            .Select(routeId => graph.RoutesById[routeId])
             .Select(route => new RouteHopDto
             {
                 RouteId = route.Id,
                 FromSectorId = route.FromSectorId,
                 ToSectorId = route.ToSectorId,
-                FromSectorName = sectorsById[route.FromSectorId].Name,
-                ToSectorName = sectorsById[route.ToSectorId].Name,
+                FromSectorName = graph.SectorsById[route.FromSectorId].Name,
+                ToSectorName = graph.SectorsById[route.ToSectorId].Name,
                 BaseTravelTimeSeconds = route.TravelTimeSeconds,
                 BaseFuelCost = route.FuelCost,
                 BaseRiskScore = route.BaseRiskScore
@@ -445,5 +490,34 @@ public sealed class RoutePlanningService : IRoutePlanningService
         public required List<Guid> SectorPath { get; init; }
         public required List<Guid> RoutePath { get; init; }
         public required double TotalCost { get; init; }
+    }
+
+    private sealed class RouteGraphSnapshot
+    {
+        public required IReadOnlyDictionary<Guid, SectorNode> SectorsById { get; init; }
+        public required IReadOnlyDictionary<Guid, RouteEdge> RoutesById { get; init; }
+        public required IReadOnlyDictionary<Guid, List<RouteEdge>> OutboundAdjacency { get; init; }
+    }
+
+    private sealed class SectorNode
+    {
+        public required Guid Id { get; init; }
+        public required string Name { get; init; }
+        public required float X { get; init; }
+        public required float Y { get; init; }
+        public required float Z { get; init; }
+        public required int HazardRating { get; init; }
+    }
+
+    private sealed class RouteEdge
+    {
+        public required Guid Id { get; init; }
+        public required Guid FromSectorId { get; init; }
+        public required Guid ToSectorId { get; init; }
+        public required int TravelTimeSeconds { get; init; }
+        public required float FuelCost { get; init; }
+        public required float BaseRiskScore { get; init; }
+        public required string LegalStatus { get; init; }
+        public required bool HasAnomalies { get; init; }
     }
 }
