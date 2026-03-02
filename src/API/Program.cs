@@ -1,12 +1,20 @@
 using GalacticTrader.Data;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
+using GalacticTrader.Services.Communication;
 using GalacticTrader.Services.Combat;
 using GalacticTrader.Services.Economy;
+using GalacticTrader.Services.Fleet;
+using GalacticTrader.Services.Leaderboard;
 using GalacticTrader.Services.Market;
 using GalacticTrader.Services.Navigation;
 using GalacticTrader.Services.Npc;
+using GalacticTrader.Services.Reputation;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +48,10 @@ builder.Services.AddScoped<ICombatService, CombatService>();
 builder.Services.AddScoped<IEconomyService, EconomyService>();
 builder.Services.AddScoped<IMarketTransactionService, MarketTransactionService>();
 builder.Services.AddScoped<INpcService, NpcService>();
+builder.Services.AddScoped<IFleetService, FleetService>();
+builder.Services.AddScoped<IReputationService, ReputationService>();
+builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 
 var app = builder.Build();
 
@@ -51,6 +63,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseWebSockets();
+var channelSockets = new ConcurrentDictionary<Guid, (WebSocket Socket, ChannelType ChannelType, string ChannelKey)>();
 
 var sectors = app.MapGroup("/api/navigation/sectors")
     .WithTags("Navigation - Sectors");
@@ -553,6 +567,429 @@ npc.MapPost("/agents/{agentId:guid}/trade", async (
 {
     var margin = await npcService.ExecuteNpcTradeAsync(agentId, cancellationToken);
     return margin.HasValue ? Results.Ok(new { margin = margin.Value }) : Results.NotFound();
+});
+
+var fleet = app.MapGroup("/api/fleet")
+    .WithTags("Fleet");
+
+fleet.MapGet("/templates", async (IFleetService fleetService, CancellationToken cancellationToken) =>
+{
+    var templates = await fleetService.GetShipTemplatesAsync(cancellationToken);
+    return Results.Ok(templates);
+});
+
+fleet.MapPost("/ships/purchase", async (
+    PurchaseShipRequest request,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var ship = await fleetService.PurchaseShipAsync(request, cancellationToken);
+        return ship is null ? Results.NotFound() : Results.Created($"/api/fleet/ships/{ship.Id}", ship);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+fleet.MapGet("/players/{playerId:guid}/ships", async (
+    Guid playerId,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    var ships = await fleetService.GetPlayerShipsAsync(playerId, cancellationToken);
+    return Results.Ok(ships);
+});
+
+fleet.MapGet("/ships/{shipId:guid}", async (
+    Guid shipId,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    var ship = await fleetService.GetShipAsync(shipId, cancellationToken);
+    return ship is null ? Results.NotFound() : Results.Ok(ship);
+});
+
+fleet.MapPost("/ships/modules", async (
+    InstallShipModuleRequest request,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var ship = await fleetService.InstallModuleAsync(request, cancellationToken);
+        return ship is null ? Results.NotFound() : Results.Ok(ship);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+fleet.MapPost("/crew/hire", async (
+    HireCrewRequest request,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var crew = await fleetService.HireCrewAsync(request, cancellationToken);
+        return crew is null ? Results.NotFound() : Results.Created($"/api/fleet/crew/{crew.Id}", crew);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+fleet.MapPost("/crew/{crewId:guid}/progress", async (
+    Guid crewId,
+    CrewProgressRequest request,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    var crew = await fleetService.ProgressCrewAsync(crewId, request, cancellationToken);
+    return crew is null ? Results.NotFound() : Results.Ok(crew);
+});
+
+fleet.MapDelete("/crew/{crewId:guid}", async (
+    Guid crewId,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    var fired = await fleetService.FireCrewAsync(crewId, cancellationToken);
+    return fired ? Results.NoContent() : Results.NotFound();
+});
+
+fleet.MapGet("/players/{playerId:guid}/escort", async (
+    Guid playerId,
+    FleetFormation? formation,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    var summary = await fleetService.GetEscortSummaryAsync(playerId, formation ?? FleetFormation.Defensive, cancellationToken);
+    return summary is null ? Results.NotFound() : Results.Ok(summary);
+});
+
+fleet.MapPost("/convoy/simulate", async (
+    ConvoySimulationRequest request,
+    IFleetService fleetService,
+    CancellationToken cancellationToken) =>
+{
+    var simulation = await fleetService.SimulateConvoyAsync(request, cancellationToken);
+    return simulation is null ? Results.NotFound() : Results.Ok(simulation);
+});
+
+var reputation = app.MapGroup("/api/reputation")
+    .WithTags("Reputation");
+
+reputation.MapPost("/factions/adjust", async (
+    UpdateFactionStandingRequest request,
+    IReputationService reputationService,
+    CancellationToken cancellationToken) =>
+{
+    var standing = await reputationService.AdjustFactionStandingAsync(request, cancellationToken);
+    return standing is null ? Results.NotFound() : Results.Ok(standing);
+});
+
+reputation.MapGet("/factions/{playerId:guid}", async (
+    Guid playerId,
+    IReputationService reputationService,
+    CancellationToken cancellationToken) =>
+{
+    var standings = await reputationService.GetFactionStandingsAsync(playerId, cancellationToken);
+    return Results.Ok(standings);
+});
+
+reputation.MapPost("/factions/decay", async (
+    int? points,
+    IReputationService reputationService,
+    CancellationToken cancellationToken) =>
+{
+    var updated = await reputationService.ApplyFactionReputationDecayAsync(points ?? 1, cancellationToken);
+    return Results.Ok(new { updated });
+});
+
+reputation.MapGet("/factions/{playerId:guid}/benefits", async (
+    Guid playerId,
+    IReputationService reputationService,
+    CancellationToken cancellationToken) =>
+{
+    var benefits = await reputationService.GetFactionBenefitsAsync(playerId, cancellationToken);
+    return Results.Ok(benefits);
+});
+
+reputation.MapPost("/alignment/action", async (
+    AlignmentActionRequest request,
+    IReputationService reputationService,
+    CancellationToken cancellationToken) =>
+{
+    var alignment = await reputationService.ApplyAlignmentActionAsync(request, cancellationToken);
+    return alignment is null ? Results.NotFound() : Results.Ok(alignment);
+});
+
+reputation.MapGet("/alignment/{playerId:guid}", async (
+    Guid playerId,
+    IReputationService reputationService,
+    CancellationToken cancellationToken) =>
+{
+    var access = await reputationService.GetAlignmentAccessAsync(playerId, cancellationToken);
+    return access is null ? Results.NotFound() : Results.Ok(access);
+});
+
+var leaderboards = app.MapGroup("/api/leaderboards")
+    .WithTags("Leaderboards");
+
+leaderboards.MapPost("/recalculate", async (ILeaderboardService leaderboardService, CancellationToken cancellationToken) =>
+{
+    var recalculated = await leaderboardService.RecalculateAllAsync(cancellationToken);
+    return Results.Ok(recalculated);
+});
+
+leaderboards.MapGet("/{leaderboardType}", async (
+    string leaderboardType,
+    int? limit,
+    ILeaderboardService leaderboardService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var board = await leaderboardService.GetLeaderboardAsync(leaderboardType, limit ?? 50, cancellationToken);
+        return Results.Ok(board);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+leaderboards.MapGet("/{leaderboardType}/player/{playerId:guid}", async (
+    string leaderboardType,
+    Guid playerId,
+    ILeaderboardService leaderboardService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var position = await leaderboardService.GetPlayerPositionAsync(playerId, leaderboardType, cancellationToken);
+        return position is null ? Results.NotFound() : Results.Ok(position);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+leaderboards.MapGet("/{leaderboardType}/player/{playerId:guid}/history", async (
+    string leaderboardType,
+    Guid playerId,
+    int? limit,
+    ILeaderboardService leaderboardService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var history = await leaderboardService.GetHistoryAsync(playerId, leaderboardType, limit ?? 20, cancellationToken);
+        return Results.Ok(history);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+leaderboards.MapPost("/{leaderboardType}/reset", async (
+    string leaderboardType,
+    ILeaderboardService leaderboardService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var removed = await leaderboardService.ResetLeaderboardAsync(leaderboardType, cancellationToken);
+        return Results.Ok(new { removed });
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+var communication = app.MapGroup("/api/communication")
+    .WithTags("Communication");
+
+communication.MapPost("/subscribe", async (
+    SubscribeChannelRequest request,
+    ICommunicationService communicationService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await communicationService.SubscribeAsync(request, cancellationToken);
+    return Results.Ok(result);
+});
+
+communication.MapPost("/unsubscribe", async (
+    SubscribeChannelRequest request,
+    ICommunicationService communicationService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await communicationService.UnsubscribeAsync(request, cancellationToken);
+    return Results.Ok(result);
+});
+
+communication.MapPost("/messages", async (
+    SendChannelMessageRequest request,
+    ICommunicationService communicationService,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var message = await communicationService.SendMessageAsync(request, cancellationToken);
+        return message is null ? Results.BadRequest() : Results.Ok(message);
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.BadRequest(new { error = exception.Message });
+    }
+});
+
+communication.MapGet("/messages/{channelType}/{channelKey}", async (
+    string channelType,
+    string channelKey,
+    int? limit,
+    ICommunicationService communicationService,
+    CancellationToken cancellationToken) =>
+{
+    if (!Enum.TryParse<ChannelType>(channelType, true, out var parsedChannelType))
+    {
+        return Results.BadRequest(new { error = "Unsupported channel type." });
+    }
+
+    var messages = await communicationService.GetRecentMessagesAsync(parsedChannelType, channelKey, limit ?? 50, cancellationToken);
+    return Results.Ok(messages);
+});
+
+communication.Map("/ws/{channelType}/{channelKey}", async (
+    HttpContext context,
+    string channelType,
+    string channelKey,
+    ICommunicationService communicationService,
+    CancellationToken cancellationToken) =>
+{
+    if (!context.WebSockets.IsWebSocketRequest)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { error = "WebSocket upgrade required." }, cancellationToken);
+        return;
+    }
+
+    if (!Enum.TryParse<ChannelType>(channelType, true, out var parsedChannelType))
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { error = "Unsupported channel type." }, cancellationToken);
+        return;
+    }
+
+    if (!Guid.TryParse(context.Request.Query["playerId"], out var playerId))
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { error = "Query string playerId is required." }, cancellationToken);
+        return;
+    }
+
+    await communicationService.SubscribeAsync(new SubscribeChannelRequest
+    {
+        PlayerId = playerId,
+        ChannelType = parsedChannelType,
+        ChannelKey = channelKey
+    }, cancellationToken);
+
+    using var socket = await context.WebSockets.AcceptWebSocketAsync();
+    var connectionId = Guid.NewGuid();
+    var normalizedKey = channelKey.Trim().ToLowerInvariant();
+    channelSockets[connectionId] = (socket, parsedChannelType, normalizedKey);
+
+    var backlog = await communicationService.GetRecentMessagesAsync(parsedChannelType, normalizedKey, 25, cancellationToken);
+    var backlogBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(backlog));
+    await socket.SendAsync(backlogBytes, WebSocketMessageType.Text, true, cancellationToken);
+
+    var buffer = new byte[4096];
+    try
+    {
+        while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+        {
+            var receiveResult = await socket.ReceiveAsync(buffer, cancellationToken);
+            if (receiveResult.MessageType == WebSocketMessageType.Close)
+            {
+                break;
+            }
+
+            if (receiveResult.MessageType != WebSocketMessageType.Text)
+            {
+                continue;
+            }
+
+            var content = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count).Trim();
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                continue;
+            }
+
+            ChannelMessageDto? created;
+            try
+            {
+                created = await communicationService.SendMessageAsync(new SendChannelMessageRequest
+                {
+                    PlayerId = playerId,
+                    ChannelType = parsedChannelType,
+                    ChannelKey = normalizedKey,
+                    Content = content
+                }, cancellationToken);
+            }
+            catch (InvalidOperationException exception)
+            {
+                var rateLimitedBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { error = exception.Message }));
+                await socket.SendAsync(rateLimitedBytes, WebSocketMessageType.Text, true, cancellationToken);
+                continue;
+            }
+
+            if (created is null)
+            {
+                continue;
+            }
+
+            var payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(created));
+            foreach (var entry in channelSockets.Values)
+            {
+                if (entry.Socket.State != WebSocketState.Open)
+                {
+                    continue;
+                }
+
+                if (entry.ChannelType != parsedChannelType || entry.ChannelKey != normalizedKey)
+                {
+                    continue;
+                }
+
+                await entry.Socket.SendAsync(payload, WebSocketMessageType.Text, true, cancellationToken);
+            }
+        }
+    }
+    finally
+    {
+        channelSockets.TryRemove(connectionId, out _);
+        if (socket.State == WebSocketState.Open)
+        {
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", cancellationToken);
+        }
+
+        await communicationService.UnsubscribeAsync(new SubscribeChannelRequest
+        {
+            PlayerId = playerId,
+            ChannelType = parsedChannelType,
+            ChannelKey = normalizedKey
+        }, cancellationToken);
+    }
 });
 
 app.Run();

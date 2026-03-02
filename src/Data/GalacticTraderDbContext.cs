@@ -44,6 +44,9 @@ namespace GalacticTrader.Data
         public DbSet<NPCAgent> NPCAgents { get; set; }
         public DbSet<NPCShip> NPCShips { get; set; }
 
+        // Communication
+        public DbSet<ChannelMessage> ChannelMessages { get; set; }
+
         // Leaderboards
         public DbSet<Leaderboard> Leaderboards { get; set; }
 
@@ -209,6 +212,18 @@ namespace GalacticTrader.Data
             // Configure NPCAgent
             modelBuilder.Entity<NPCAgent>()
                 .HasKey(n => n.Id);
+
+            // Configure ChannelMessage
+            modelBuilder.Entity<ChannelMessage>()
+                .HasKey(message => message.Id);
+            modelBuilder.Entity<ChannelMessage>()
+                .HasOne(message => message.Sender)
+                .WithMany()
+                .HasForeignKey(message => message.SenderId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ChannelMessage>()
+                .HasIndex(message => new { message.ChannelType, message.ChannelKey, message.CreatedAt })
+                .IsUnique(false);
 
             // Add composite indexes for common queries
             modelBuilder.Entity<TradeTransaction>()
