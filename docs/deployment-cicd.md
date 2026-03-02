@@ -12,7 +12,8 @@
 ## Staging Deployment
 1. Copy `infrastructure/staging.env.example` to `infrastructure/staging.env`.
 2. Set secrets (`DB_PASSWORD`, `KEYCLOAK_PASSWORD`, `GRAFANA_PASSWORD`).
-3. Run:
+3. Optional: configure Vault settings (`VAULT_ENABLED`, `VAULT_ADDRESS`, `VAULT_TOKEN`, `VAULT_PATH`).
+4. Run:
 ```bash
 ./scripts/deploy-staging.sh <image_tag>
 ```
@@ -20,7 +21,8 @@
 ## Production Deployment
 1. Copy `infrastructure/production.env.example` to `infrastructure/production.env`.
 2. Set production secrets and approved image tag.
-3. Run:
+3. Configure Vault (`VAULT_ENABLED=true`) and provide a production-scoped token.
+4. Run:
 ```bash
 ./scripts/deploy-production.sh <image_tag>
 ```
@@ -32,3 +34,7 @@ Run rollback using a previously published image tag:
 ```
 
 Use `--dry-run` on deploy and rollback scripts to validate command construction without applying changes.
+
+## Vault Secrets
+- API supports HashiCorp Vault secret bootstrap at startup.
+- See `docs/vault-secrets.md` for configuration and local seeding commands.

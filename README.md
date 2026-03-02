@@ -64,6 +64,7 @@ The primary client is now a WPF desktop UI with a 3D tactical starmap in `src/De
 ### Desktop Client
 
 - **WPF Desktop UI** - Command interface with `Viewport3D` starmap
+- **Animated Splash Screen** - 3D ship fly-in with logo reveal and terminal-style boot sequence
 
 ## Project Structure
 
@@ -106,6 +107,12 @@ dotnet watch run --project src/API
 
 # Production mode
 dotnet run --project src/API -c Release
+```
+
+### Running the Desktop UI
+
+```bash
+dotnet run --project src/Desktop
 ```
 
 ### Running Tests
@@ -160,6 +167,10 @@ See `.env.example` for all configurable options:
 - `ConnectionStrings__Default` - PostgreSQL connection string
 - `Redis__Connection` - Redis connection string
 - `Keycloak__ServerUrl` - Keycloak server URL
+- `Vault__Enabled` - Enable HashiCorp Vault secret bootstrap
+- `Vault__Address` / `Vault__Token` / `Vault__Path` - Vault connection and secret path
+
+See [docs/vault-secrets.md](docs/vault-secrets.md) for Vault setup and seeding steps.
 
 ## Docker Commands
 

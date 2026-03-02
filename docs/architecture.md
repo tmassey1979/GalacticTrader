@@ -228,6 +228,7 @@ graph TB
 | Database | `ConnectionStrings__Default` | PostgreSQL connection string; fallback to in-memory when missing |
 | Redis | `Redis__Connection` | Cache/session backend connection |
 | Keycloak | `Keycloak__ServerUrl` | External IdP endpoint for production auth integration |
+| Vault | `Vault__Enabled` / `Vault__Address` / `Vault__Token` / `Vault__Path` | Optional HashiCorp Vault secret bootstrap at API startup |
 | Metrics | `PROMETHEUS_*` | Prometheus scrape and alert configuration via infrastructure files |
 | Deployment | `DOCKER_IMAGE_TAG` | Image tag used by deploy workflow scripts |
 

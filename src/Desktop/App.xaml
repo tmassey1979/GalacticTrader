@@ -1,9 +1,7 @@
-﻿<Application x:Class="GalacticTrader.Desktop.App"
+<Application x:Class="GalacticTrader.Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:GalacticTrader.Desktop"
-             StartupUri="MainWindow.xaml">
+             xmlns:local="clr-namespace:GalacticTrader.Desktop">
     <Application.Resources>
-         
     </Application.Resources>
 </Application>

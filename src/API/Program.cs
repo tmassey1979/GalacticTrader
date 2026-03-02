@@ -1,5 +1,6 @@
 using GalacticTrader.API.Telemetry;
 using GalacticTrader.API.Swagger;
+using GalacticTrader.API.Secrets;
 using GalacticTrader.Data;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
@@ -23,6 +24,7 @@ using System.Text;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddVaultSecretsIfConfigured();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

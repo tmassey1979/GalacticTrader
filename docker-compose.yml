@@ -92,6 +92,26 @@ services:
     networks:
       - galactictrader-network
 
+  # HashiCorp Vault (development mode)
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: galactictrader-vault
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN:-root}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    command: vault server -dev -dev-root-token-id=${VAULT_DEV_ROOT_TOKEN:-root}
+    ports:
+      - "8200:8200"
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - galactictrader-network
+
   # API Gateway
   api:
     image: ${API_IMAGE:-galactictrader-api:local}
@@ -106,6 +126,13 @@ services:
       Redis__Connection: "redis:6379"
       Keycloak__ServerUrl: "http://keycloak:8080"
       Keycloak__Realm: "galactictrader"
+      Vault__Enabled: ${VAULT_ENABLED:-false}
+      Vault__FailFast: "false"
+      Vault__Address: "http://vault:8200"
+      Vault__Token: ${VAULT_DEV_ROOT_TOKEN:-root}
+      Vault__Mount: ${VAULT_MOUNT:-secret}
+      Vault__Path: ${VAULT_PATH:-galactictrader/api}
+      Vault__KvVersion: ${VAULT_KV_VERSION:-2}
     ports:
       - "8080:8080"
       - "8443:8443"
@@ -115,6 +142,8 @@ services:
       redis:
         condition: service_healthy
       keycloak:
+        condition: service_started
+      vault:
         condition: service_started
     networks:
       - galactictrader-network
