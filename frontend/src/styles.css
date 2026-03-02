@@ -278,6 +278,18 @@ th {
   font-size: 0.75rem;
 }
 
+.chip.territory-low {
+  background: rgba(31, 122, 119, 0.18);
+}
+
+.chip.territory-med {
+  background: rgba(209, 138, 41, 0.22);
+}
+
+.chip.territory-high {
+  background: rgba(155, 67, 42, 0.2);
+}
+
 .stack {
   display: grid;
   gap: 0.5rem;

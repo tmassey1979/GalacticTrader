@@ -9,6 +9,7 @@ import { FleetManagementScreen } from "./screens/FleetManagementScreen";
 import { MarketIntelligenceScreen } from "./screens/MarketIntelligenceScreen";
 import { ReputationServicesScreen } from "./screens/ReputationServicesScreen";
 import { RoutePlanningScreen } from "./screens/RoutePlanningScreen";
+import { TerritoryScreen } from "./screens/TerritoryScreen";
 import { TradeScreen } from "./screens/TradeScreen";
 import { getOrCreatePlayerId } from "./session/playerSession";
 import { useAppStore } from "./state/useAppStore";
@@ -71,6 +72,7 @@ export default function App() {
         {activeScreen === "fleet" && <FleetManagementScreen />}
         {activeScreen === "battle" && <BattleResultsScreen />}
         {activeScreen === "reputation" && <ReputationServicesScreen />}
+        {activeScreen === "territory" && <TerritoryScreen />}
         {activeScreen === "intelligence" && <MarketIntelligenceScreen />}
       </main>
     </div>

@@ -8,7 +8,9 @@ describe("Sidebar", () => {
     render(<Sidebar active="dashboard" onChange={onChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Trade" }));
+    fireEvent.click(screen.getByRole("button", { name: "Territory" }));
 
     expect(onChange).toHaveBeenCalledWith("trade");
+    expect(onChange).toHaveBeenCalledWith("territory");
   });
 });

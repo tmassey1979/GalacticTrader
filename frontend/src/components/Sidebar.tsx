@@ -7,6 +7,7 @@ const screens: Array<{ key: ScreenKey; label: string }> = [
   { key: "fleet", label: "Fleet Ops" },
   { key: "battle", label: "Battle Lab" },
   { key: "reputation", label: "Reputation" },
+  { key: "territory", label: "Territory" },
   { key: "intelligence", label: "Market Intel" }
 ];
 
