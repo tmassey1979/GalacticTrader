@@ -50,6 +50,12 @@ namespace GalacticTrader.Data
         // Leaderboards
         public DbSet<Leaderboard> Leaderboards { get; set; }
 
+        // Strategic Systems (Phase 1)
+        public DbSet<SectorVolatilityCycle> SectorVolatilityCycles { get; set; }
+        public DbSet<CorporateWar> CorporateWars { get; set; }
+        public DbSet<InfrastructureOwnership> InfrastructureOwnerships { get; set; }
+        public DbSet<TerritoryDominance> TerritoryDominances { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -208,6 +214,64 @@ namespace GalacticTrader.Data
                 .HasKey(l => l.Id);
             modelBuilder.Entity<Leaderboard>()
                 .HasIndex(l => new { l.LeaderboardType, l.Rank });
+
+            // Configure SectorVolatilityCycle
+            modelBuilder.Entity<SectorVolatilityCycle>()
+                .HasKey(cycle => cycle.Id);
+            modelBuilder.Entity<SectorVolatilityCycle>()
+                .HasOne(cycle => cycle.Sector)
+                .WithMany()
+                .HasForeignKey(cycle => cycle.SectorId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<SectorVolatilityCycle>()
+                .HasIndex(cycle => new { cycle.SectorId, cycle.LastUpdatedAt })
+                .IsUnique(false);
+
+            // Configure CorporateWar
+            modelBuilder.Entity<CorporateWar>()
+                .HasKey(war => war.Id);
+            modelBuilder.Entity<CorporateWar>()
+                .HasOne(war => war.AttackerFaction)
+                .WithMany()
+                .HasForeignKey(war => war.AttackerFactionId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<CorporateWar>()
+                .HasOne(war => war.DefenderFaction)
+                .WithMany()
+                .HasForeignKey(war => war.DefenderFactionId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<CorporateWar>()
+                .HasIndex(war => new { war.IsActive, war.StartedAt })
+                .IsUnique(false);
+
+            // Configure InfrastructureOwnership
+            modelBuilder.Entity<InfrastructureOwnership>()
+                .HasKey(ownership => ownership.Id);
+            modelBuilder.Entity<InfrastructureOwnership>()
+                .HasOne(ownership => ownership.Sector)
+                .WithMany()
+                .HasForeignKey(ownership => ownership.SectorId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<InfrastructureOwnership>()
+                .HasOne(ownership => ownership.Faction)
+                .WithMany()
+                .HasForeignKey(ownership => ownership.FactionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<InfrastructureOwnership>()
+                .HasIndex(ownership => new { ownership.SectorId, ownership.InfrastructureType })
+                .IsUnique();
+
+            // Configure TerritoryDominance
+            modelBuilder.Entity<TerritoryDominance>()
+                .HasKey(dominance => dominance.Id);
+            modelBuilder.Entity<TerritoryDominance>()
+                .HasOne(dominance => dominance.Faction)
+                .WithMany()
+                .HasForeignKey(dominance => dominance.FactionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TerritoryDominance>()
+                .HasIndex(dominance => dominance.FactionId)
+                .IsUnique();
 
             // Configure NPCAgent
             modelBuilder.Entity<NPCAgent>()

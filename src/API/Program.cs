@@ -15,6 +15,7 @@ using GalacticTrader.Services.Market;
 using GalacticTrader.Services.Navigation;
 using GalacticTrader.Services.Npc;
 using GalacticTrader.Services.Reputation;
+using GalacticTrader.Services.Strategic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Prometheus;
@@ -94,6 +95,7 @@ builder.Services.AddScoped<IFleetService, FleetService>();
 builder.Services.AddScoped<IReputationService, ReputationService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
+builder.Services.AddScoped<IStrategicSystemsService, StrategicSystemsService>();
 builder.Services.AddSingleton<IBalanceControlService, BalanceControlService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IVoiceService, VoiceService>();
@@ -986,6 +988,101 @@ leaderboards.MapPost("/{leaderboardType}/reset", async (
     }
 });
 
+var strategic = app.MapGroup("/api/strategic")
+    .WithTags("Strategic Systems");
+
+strategic.MapGet("/volatility", async (
+    Guid? sectorId,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var cycles = await strategicService.GetSectorVolatilityCyclesAsync(sectorId, cancellationToken);
+    return Results.Ok(cycles);
+});
+
+strategic.MapPost("/volatility", async (
+    UpsertSectorVolatilityApiRequest request,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.UpsertSectorVolatilityCycleAsync(new UpdateSectorVolatilityCycleRequest
+    {
+        SectorId = request.SectorId,
+        CurrentPhase = request.CurrentPhase,
+        VolatilityIndex = request.VolatilityIndex,
+        NextTransitionAt = request.NextTransitionAt
+    }, cancellationToken);
+
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+strategic.MapGet("/corporate-wars", async (
+    bool? activeOnly,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var wars = await strategicService.GetCorporateWarsAsync(activeOnly ?? true, cancellationToken);
+    return Results.Ok(wars);
+});
+
+strategic.MapPost("/corporate-wars", async (
+    DeclareCorporateWarApiRequest request,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.DeclareCorporateWarAsync(new DeclareCorporateWarRequest
+    {
+        AttackerFactionId = request.AttackerFactionId,
+        DefenderFactionId = request.DefenderFactionId,
+        CasusBelli = request.CasusBelli,
+        Intensity = request.Intensity
+    }, cancellationToken);
+
+    return result is null ? Results.BadRequest(new { error = "Unable to declare corporate war for the provided factions." }) : Results.Ok(result);
+});
+
+strategic.MapGet("/infrastructure", async (
+    Guid? sectorId,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var ownership = await strategicService.GetInfrastructureOwnershipAsync(sectorId, cancellationToken);
+    return Results.Ok(ownership);
+});
+
+strategic.MapPost("/infrastructure", async (
+    UpsertInfrastructureOwnershipApiRequest request,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.UpsertInfrastructureOwnershipAsync(new UpdateInfrastructureOwnershipRequest
+    {
+        SectorId = request.SectorId,
+        FactionId = request.FactionId,
+        InfrastructureType = request.InfrastructureType,
+        ControlScore = request.ControlScore
+    }, cancellationToken);
+
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+strategic.MapGet("/territory-dominance", async (
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var dominance = await strategicService.GetTerritoryDominanceAsync(cancellationToken);
+    return Results.Ok(dominance);
+});
+
+strategic.MapPost("/territory-dominance/recalculate/{factionId:guid}", async (
+    Guid factionId,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.RecalculateTerritoryDominanceAsync(factionId, cancellationToken);
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
 static bool IsAdminAuthorized(HttpContext context, IConfiguration configuration)
 {
     var expectedKey = configuration["Admin:Key"]
@@ -1342,6 +1439,9 @@ public sealed record CreateRouteRequest(Guid FromSectorId, Guid ToSectorId, stri
 public sealed record UpdateRouteRequest(string? LegalStatus, float? BaseRiskScore);
 public sealed record RegisterPlayerApiRequest(string Username, string Email, string Password);
 public sealed record LoginPlayerApiRequest(string Username, string Password);
+public sealed record UpsertSectorVolatilityApiRequest(Guid SectorId, string CurrentPhase, float VolatilityIndex, DateTime? NextTransitionAt);
+public sealed record DeclareCorporateWarApiRequest(Guid AttackerFactionId, Guid DefenderFactionId, string CasusBelli, int Intensity);
+public sealed record UpsertInfrastructureOwnershipApiRequest(Guid SectorId, Guid FactionId, string InfrastructureType, float ControlScore);
 public sealed record UpdateTaxRateRequest(decimal TaxRatePercent);
 public sealed record UpdatePirateIntensityRequest(int IntensityPercent);
 public sealed record LiquidityAdjustmentRequest(decimal DeltaPercent, string? Reason);

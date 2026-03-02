@@ -231,6 +231,17 @@ For development and test automation, use the built-in auth endpoints:
 - `POST /api/auth/login`
 - `GET /api/auth/validate`
 
+## Strategic Systems Phase 1
+
+Strategic APIs are available under `/api/strategic` for:
+- sector volatility cycles
+- corporate wars
+- infrastructure ownership
+- territory dominance recalculation and ranking
+
+Migration and rollout guidance:
+- [docs/strategic-systems-migration-plan.md](docs/strategic-systems-migration-plan.md)
+
 ## Contributing
 
 1. Create a feature branch
