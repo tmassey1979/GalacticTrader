@@ -17,6 +17,8 @@ namespace GalacticTrader.Services.Caching
         public const string ROUTE_CACHE_PREFIX = "route:";
         public const string SECTOR_ROUTES = "routes:sector:{0}";
         public const string ROUTE_DETAILS = "route:{0}:{1}"; // From:To
+        public const string ROUTE_PLAN = "route:plan:{0}:{1}:{2}:{3}"; // algorithm:mode:from:to
+        public const string ROUTE_OPTIMIZATION = "route:opt:{0}:{1}"; // from:to
         
         // Leaderboard Cache Keys
         public const string LEADERBOARD_PREFIX = "leaderboard:";
@@ -35,6 +37,7 @@ namespace GalacticTrader.Services.Caching
         public const string SECTOR_PREFIX = "sector:";
         public const string SECTOR_DATA = "sector:{0}";
         public const string SECTOR_GRAPH = "sector:graph";
+        public const string SECTOR_LIST_ALL = "sector:list:all";
         
         // Combat Cache Keys
         public const string COMBAT_PREFIX = "combat:";
@@ -109,7 +112,8 @@ namespace GalacticTrader.Services.Caching
             
             if (session != null && session.IsActive)
             {
-                await UpdateSessionActivityAsync(playerId);
+                session.LastActivityTime = DateTime.UtcNow;
+                await _cache.SetAsync(key, session, _sessionExpiration);
             }
             
             return session;
@@ -117,11 +121,11 @@ namespace GalacticTrader.Services.Caching
 
         public async Task UpdateSessionActivityAsync(Guid playerId)
         {
-            var session = await GetSessionAsync(playerId);
+            var key = string.Format(CacheKeys.PLAYER_SESSION, playerId);
+            var session = await _cache.GetAsync<PlayerSession>(key);
             if (session != null)
             {
                 session.LastActivityTime = DateTime.UtcNow;
-                var key = string.Format(CacheKeys.PLAYER_SESSION, playerId);
                 await _cache.SetAsync(key, session, _sessionExpiration);
             }
         }
