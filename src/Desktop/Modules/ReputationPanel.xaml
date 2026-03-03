@@ -74,7 +74,7 @@
                                FontWeight="SemiBold"
                                Text="Benefits" />
                     <ListBox x:Name="BenefitsList"
-                             Height="54"
+                             Height="44"
                              Margin="0,4,0,8"
                              Background="#101F39"
                              BorderBrush="#2E4A75"
@@ -82,9 +82,46 @@
 
                     <TextBlock Foreground="#B9CBE8"
                                FontWeight="SemiBold"
+                               Text="Faction Standing Matrix" />
+                    <ItemsControl x:Name="StandingMatrixItems"
+                                  Margin="0,4,0,8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="70" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="95" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               VerticalAlignment="Center"
+                                               Foreground="#DCE7FF"
+                                               FontFamily="Consolas"
+                                               Text="{Binding FactionId}" />
+                                    <ProgressBar Grid.Column="1"
+                                                 Margin="8,0,8,0"
+                                                 Height="14"
+                                                 Minimum="0"
+                                                 Maximum="100"
+                                                 Value="{Binding NormalizedScorePercent}"
+                                                 Foreground="#F2D06B"
+                                                 Background="#10213E" />
+                                    <TextBlock Grid.Column="2"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Right"
+                                               Foreground="#B9CBE8"
+                                               FontFamily="Consolas"
+                                               Text="{Binding ScoreSummary}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
                                Text="Sanctions / Bonuses" />
                     <DataGrid x:Name="SanctionsBonusesGrid"
-                              Height="84"
+                              Height="76"
                               Margin="0,4,0,8"
                               Background="#101F39"
                               BorderBrush="#2E4A75"
@@ -110,7 +147,7 @@
                                FontWeight="SemiBold"
                                Text="Top Reputation Leaderboard" />
                     <ListBox x:Name="TopReputationList"
-                             Height="70"
+                             Height="60"
                              Margin="0,4,0,8"
                              Background="#101F39"
                              BorderBrush="#2E4A75"
@@ -120,7 +157,7 @@
                                FontWeight="SemiBold"
                                Text="Influence Zones" />
                     <ListBox x:Name="InfluenceZonesList"
-                             Height="62"
+                             Height="56"
                              Margin="0,4,0,8"
                              Background="#101F39"
                              BorderBrush="#2E4A75"
