@@ -12,6 +12,8 @@ public static class RouteRiskSimulationBuilder
         var marginFactor = 1.25d - (riskScore / 220d);
         var expectedRevenue = expectedCost * Math.Max(0.2d, marginFactor);
         var expectedLoss = expectedCost * interceptionProbability * 0.35d;
+        var protectionRate = 0.04d + (riskScore / 400d);
+        var protectionCostEstimate = expectedCost * protectionRate;
 
         var riskBand = riskScore switch
         {
@@ -27,6 +29,7 @@ public static class RouteRiskSimulationBuilder
             ExpectedCostProxy = expectedCost,
             ExpectedRevenueProxy = expectedRevenue,
             ExpectedLossProxy = expectedLoss,
+            ProtectionCostEstimate = protectionCostEstimate,
             RiskBand = riskBand
         };
     }

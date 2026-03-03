@@ -20,6 +20,7 @@ public sealed class RouteRiskSimulationBuilderTests
         Assert.Equal(0.64d, simulation.InterceptionProbability, precision: 3);
         Assert.Equal(1000d, simulation.ExpectedCostProxy, precision: 3);
         Assert.Equal(224d, simulation.ExpectedLossProxy, precision: 3);
+        Assert.Equal(200d, simulation.ProtectionCostEstimate, precision: 3);
         Assert.Equal("High", simulation.RiskBand);
     }
 
@@ -36,6 +37,7 @@ public sealed class RouteRiskSimulationBuilderTests
         var simulation = RouteRiskSimulationBuilder.Build(plan);
 
         Assert.Equal(1d, simulation.InterceptionProbability, precision: 3);
+        Assert.Equal(58d, simulation.ProtectionCostEstimate, precision: 3);
         Assert.Equal("Critical", simulation.RiskBand);
     }
 }

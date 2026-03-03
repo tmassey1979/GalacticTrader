@@ -231,7 +231,8 @@ public partial class RoutePlanningPanel : UserControl
         var simulation = RouteRiskSimulationBuilder.Build(plan);
         RiskSummaryText.Text =
             $"RiskBand {simulation.RiskBand} | Intercept {simulation.InterceptionProbability:P1} | " +
-            $"Loss {simulation.ExpectedLossProxy:N2} | Revenue {simulation.ExpectedRevenueProxy:N2}";
+            $"Loss {simulation.ExpectedLossProxy:N2} | Revenue {simulation.ExpectedRevenueProxy:N2} | " +
+            $"Protection {simulation.ProtectionCostEstimate:N2}";
     }
 
     private void AddOptimization(string profile, RoutePlanApiDto? plan)
