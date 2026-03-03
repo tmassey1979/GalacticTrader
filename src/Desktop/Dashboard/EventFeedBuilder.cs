@@ -8,6 +8,7 @@ public static class EventFeedBuilder
         IReadOnlyList<TradeExecutionResultApiDto> transactions,
         IReadOnlyList<CombatLogApiDto> combatLogs,
         IReadOnlyList<IntelligenceReportApiDto> intelligenceReports,
+        IReadOnlyList<TerritoryDominanceApiDto> territoryDominance,
         DateTime capturedAtUtc)
     {
         var tradeEvents = transactions.Select(transaction => new EventFeedEntry
@@ -36,9 +37,12 @@ public static class EventFeedBuilder
                 Detail = $"{report.Payload} | Confidence {report.ConfidenceScore:P1}"
             });
 
+        var territoryEvents = TerritoryConflictEventProjector.Build(territoryDominance, capturedAtUtc);
+
         return tradeEvents
             .Concat(combatEvents)
             .Concat(intelEvents)
+            .Concat(territoryEvents)
             .OrderByDescending(static entry => entry.OccurredAtUtc)
             .ToArray();
     }

@@ -297,8 +297,9 @@ public partial class MainWindow : Window
             var shipsTask = _fleetApiClient.GetPlayerShipsAsync(_session.PlayerId);
             var routesTask = _navigationApiClient.GetDangerousRoutesAsync(65);
             var reportsTask = _strategicApiClient.GetIntelligenceReportsAsync(_session.PlayerId);
+            var territoryTask = _strategicApiClient.GetTerritoryDominanceAsync();
             var combatLogsTask = _combatApiClient.GetRecentLogsAsync(limit: 25);
-            await Task.WhenAll(transactionsTask, standingsTask, escortTask, shipsTask, routesTask, reportsTask, combatLogsTask);
+            await Task.WhenAll(transactionsTask, standingsTask, escortTask, shipsTask, routesTask, reportsTask, territoryTask, combatLogsTask);
 
             var transactions = transactionsTask.Result;
             var standings = standingsTask.Result;
@@ -306,13 +307,14 @@ public partial class MainWindow : Window
             var ships = shipsTask.Result;
             var routes = routesTask.Result;
             var reports = reportsTask.Result;
+            var territory = territoryTask.Result;
             var combatLogs = combatLogsTask.Result;
 
             var threats = ThreatAlertRanker.Build(routes, reports);
             var metrics = StatusMetricAggregator.Build(transactions, standings, escort, threats, ships, _scene);
             ApplyMetrics(metrics);
 
-            _eventFeedAll = EventFeedBuilder.Build(transactions, combatLogs, reports, DateTime.UtcNow).ToList();
+            _eventFeedAll = EventFeedBuilder.Build(transactions, combatLogs, reports, territory, DateTime.UtcNow).ToList();
             ApplyEventFilter();
         }
         catch (Exception exception)

@@ -328,6 +328,7 @@
                         <ComboBoxItem Content="Trade" />
                         <ComboBoxItem Content="Combat" />
                         <ComboBoxItem Content="Intel" />
+                        <ComboBoxItem Content="Territory" />
                     </ComboBox>
                     <TextBox x:Name="EventKeywordFilter"
                              Width="200"
