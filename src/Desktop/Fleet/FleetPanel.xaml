@@ -69,6 +69,12 @@
                     <DataGridTextColumn Header="Status"
                                         Binding="{Binding CrewStatus}"
                                         Width="100" />
+                    <DataGridTextColumn Header="Insurance"
+                                        Binding="{Binding InsuranceStatus}"
+                                        Width="110" />
+                    <DataGridTextColumn Header="Assigned Route"
+                                        Binding="{Binding AssignedRoute}"
+                                        Width="180" />
                 </DataGrid.Columns>
             </DataGrid>
 

@@ -16,6 +16,9 @@ public sealed class ShipApiDto
     public int SignatureProfile { get; init; }
     public int CrewSlots { get; init; }
     public int Hardpoints { get; init; }
+    public bool HasInsurance { get; init; }
+    public decimal InsuranceRate { get; init; }
+    public string AssignedRoute { get; init; } = string.Empty;
     public decimal CurrentValue { get; init; }
     public IReadOnlyList<ShipModuleApiDto> Modules { get; init; } = [];
     public int CrewCount { get; init; }

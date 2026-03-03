@@ -135,6 +135,52 @@ public sealed class FleetServiceTests
     }
 
     [Fact]
+    public async Task GetPlayerShipsAsync_MapsInsuranceAndAssignedRoute()
+    {
+        await using var dbContext = CreateDbContext();
+        var player = await SeedPlayerAsync(dbContext, 500_000m);
+        var alpha = await SeedSectorAsync(dbContext, "Alpha");
+        var beta = await SeedSectorAsync(dbContext, "Beta");
+        dbContext.Ships.Add(new Ship
+        {
+            Id = Guid.NewGuid(),
+            PlayerId = player.Id,
+            Name = "Runner",
+            ShipClass = "Hauler",
+            HullIntegrity = 240,
+            MaxHullIntegrity = 240,
+            ShieldCapacity = 180,
+            MaxShieldCapacity = 180,
+            ReactorOutput = 100,
+            CargoCapacity = 480,
+            CargoUsed = 0,
+            SensorRange = 80,
+            SignatureProfile = 40,
+            CrewSlots = 8,
+            Hardpoints = 2,
+            HasInsurance = false,
+            InsuranceRate = 0m,
+            IsActive = true,
+            IsInCombat = false,
+            StatusId = 1,
+            CurrentSectorId = alpha.Id,
+            TargetSectorId = beta.Id,
+            PurchasePrice = 120_000m,
+            CurrentValue = 110_000m,
+            PurchasedAt = DateTime.UtcNow
+        });
+        await dbContext.SaveChangesAsync();
+        var service = new FleetService(dbContext);
+
+        var ships = await service.GetPlayerShipsAsync(player.Id);
+
+        var ship = Assert.Single(ships);
+        Assert.False(ship.HasInsurance);
+        Assert.Equal(0m, ship.InsuranceRate);
+        Assert.Equal("Alpha -> Beta", ship.AssignedRoute);
+    }
+
+    [Fact]
     public async Task FireCrewAsync_RemovesCrewRecord()
     {
         await using var dbContext = CreateDbContext();
@@ -222,6 +268,29 @@ public sealed class FleetServiceTests
         dbContext.Ships.Add(ship);
         await dbContext.SaveChangesAsync();
         return ship;
+    }
+
+    private static async Task<Sector> SeedSectorAsync(GalacticTraderDbContext dbContext, string name)
+    {
+        var sector = new Sector
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            X = 0f,
+            Y = 0f,
+            Z = 0f,
+            SecurityLevel = 50,
+            HazardRating = 20,
+            ResourceModifier = 1f,
+            EconomicIndex = 55,
+            SensorInterferenceLevel = 10f,
+            AverageTrafficLevel = 40,
+            PiratePresenceProbability = 20
+        };
+
+        dbContext.Sectors.Add(sector);
+        await dbContext.SaveChangesAsync();
+        return sector;
     }
 
     private static GalacticTraderDbContext CreateDbContext()

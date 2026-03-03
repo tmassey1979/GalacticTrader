@@ -11,4 +11,6 @@ public sealed class FleetShipDisplayRow
     public int ModuleCount { get; init; }
     public required string CrewAssignment { get; init; }
     public required string CrewStatus { get; init; }
+    public required string InsuranceStatus { get; init; }
+    public required string AssignedRoute { get; init; }
 }

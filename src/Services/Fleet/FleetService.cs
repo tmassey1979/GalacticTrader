@@ -106,6 +106,8 @@ public sealed class FleetService : IFleetService
             .AsNoTracking()
             .Include(ship => ship.Modules)
             .Include(ship => ship.Crew)
+            .Include(ship => ship.CurrentSector)
+            .Include(ship => ship.TargetSector)
             .Where(ship => ship.PlayerId == playerId)
             .OrderBy(ship => ship.Name)
             .ToListAsync(cancellationToken);
@@ -119,6 +121,8 @@ public sealed class FleetService : IFleetService
             .AsNoTracking()
             .Include(existing => existing.Modules)
             .Include(existing => existing.Crew)
+            .Include(existing => existing.CurrentSector)
+            .Include(existing => existing.TargetSector)
             .FirstOrDefaultAsync(existing => existing.Id == shipId, cancellationToken);
 
         return ship is null ? null : MapShip(ship, ship.Modules.ToList(), ship.Crew.Count);
@@ -130,6 +134,8 @@ public sealed class FleetService : IFleetService
             .AsNoTracking()
             .Include(existing => existing.Modules)
             .Include(existing => existing.Crew)
+            .Include(existing => existing.CurrentSector)
+            .Include(existing => existing.TargetSector)
             .FirstOrDefaultAsync(existing => existing.Id == request.ShipId, cancellationToken);
         if (ship is null)
         {
@@ -455,6 +461,9 @@ public sealed class FleetService : IFleetService
             SignatureProfile = ship.SignatureProfile,
             CrewSlots = ship.CrewSlots,
             Hardpoints = ship.Hardpoints,
+            HasInsurance = ship.HasInsurance,
+            InsuranceRate = ship.InsuranceRate,
+            AssignedRoute = BuildAssignedRoute(ship),
             CurrentValue = ship.CurrentValue,
             Modules = modules.Select(module => new ShipModuleDto
             {
@@ -506,7 +515,30 @@ public sealed class FleetService : IFleetService
             SignatureProfile = ship.SignatureProfile,
             CrewSlots = ship.CrewSlots,
             Hardpoints = ship.Hardpoints,
+            HasInsurance = ship.HasInsurance,
+            InsuranceRate = ship.InsuranceRate,
+            StatusId = ship.StatusId,
+            CurrentSectorId = ship.CurrentSectorId,
+            TargetSectorId = ship.TargetSectorId,
+            CurrentSector = ship.CurrentSector,
+            TargetSector = ship.TargetSector,
             CurrentValue = ship.CurrentValue
+        };
+    }
+
+    private static string BuildAssignedRoute(Ship ship)
+    {
+        return ship.StatusId switch
+        {
+            1 when !string.IsNullOrWhiteSpace(ship.CurrentSector?.Name) && !string.IsNullOrWhiteSpace(ship.TargetSector?.Name)
+                => $"{ship.CurrentSector.Name} -> {ship.TargetSector.Name}",
+            1 => "Traveling",
+            0 when !string.IsNullOrWhiteSpace(ship.CurrentSector?.Name)
+                => $"Docked @ {ship.CurrentSector.Name}",
+            0 => "Docked",
+            2 => "Drifting",
+            3 => "In Combat",
+            _ => "Unknown"
         };
     }
 

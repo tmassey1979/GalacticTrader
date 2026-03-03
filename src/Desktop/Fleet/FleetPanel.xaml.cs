@@ -52,7 +52,9 @@ public partial class FleetPanel : UserControl
 
         SelectedShipText.Text =
             $"{ship.Name} ({ship.ShipClass}) | Hull {ship.HullIntegrity}/{ship.MaxHullIntegrity} | " +
-            $"Cargo {ship.CargoCapacity} | Reactor {ship.ReactorOutput}";
+            $"Cargo {ship.CargoCapacity} | Reactor {ship.ReactorOutput} | " +
+            $"{FleetInsuranceStatusFormatter.Format(ship.HasInsurance, ship.InsuranceRate)} | " +
+            $"Route {ship.AssignedRoute}";
 
         var moduleLines = ship.Modules.Count == 0
             ? new[] { "No modules installed." }
@@ -87,7 +89,9 @@ public partial class FleetPanel : UserControl
                     CargoCapacity = ship.CargoCapacity,
                     ModuleCount = ship.Modules.Count,
                     CrewAssignment = $"{utilization.CrewCount}/{ship.CrewSlots}",
-                    CrewStatus = utilization.Status
+                    CrewStatus = utilization.Status,
+                    InsuranceStatus = FleetInsuranceStatusFormatter.Format(ship.HasInsurance, ship.InsuranceRate),
+                    AssignedRoute = ship.AssignedRoute
                 });
             }
 
