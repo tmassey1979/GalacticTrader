@@ -7,6 +7,7 @@ public sealed class DashboardSummarySnapshot
     public decimal AssetLiquidityRatio { get; init; }
     public decimal CashFlowIndex { get; init; }
     public decimal RecentTradeVolume { get; init; }
+    public IReadOnlyList<decimal> CashFlowTrend { get; init; } = [];
     public int ShipCount { get; init; }
     public int FleetStrength { get; init; }
     public decimal FleetRiskExposure { get; init; }

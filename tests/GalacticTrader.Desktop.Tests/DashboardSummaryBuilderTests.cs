@@ -63,6 +63,7 @@ public sealed class DashboardSummaryBuilderTests
         Assert.Equal(82.6m, summary.AssetLiquidityRatio);
         Assert.Equal(5.3m, summary.CashFlowIndex);
         Assert.Equal(500m, summary.RecentTradeVolume);
+        Assert.Equal([9400m, 9500m], summary.CashFlowTrend);
         Assert.Equal(2, summary.ShipCount);
         Assert.Equal(140, summary.FleetStrength);
         Assert.Equal(50m, summary.FleetRiskExposure);

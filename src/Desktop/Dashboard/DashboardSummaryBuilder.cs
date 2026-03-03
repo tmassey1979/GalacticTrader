@@ -20,6 +20,11 @@ public static class DashboardSummaryBuilder
             : 0m;
         var netWorth = credits + ships.Sum(static ship => ship.CurrentValue);
         var recentTradeVolume = transactions.Take(10).Sum(static transaction => transaction.TotalPrice);
+        var cashFlowTrend = transactions
+            .Take(8)
+            .Select(static transaction => transaction.RemainingPlayerCredits)
+            .Reverse()
+            .ToArray();
         var highestReputation = standings.Count > 0
             ? standings.Max(static standing => standing.ReputationScore)
             : 0;
@@ -50,6 +55,7 @@ public static class DashboardSummaryBuilder
             AssetLiquidityRatio = assetLiquidityRatio,
             CashFlowIndex = cashFlowIndex,
             RecentTradeVolume = recentTradeVolume,
+            CashFlowTrend = cashFlowTrend,
             ShipCount = ships.Count,
             FleetStrength = escortSummary?.FleetStrength ?? 0,
             FleetRiskExposure = fleetRiskExposure,

@@ -83,7 +83,11 @@ public partial class DashboardPanel : UserControl
             CreditsValue.Text = $"Credits {summary.LiquidCredits:N2}";
             NetWorthValue.Text = $"Net worth {summary.NetWorth:N2}";
             TradeVolumeValue.Text = $"Recent volume {summary.RecentTradeVolume:N2}";
-            AssetMixValue.Text = $"Liquid ratio {summary.AssetLiquidityRatio:N1}%";
+            var illiquidRatio = Math.Round(100m - summary.AssetLiquidityRatio, 1);
+            AssetMixValue.Text = $"Liquid {summary.AssetLiquidityRatio:N1}% | Holdings {illiquidRatio:N1}%";
+            CashFlowTrendValue.Text = $"Trend samples {summary.CashFlowTrend.Count}";
+            CashFlowSparkline.Points = CashFlowSparklineBuilder.Build(summary.CashFlowTrend, width: 230, height: 34);
+            AssetAllocationBar.Value = (double)summary.AssetLiquidityRatio;
             CashFlowBar.Value = (double)summary.CashFlowIndex;
             FleetValue.Text = $"Strength {summary.FleetStrength}";
             ShipCountValue.Text = $"Ships {summary.ShipCount}";

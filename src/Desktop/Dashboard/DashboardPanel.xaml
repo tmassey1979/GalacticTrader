@@ -52,6 +52,32 @@
                     <TextBlock x:Name="AssetMixValue"
                                Foreground="#9DB7E2"
                                Text="-" />
+                    <TextBlock x:Name="CashFlowTrendValue"
+                               Foreground="#9DB7E2"
+                               Text="-" />
+                    <Border Margin="0,4,0,0"
+                            Height="40"
+                            Background="#0A1630"
+                            BorderBrush="#27466E"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="2">
+                        <Grid>
+                            <Polyline x:Name="CashFlowSparkline"
+                                      Stroke="#1FD6B4"
+                                      StrokeThickness="2"
+                                      StrokeLineJoin="Round"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round" />
+                        </Grid>
+                    </Border>
+                    <ProgressBar x:Name="AssetAllocationBar"
+                                 Margin="0,4,0,0"
+                                 Height="6"
+                                 Maximum="100"
+                                 Value="0"
+                                 Foreground="#7BA0FF"
+                                 Background="#0A1630" />
                     <ProgressBar x:Name="CashFlowBar"
                                  Margin="0,4,0,0"
                                  Height="6"
