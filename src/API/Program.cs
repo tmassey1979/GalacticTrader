@@ -115,6 +115,9 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<GalacticTraderDbContext>();
     await dbContext.Database.EnsureCreatedAsync();
+
+    var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
+    await EnsureBootstrapAdminPlayerAsync(dbContext, authService, builder.Configuration, CancellationToken.None);
 }
 
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
@@ -228,6 +231,13 @@ auth.MapPost("/register", async (
                 request.Website),
             cancellationToken);
 
+        await EnsureUserAccountRolesAsync(
+            dbContext,
+            created.PlayerId,
+            created.Username,
+            created.Email,
+            [AuthorizationPolicies.PlayerRole],
+            cancellationToken);
         await BootstrapNewPlayerAsync(dbContext, created, cancellationToken);
         return Results.Created($"/api/auth/players/{created.PlayerId}", created);
     }
@@ -1794,71 +1804,216 @@ static bool TryReadBearerToken(HttpContext context, out string token)
     return true;
 }
 
+static async Task EnsureBootstrapAdminPlayerAsync(
+    GalacticTraderDbContext dbContext,
+    IAuthService authService,
+    IConfiguration configuration,
+    CancellationToken cancellationToken)
+{
+    const string bootstrapUsername = "viper";
+    const string bootstrapEmail = "epiphanygs@gmail.com";
+
+    var configuredPassword = configuration["Bootstrap:ViperPassword"]
+        ?? configuration["Bootstrap__ViperPassword"];
+    var bootstrapPassword = string.IsNullOrWhiteSpace(configuredPassword)
+        ? "ViperDev123!"
+        : configuredPassword.Trim();
+
+    var existingPlayer = await dbContext.Players
+        .AsNoTracking()
+        .FirstOrDefaultAsync(
+            player =>
+                player.Username == bootstrapUsername ||
+                player.Email == bootstrapEmail,
+            cancellationToken);
+
+    var bootstrapPlayerId = existingPlayer?.Id ?? Guid.NewGuid();
+    PlayerIdentity identity;
+    try
+    {
+        identity = await authService.RegisterAsync(
+            new RegisterPlayerRequest(
+                bootstrapUsername,
+                bootstrapEmail,
+                bootstrapPassword,
+                FirstName: "Viper",
+                LastName: "Pilot",
+                PlayerId: bootstrapPlayerId),
+            cancellationToken);
+    }
+    catch (InvalidOperationException)
+    {
+        identity = new PlayerIdentity(
+            bootstrapPlayerId,
+            bootstrapUsername,
+            bootstrapEmail,
+            DateTimeOffset.UtcNow);
+    }
+
+    await EnsureUserAccountRolesAsync(
+        dbContext,
+        identity.PlayerId,
+        identity.Username,
+        identity.Email,
+        [AuthorizationPolicies.PlayerRole, AuthorizationPolicies.AdminRole, AuthorizationPolicies.MapAdminRole],
+        cancellationToken);
+
+    await BootstrapNewPlayerAsync(dbContext, identity, cancellationToken);
+}
+
+static async Task EnsureUserAccountRolesAsync(
+    GalacticTraderDbContext dbContext,
+    Guid playerId,
+    string username,
+    string email,
+    IReadOnlyCollection<string> requiredRoles,
+    CancellationToken cancellationToken)
+{
+    var normalizedUsername = username.Trim();
+    var normalizedEmail = email.Trim();
+
+    var userAccount = await dbContext.UserAccounts
+        .FirstOrDefaultAsync(
+            account =>
+                account.Id == playerId ||
+                account.Username == normalizedUsername ||
+                account.Email == normalizedEmail,
+            cancellationToken);
+
+    if (userAccount is null)
+    {
+        userAccount = new GalacticTrader.Data.Models.UserAccount
+        {
+            Id = playerId,
+            Username = normalizedUsername,
+            Email = normalizedEmail,
+            FirstName = normalizedUsername,
+            LastName = "Pilot",
+            KeycloakId = playerId.ToString("D"),
+            Roles = []
+        };
+
+        dbContext.UserAccounts.Add(userAccount);
+    }
+    else
+    {
+        userAccount.Username = normalizedUsername;
+        userAccount.Email = normalizedEmail;
+        userAccount.KeycloakId = playerId.ToString("D");
+    }
+
+    foreach (var role in requiredRoles.Where(role => !string.IsNullOrWhiteSpace(role)))
+    {
+        if (userAccount.Roles.Contains(role, StringComparer.OrdinalIgnoreCase))
+        {
+            continue;
+        }
+
+        userAccount.Roles.Add(role);
+    }
+
+    await dbContext.SaveChangesAsync(cancellationToken);
+}
+
 static async Task BootstrapNewPlayerAsync(
     GalacticTraderDbContext dbContext,
     PlayerIdentity identity,
     CancellationToken cancellationToken)
 {
-    var exists = await dbContext.Players
-        .AsNoTracking()
-        .AnyAsync(player => player.Id == identity.PlayerId, cancellationToken);
-    if (exists)
-    {
-        return;
-    }
-
-    var starterSector = await EnsureStarterSectorAsync(dbContext, cancellationToken);
     const decimal starterCredits = 250_000m;
     const decimal starterShipValue = 95_000m;
+    var now = DateTime.UtcNow;
 
-    var player = new Player
+    var starterSector = await EnsureStarterSectorAsync(dbContext, cancellationToken);
+    var player = await dbContext.Players
+        .FirstOrDefaultAsync(
+            existing =>
+                existing.Id == identity.PlayerId ||
+                existing.Username == identity.Username ||
+                existing.Email == identity.Email,
+            cancellationToken);
+
+    if (player is null)
     {
-        Id = identity.PlayerId,
-        Username = identity.Username,
-        Email = identity.Email,
-        KeycloakUserId = identity.PlayerId,
-        NetWorth = starterCredits + starterShipValue,
-        LiquidCredits = starterCredits,
-        ReputationScore = 0,
-        AlignmentLevel = 0,
-        FleetStrengthRating = 342,
-        ProtectionStatus = "Protected",
-        CreatedAt = DateTime.UtcNow,
-        LastActiveAt = DateTime.UtcNow,
-        IsActive = true
-    };
+        player = new Player
+        {
+            Id = identity.PlayerId,
+            Username = identity.Username,
+            Email = identity.Email,
+            KeycloakUserId = identity.PlayerId,
+            NetWorth = starterCredits + starterShipValue,
+            LiquidCredits = starterCredits,
+            ReputationScore = 0,
+            AlignmentLevel = 0,
+            FleetStrengthRating = 342,
+            ProtectionStatus = "Protected",
+            CreatedAt = now,
+            LastActiveAt = now,
+            IsActive = true
+        };
 
-    var ship = new Ship
+        dbContext.Players.Add(player);
+    }
+    else
     {
-        Id = Guid.NewGuid(),
-        PlayerId = identity.PlayerId,
-        Name = "Pioneer-01",
-        ShipClass = "Scout",
-        HullIntegrity = 180,
-        MaxHullIntegrity = 180,
-        ShieldCapacity = 120,
-        MaxShieldCapacity = 120,
-        ReactorOutput = 90,
-        CargoCapacity = 160,
-        CargoUsed = 0,
-        SensorRange = 120,
-        SignatureProfile = 35,
-        CrewSlots = 6,
-        Hardpoints = 2,
-        HasInsurance = true,
-        InsuranceRate = 0.015m,
-        IsActive = true,
-        IsInCombat = false,
-        CurrentSectorId = starterSector.Id,
-        TargetSectorId = starterSector.Id,
-        StatusId = 0,
-        PurchasePrice = starterShipValue,
-        PurchasedAt = DateTime.UtcNow,
-        CurrentValue = starterShipValue
-    };
+        player.Username = identity.Username;
+        player.Email = identity.Email;
+        player.KeycloakUserId = identity.PlayerId;
+        player.LastActiveAt = now;
+        player.IsActive = true;
+        player.ProtectionStatus = string.IsNullOrWhiteSpace(player.ProtectionStatus)
+            ? "Protected"
+            : player.ProtectionStatus;
+    }
 
-    dbContext.Players.Add(player);
-    dbContext.Ships.Add(ship);
+    if (player.LiquidCredits < starterCredits)
+    {
+        player.LiquidCredits = starterCredits;
+    }
+
+    var hasShip = await dbContext.Ships
+        .AnyAsync(ship => ship.PlayerId == player.Id, cancellationToken);
+    if (!hasShip)
+    {
+        var starterShip = new Ship
+        {
+            Id = Guid.NewGuid(),
+            PlayerId = player.Id,
+            Name = "Pioneer-01",
+            ShipClass = "Scout",
+            HullIntegrity = 180,
+            MaxHullIntegrity = 180,
+            ShieldCapacity = 120,
+            MaxShieldCapacity = 120,
+            ReactorOutput = 90,
+            CargoCapacity = 160,
+            CargoUsed = 0,
+            SensorRange = 120,
+            SignatureProfile = 35,
+            CrewSlots = 6,
+            Hardpoints = 2,
+            HasInsurance = true,
+            InsuranceRate = 0.015m,
+            IsActive = true,
+            IsInCombat = false,
+            CurrentSectorId = starterSector.Id,
+            TargetSectorId = starterSector.Id,
+            StatusId = 0,
+            PurchasePrice = starterShipValue,
+            PurchasedAt = now,
+            CurrentValue = starterShipValue
+        };
+
+        dbContext.Ships.Add(starterShip);
+        hasShip = true;
+    }
+
+    var minimumNetWorth = player.LiquidCredits + (hasShip ? starterShipValue : 0m);
+    if (player.NetWorth < minimumNetWorth)
+    {
+        player.NetWorth = minimumNetWorth;
+    }
+
     await dbContext.SaveChangesAsync(cancellationToken);
 }
 

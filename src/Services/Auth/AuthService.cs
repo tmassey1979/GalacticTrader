@@ -30,7 +30,7 @@ public sealed class AuthService : IAuthService
         }
 
         var identity = new PlayerIdentity(
-            PlayerId: Guid.NewGuid(),
+            PlayerId: request.PlayerId ?? Guid.NewGuid(),
             Username: normalizedUsername,
             Email: normalizedEmail,
             RegisteredAtUtc: DateTimeOffset.UtcNow);

@@ -1,5 +1,21 @@
 const { test, expect } = require('@playwright/test');
 
+async function getAdminAuthHeaders(request) {
+  const login = await request.post('/api/auth/login', {
+    data: {
+      username: 'viper',
+      password: 'ViperDev123!'
+    }
+  });
+
+  expect(login.status()).toBe(200);
+  const loginBody = await login.json();
+  expect(loginBody.accessToken).toBeTruthy();
+  return {
+    Authorization: `Bearer ${loginBody.accessToken}`
+  };
+}
+
 test.describe('critical gameplay flows', () => {
   test('login and registration flow', async ({ request }) => {
     const timestamp = Date.now();
@@ -52,8 +68,10 @@ test.describe('critical gameplay flows', () => {
 
   test('navigation planning and execution flow', async ({ request }) => {
     const seed = Date.now().toString();
+    const authHeaders = await getAdminAuthHeaders(request);
 
     const createA = await request.post('/api/navigation/sectors', {
+      headers: authHeaders,
       data: {
         name: `A-${seed}`,
         x: 0,
@@ -65,6 +83,7 @@ test.describe('critical gameplay flows', () => {
     const sectorA = await createA.json();
 
     const createB = await request.post('/api/navigation/sectors', {
+      headers: authHeaders,
       data: {
         name: `B-${seed}`,
         x: 30,
@@ -76,6 +95,7 @@ test.describe('critical gameplay flows', () => {
     const sectorB = await createB.json();
 
     const createRoute = await request.post('/api/navigation/routes', {
+      headers: authHeaders,
       data: {
         fromSectorId: sectorA.id,
         toSectorId: sectorB.id,

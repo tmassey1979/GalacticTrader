@@ -14,4 +14,5 @@ public sealed record RegisterPlayerRequest(
     string? PhoneNumber = null,
     string? Locale = null,
     string? TimeZone = null,
-    string? Website = null);
+    string? Website = null,
+    Guid? PlayerId = null);

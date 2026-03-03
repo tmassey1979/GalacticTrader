@@ -1,6 +1,7 @@
 namespace GalacticTrader.IntegrationTests;
 
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -19,6 +20,8 @@ public sealed class CoreWorkflowIntegrationTests : IClassFixture<ApiWebApplicati
     [Fact]
     public async Task NavigationPlanningFlow_Succeeds()
     {
+        await AuthenticateAsBootstrapAdminAsync();
+
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var sourceSector = await CreateSectorAsync($"Alpha Prime {suffix}", 0, 0, 0);
         var destinationSector = await CreateSectorAsync($"Beta Forge {suffix}", 42, 10, -12);
@@ -91,5 +94,23 @@ public sealed class CoreWorkflowIntegrationTests : IClassFixture<ApiWebApplicati
         return new CreatedSector(id, sectorName);
     }
 
+    private async Task AuthenticateAsBootstrapAdminAsync()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            username = "viper",
+            password = "ViperDev123!"
+        });
+
+        response.EnsureSuccessStatusCode();
+        var loginPayload = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        Assert.NotNull(loginPayload);
+        Assert.False(string.IsNullOrWhiteSpace(loginPayload!.AccessToken));
+
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", loginPayload.AccessToken);
+    }
+
     private sealed record CreatedSector(Guid Id, string Name);
+    private sealed record LoginResponse(string AccessToken);
 }
