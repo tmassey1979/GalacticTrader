@@ -63,6 +63,7 @@ public partial class MainWindow : Window
             {
                 BaseAddress = new Uri(ApiBaseUrlText.Text.Trim())
             };
+            MapGeneratorAuthHeaderConfigurator.ApplyBearerToken(httpClient, ApiTokenText.Text);
             var apiClient = new MapNavigationApiClient(httpClient);
 
             if (ReplaceExistingCheck.IsChecked == true)
@@ -96,6 +97,7 @@ public partial class MainWindow : Window
             {
                 BaseAddress = new Uri(ApiBaseUrlText.Text.Trim())
             };
+            MapGeneratorAuthHeaderConfigurator.ApplyBearerToken(httpClient, ApiTokenText.Text);
             var apiClient = new MapNavigationApiClient(httpClient);
 
             var sectorsTask = apiClient.GetSectorsAsync();

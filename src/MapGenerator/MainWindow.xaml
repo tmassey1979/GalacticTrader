@@ -43,6 +43,17 @@
                              Foreground="#EBF4FF"
                              FontFamily="Consolas" />
 
+                    <TextBlock Text="Bearer Token (Optional)"
+                               Foreground="#B9CBE8" />
+                    <TextBox x:Name="ApiTokenText"
+                             Margin="0,6,0,12"
+                             Height="34"
+                             Padding="8,6"
+                             Background="#12223E"
+                             BorderBrush="#35598D"
+                             Foreground="#EBF4FF"
+                             FontFamily="Consolas" />
+
                     <TextBlock Text="Seed"
                                Foreground="#B9CBE8" />
                     <TextBox x:Name="SeedText"
