@@ -72,7 +72,19 @@ public partial class App : Application
                 reconnectPolicy);
 
             var starmapLoader = new DatabaseStarmapSceneLoader(navigationApiClient);
-            var scene = await starmapLoader.LoadAsync();
+            var starmapLoad = await StarmapSceneResolver.ResolveAsync(
+                starmapLoader.LoadAsync,
+                StarmapSceneBuilder.Build);
+            if (starmapLoad.UsedFallback)
+            {
+                MessageBox.Show(
+                    starmapLoad.Warning,
+                    "Galactic Trader",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+            var scene = starmapLoad.Scene;
 
             var mainWindow = new MainWindow(
                 scene,
