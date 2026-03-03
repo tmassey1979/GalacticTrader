@@ -489,5 +489,6 @@ public partial class MainWindow : Window
         var selectedModule = (ModuleTabs.SelectedItem as TabItem)?.Header?.ToString();
         BreadcrumbText.Text = ModuleBreadcrumbBuilder.Build(selectedModule);
         QuickActionsText.Text = ModuleQuickActionsBuilder.Build(selectedModule);
+        ContextSubmenuList.ItemsSource = ModuleContextSubmenuBuilder.Build(selectedModule);
     }
 }

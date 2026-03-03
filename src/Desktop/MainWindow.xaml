@@ -117,6 +117,18 @@
                                FontSize="11"
                                TextWrapping="Wrap"
                                Text="Quick Actions: Use module controls to inspect strategic data" />
+                    <TextBlock DockPanel.Dock="Top"
+                               Foreground="#7FA3D8"
+                               FontSize="11"
+                               Text="Context Submenu" />
+                    <ListBox x:Name="ContextSubmenuList"
+                             DockPanel.Dock="Top"
+                             Height="82"
+                             Margin="0,4,0,12"
+                             Background="#0C152A"
+                             BorderBrush="#2F4B78"
+                             Foreground="#CFDDFC"
+                             FontSize="11" />
 
                     <StackPanel DockPanel.Dock="Top"
                                 Orientation="Vertical"
