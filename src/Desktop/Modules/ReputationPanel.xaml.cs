@@ -17,6 +17,8 @@ public partial class ReputationPanel : UserControl
     private readonly ObservableCollection<string> _benefits = [];
     private readonly ObservableCollection<string> _topReputation = [];
     private readonly ObservableCollection<string> _influenceZones = [];
+    private IReadOnlyList<PlayerFactionStandingApiDto> _latestStandings = [];
+    private AlignmentAccessApiDto? _latestAlignmentAccess;
     private bool _hasLoaded;
 
     public ReputationPanel(
@@ -107,6 +109,8 @@ public partial class ReputationPanel : UserControl
             var benefits = benefitsTask.Result;
             var access = accessTask.Result;
             var leaderboard = leaderboardTask.Result;
+            _latestStandings = standings;
+            _latestAlignmentAccess = access;
 
             _rows.Clear();
             foreach (var standing in standings.OrderByDescending(static standing => standing.ReputationScore))
@@ -173,6 +177,7 @@ public partial class ReputationPanel : UserControl
                     $"Legal Insurance: {access.CanUseLegalInsurance} | Black Market: {access.CanAccessBlackMarket}\n" +
                     $"Scan Mod: {access.ScanFrequencyModifier:P1} | Insurance Mod: {access.InsuranceCostModifier:P1}";
             }
+            RenderImpactForecast();
 
             SetStatus($"Loaded {_rows.Count} faction standings.", isError: false);
         }
@@ -188,12 +193,13 @@ public partial class ReputationPanel : UserControl
 
     private async Task RefreshAlignmentAccessAsync()
     {
-        var access = await _reputationApiClient.GetAlignmentAccessAsync(_session.PlayerId);
-        AlignmentAccessText.Text = access is null
+        _latestAlignmentAccess = await _reputationApiClient.GetAlignmentAccessAsync(_session.PlayerId);
+        AlignmentAccessText.Text = _latestAlignmentAccess is null
             ? "No alignment profile available."
-            : $"Path {access.Path} | Level {access.AlignmentLevel}\n" +
-              $"Legal Insurance: {access.CanUseLegalInsurance} | Black Market: {access.CanAccessBlackMarket}\n" +
-              $"Scan Mod: {access.ScanFrequencyModifier:P1} | Insurance Mod: {access.InsuranceCostModifier:P1}";
+            : $"Path {_latestAlignmentAccess.Path} | Level {_latestAlignmentAccess.AlignmentLevel}\n" +
+              $"Legal Insurance: {_latestAlignmentAccess.CanUseLegalInsurance} | Black Market: {_latestAlignmentAccess.CanAccessBlackMarket}\n" +
+              $"Scan Mod: {_latestAlignmentAccess.ScanFrequencyModifier:P1} | Insurance Mod: {_latestAlignmentAccess.InsuranceCostModifier:P1}";
+        RenderImpactForecast();
     }
 
     private async Task<IReadOnlyList<LeaderboardEntryApiDto>> LoadReputationLeaderboardAsync()
@@ -220,5 +226,15 @@ public partial class ReputationPanel : UserControl
         StatusText.Foreground = isError
             ? new SolidColorBrush(Color.FromRgb(255, 147, 147))
             : new SolidColorBrush(Color.FromRgb(157, 183, 226));
+    }
+
+    private void RenderImpactForecast()
+    {
+        var projection = ReputationImpactForecastProjector.Build(_latestStandings, _latestAlignmentAccess);
+        ImpactForecastText.Text =
+            $"Trade Margin: {projection.TradeMarginModifier:+0.0%;-0.0%;0.0%}\n" +
+            $"Protection Cost: {projection.ProtectionCostModifier:+0.0%;-0.0%;0.0%}\n" +
+            $"Smuggling Success: {projection.SmugglingSuccessChance:0.0%}\n" +
+            $"Alliance Access: {projection.AllianceAccessSummary}";
     }
 }

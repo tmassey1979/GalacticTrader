@@ -145,6 +145,16 @@
 
                     <TextBlock Foreground="#B9CBE8"
                                FontWeight="SemiBold"
+                               Text="Impact Forecast" />
+                    <TextBlock x:Name="ImpactForecastText"
+                               Margin="0,4,0,8"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               TextWrapping="Wrap"
+                               Text="Trade Margin: 0.0%&#10;Protection Cost: 0.0%&#10;Smuggling Success: 0.0%&#10;Alliance Access: No standings" />
+
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
                                Text="Top Reputation Leaderboard" />
                     <ListBox x:Name="TopReputationList"
                              Height="60"
