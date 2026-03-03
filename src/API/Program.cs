@@ -25,6 +25,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Prometheus;
+using Serilog;
+using Serilog.Events;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
@@ -35,7 +37,33 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
+var logServerUrl = Environment.GetEnvironmentVariable("GT_LOG_SERVER_URL");
+var logServerApiKey = Environment.GetEnvironmentVariable("GT_LOG_SERVER_API_KEY");
+
+var loggerConfiguration = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("System", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        Path.Combine(AppContext.BaseDirectory, "logs", "api-.log"),
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        shared: true);
+
+if (!string.IsNullOrWhiteSpace(logServerUrl))
+{
+    loggerConfiguration = loggerConfiguration.WriteTo.Seq(
+        serverUrl: logServerUrl.Trim(),
+        apiKey: string.IsNullOrWhiteSpace(logServerApiKey) ? null : logServerApiKey.Trim());
+}
+
+Log.Logger = loggerConfiguration.CreateLogger();
+AppDomain.CurrentDomain.ProcessExit += (_, _) => Log.CloseAndFlush();
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 builder.Configuration.AddVaultSecretsIfConfigured();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -139,6 +167,8 @@ if (!app.Environment.IsEnvironment("Testing"))
 {
     app.UseHttpsRedirection();
 }
+
+app.UseSerilogRequestLogging();
 app.UseWebSockets();
 var channelSockets = new ConcurrentDictionary<Guid, (WebSocket Socket, ChannelType ChannelType, string ChannelKey)>();
 

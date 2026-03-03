@@ -23,6 +23,7 @@ The app supports bearer token authentication in `Bearer Token`.
 - If API login is unavailable, it falls back to Keycloak token login (realm `galactictrader` by default).
 - The token is applied as `Authorization: Bearer <token>` on load and publish requests.
 - `GT_KEYCLOAK_BASE_URL`, `GT_KEYCLOAK_REALM`, and `GT_KEYCLOAK_CLIENT_ID` can override Keycloak login defaults.
+- `GT_LOG_SERVER_URL` and optional `GT_LOG_SERVER_API_KEY` forward Map Generator logs to a central Seq-compatible server.
 
 ## Inputs
 

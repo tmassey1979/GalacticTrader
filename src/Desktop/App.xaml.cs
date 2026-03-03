@@ -1,8 +1,12 @@
 using GalacticTrader.Desktop.Api;
 using GalacticTrader.Desktop.Realtime;
 using GalacticTrader.Desktop.Starmap;
+using Serilog;
+using Serilog.Events;
+using System.IO;
 using System.Net.Http;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace GalacticTrader.Desktop;
 
@@ -13,6 +17,9 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ConfigureLogging();
+        RegisterGlobalExceptionHandlers();
+        Log.Information("Desktop startup initiated.");
 
         try
         {
@@ -106,9 +113,11 @@ public partial class App : Application
             MainWindow = mainWindow;
             ShutdownMode = ShutdownMode.OnMainWindowClose;
             mainWindow.Show();
+            Log.Information("Desktop startup completed for user {Username}.", loginWindow.Session.Username);
         }
         catch (Exception exception)
         {
+            Log.Fatal(exception, "Desktop startup failed.");
             MessageBox.Show(
                 $"Startup failed: {exception.Message}",
                 "Galactic Trader",
@@ -121,7 +130,64 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Log.Information("Desktop app exiting.");
         _httpClient?.Dispose();
+        Log.CloseAndFlush();
         base.OnExit(e);
+    }
+
+    private static void ConfigureLogging()
+    {
+        var logServerUrl = Environment.GetEnvironmentVariable("GT_LOG_SERVER_URL");
+        var logServerApiKey = Environment.GetEnvironmentVariable("GT_LOG_SERVER_API_KEY");
+
+        var loggerConfiguration = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("System", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .Enrich.FromLogContext()
+            .WriteTo.File(
+                Path.Combine(AppContext.BaseDirectory, "logs", "desktop-.log"),
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 14,
+                shared: true);
+
+        if (!string.IsNullOrWhiteSpace(logServerUrl))
+        {
+            loggerConfiguration = loggerConfiguration.WriteTo.Seq(
+                serverUrl: logServerUrl.Trim(),
+                apiKey: string.IsNullOrWhiteSpace(logServerApiKey) ? null : logServerApiKey.Trim());
+        }
+
+        Log.Logger = loggerConfiguration.CreateLogger();
+    }
+
+    private void RegisterGlobalExceptionHandlers()
+    {
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+    }
+
+    private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        Log.Error(e.Exception, "Unhandled UI thread exception.");
+    }
+
+    private static void OnUnhandledException(object? sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+        {
+            Log.Fatal(exception, "Unhandled AppDomain exception. IsTerminating: {IsTerminating}", e.IsTerminating);
+            return;
+        }
+
+        Log.Fatal("Unhandled AppDomain exception object of type {Type}. IsTerminating: {IsTerminating}", e.ExceptionObject?.GetType().FullName ?? "unknown", e.IsTerminating);
+    }
+
+    private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        Log.Error(e.Exception, "Unobserved task exception.");
+        e.SetObserved();
     }
 }

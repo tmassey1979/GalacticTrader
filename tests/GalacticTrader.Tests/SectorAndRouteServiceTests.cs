@@ -170,6 +170,7 @@ public sealed class SectorAndRouteServiceTests
 
         return new NavigationServices(
             new SectorService(
+                dbContext,
                 sectorRepository,
                 routeRepository,
                 validation,

@@ -187,6 +187,8 @@ See `.env.example` for all configurable options:
 - `ConnectionStrings__Default` - PostgreSQL connection string
 - `Redis__Connection` - Redis connection string
 - `Keycloak__ServerUrl` - Keycloak server URL
+- `GT_LOG_SERVER_URL` - Optional central log server URL (Seq-compatible) used by API and WPF clients
+- `GT_LOG_SERVER_API_KEY` - Optional API key for the log server
 - `Vault__Enabled` - Enable HashiCorp Vault secret bootstrap
 - `Vault__Address` / `Vault__Token` / `Vault__Path` - Vault connection and secret path
 

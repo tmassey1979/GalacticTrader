@@ -153,6 +153,8 @@ services:
       Keycloak__IssuerUrl: "http://localhost:8180"
       Keycloak__Realm: "galactictrader"
       Keycloak__RequireHttpsMetadata: "false"
+      GT_LOG_SERVER_URL: "${GT_LOG_SERVER_URL:-}"
+      GT_LOG_SERVER_API_KEY: "${GT_LOG_SERVER_API_KEY:-}"
       Vault__Enabled: ${VAULT_ENABLED:-false}
       Vault__FailFast: "false"
       Vault__Address: "http://vault:8200"
