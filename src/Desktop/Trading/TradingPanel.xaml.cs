@@ -14,6 +14,7 @@ public partial class TradingPanel : UserControl
     private readonly MarketApiClient _marketApiClient;
     private readonly ObservableCollection<TradeTransactionDisplayRow> _tradeRows = [];
     private readonly List<TradeExecutionResultApiDto> _recentTransactions = [];
+    private bool _isSyncingQuantity;
     private bool _hasLoaded;
 
     public TradingPanel(
@@ -58,10 +59,16 @@ public partial class TradingPanel : UserControl
         {
             var preview = await _economyApiClient.PreviewPriceAsync(request);
             var summary = TradePreviewSummaryBuilder.Build(preview, _recentTransactions, quantity);
+            var smugglingRisk = SmugglingRiskIndicatorBuilder.Build(
+                request.RiskPremium,
+                request.PirateActivityModifier,
+                request.MonopolyModifier,
+                request.DemandMultiplier);
             PreviewSummaryText.Text =
                 $"Current {summary.CurrentPrice:N2} | Calculated {summary.CalculatedPrice:N2} | " +
                 $"Spread {summary.Spread:+0.00;-0.00;0.00} ({summary.SpreadPercent:+0.00;-0.00;0.00}%) | " +
                 $"Est. Fee {summary.EstimatedTariffAmount:N2} @ {summary.EstimatedTariffRate:P1}";
+            SmugglingRiskText.Text = $"Smuggling Risk: {smugglingRisk.Band} ({smugglingRisk.Score:N1})";
             SetStatus("Preview generated from economy simulation and recent tariff history.", isError: false);
         }
         catch (Exception exception)
@@ -170,10 +177,43 @@ public partial class TradingPanel : UserControl
         return true;
     }
 
+    private void OnQuantityTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isSyncingQuantity)
+        {
+            return;
+        }
+
+        if (!long.TryParse(QuantityText.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var quantity) ||
+            quantity <= 0)
+        {
+            return;
+        }
+
+        var clamped = Math.Clamp((double)quantity, QuantitySlider.Minimum, QuantitySlider.Maximum);
+        _isSyncingQuantity = true;
+        QuantitySlider.Value = clamped;
+        _isSyncingQuantity = false;
+    }
+
+    private void OnQuantitySliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_isSyncingQuantity)
+        {
+            return;
+        }
+
+        _isSyncingQuantity = true;
+        QuantityText.Text = Math.Round(QuantitySlider.Value).ToString(CultureInfo.InvariantCulture);
+        _isSyncingQuantity = false;
+    }
+
     private void SetBusy(bool isBusy)
     {
         PreviewButton.IsEnabled = !isBusy;
         RefreshButton.IsEnabled = !isBusy;
+        QuantityText.IsEnabled = !isBusy;
+        QuantitySlider.IsEnabled = !isBusy;
     }
 
     private void SetStatus(string message, bool isError)

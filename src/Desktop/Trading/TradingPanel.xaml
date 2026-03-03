@@ -31,10 +31,20 @@
                          Width="84"
                          Height="30"
                          Text="100"
+                         TextChanged="OnQuantityTextChanged"
                          Background="#101F39"
                          BorderBrush="#2E4A75"
                          Foreground="#EAF2FF"
                          Padding="8,4" />
+                <Slider x:Name="QuantitySlider"
+                        Width="140"
+                        Margin="0,4,0,0"
+                        Minimum="1"
+                        Maximum="100000"
+                        Value="100"
+                        TickFrequency="1000"
+                        IsSnapToTickEnabled="False"
+                        ValueChanged="OnQuantitySliderChanged" />
             </StackPanel>
             <StackPanel Margin="0,0,10,0">
                 <TextBlock Foreground="#B9CBE8"
@@ -154,6 +164,11 @@
                                FontFamily="Consolas"
                                Text="No preview generated." />
                 </WrapPanel>
+                <TextBlock x:Name="SmugglingRiskText"
+                           Margin="0,6,0,0"
+                           Foreground="#EAF2FF"
+                           FontFamily="Consolas"
+                           Text="Smuggling Risk: --" />
             </DockPanel>
         </Border>
 
