@@ -25,10 +25,13 @@ public sealed class DashboardRealtimeMessageProjectorTests
             Metrics = new DashboardRealtimeMetricsApiDto
             {
                 LiquidCredits = 4200m,
+                NetWorth = 9600m,
                 ReputationScore = 77,
                 FleetStrength = 44,
+                ProtectionStatus = "Guarded",
                 ActiveRoutes = 12,
-                AlertCount = 5
+                AlertCount = 5,
+                GlobalEconomicIndex = 123.4m
             },
             Events =
             [
@@ -52,10 +55,13 @@ public sealed class DashboardRealtimeMessageProjectorTests
         var projection = DashboardRealtimeMessageProjector.ApplySnapshot(existing, snapshot);
 
         Assert.Equal(4200m, projection.Metrics.LiquidCredits);
+        Assert.Equal(9600m, projection.Metrics.NetWorth);
         Assert.Equal(77, projection.Metrics.ReputationScore);
         Assert.Equal(44, projection.Metrics.FleetStrength);
+        Assert.Equal("Guarded", projection.Metrics.ProtectionStatus);
         Assert.Equal(12, projection.Metrics.ActiveRoutes);
         Assert.Equal(5, projection.Metrics.AlertCount);
+        Assert.Equal(123.4m, projection.Metrics.GlobalEconomicIndex);
 
         Assert.Equal(2, projection.Events.Count);
         Assert.Equal("Intel", projection.Events[0].Category);

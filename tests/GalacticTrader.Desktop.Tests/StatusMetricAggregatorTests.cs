@@ -13,7 +13,7 @@ public sealed class StatusMetricAggregatorTests
     {
         var transactions = new[]
         {
-            new TradeExecutionResultApiDto { RemainingPlayerCredits = 8425.5m }
+            new TradeExecutionResultApiDto { RemainingPlayerCredits = 8425.5m, TotalPrice = 4200m }
         };
 
         var standings = new[]
@@ -32,6 +32,11 @@ public sealed class StatusMetricAggregatorTests
             new ThreatAlert { Source = "Intel", Headline = "A", Detail = "a", Severity = 80f },
             new ThreatAlert { Source = "Route", Headline = "B", Detail = "b", Severity = 70f }
         };
+        var ships = new[]
+        {
+            new ShipApiDto { CurrentValue = 9000m },
+            new ShipApiDto { CurrentValue = 2500m }
+        };
 
         var scene = new StarmapScene(
             [],
@@ -41,12 +46,15 @@ public sealed class StatusMetricAggregatorTests
             ],
             new Model3DGroup());
 
-        var snapshot = StatusMetricAggregator.Build(transactions, standings, escort, threats, scene);
+        var snapshot = StatusMetricAggregator.Build(transactions, standings, escort, threats, ships, scene);
 
         Assert.Equal(8425.5m, snapshot.LiquidCredits);
+        Assert.Equal(19925.5m, snapshot.NetWorth);
         Assert.Equal(71, snapshot.ReputationScore);
         Assert.Equal(128, snapshot.FleetStrength);
+        Assert.Equal("Guarded", snapshot.ProtectionStatus);
         Assert.Equal(2, snapshot.ActiveRoutes);
         Assert.Equal(2, snapshot.AlertCount);
+        Assert.Equal(140m, snapshot.GlobalEconomicIndex);
     }
 }

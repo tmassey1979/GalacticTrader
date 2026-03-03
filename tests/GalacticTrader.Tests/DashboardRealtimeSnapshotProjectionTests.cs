@@ -35,6 +35,11 @@ public sealed class DashboardRealtimeSnapshotProjectionTests
         {
             FleetStrength = 45
         };
+        var ships = new[]
+        {
+            new ShipDto { CurrentValue = 1300m },
+            new ShipDto { CurrentValue = 700m }
+        };
         var routes = new[]
         {
             new RouteDto { Id = Guid.NewGuid(), BaseRiskScore = 30f },
@@ -83,6 +88,7 @@ public sealed class DashboardRealtimeSnapshotProjectionTests
             transactions,
             standings,
             escortSummary,
+            ships,
             routes,
             dangerousRoutes,
             reports,
@@ -90,10 +96,13 @@ public sealed class DashboardRealtimeSnapshotProjectionTests
             capturedAtUtc);
 
         Assert.Equal(900m, snapshot.Metrics.LiquidCredits);
+        Assert.Equal(2900m, snapshot.Metrics.NetWorth);
         Assert.Equal(27, snapshot.Metrics.ReputationScore);
         Assert.Equal(45, snapshot.Metrics.FleetStrength);
+        Assert.Equal("Contested", snapshot.Metrics.ProtectionStatus);
         Assert.Equal(2, snapshot.Metrics.ActiveRoutes);
         Assert.Equal(4, snapshot.Metrics.AlertCount);
+        Assert.Equal(76m, snapshot.Metrics.GlobalEconomicIndex);
 
         Assert.Equal(3, snapshot.Events.Count);
         Assert.Equal("Trade", snapshot.Events[0].Category);

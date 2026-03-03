@@ -23,10 +23,13 @@ public static class DashboardRealtimeMessageProjector
             Metrics = new StatusMetricSnapshot
             {
                 LiquidCredits = snapshot.Metrics.LiquidCredits,
+                NetWorth = snapshot.Metrics.NetWorth,
                 ReputationScore = snapshot.Metrics.ReputationScore,
                 FleetStrength = snapshot.Metrics.FleetStrength,
+                ProtectionStatus = snapshot.Metrics.ProtectionStatus,
                 ActiveRoutes = snapshot.Metrics.ActiveRoutes,
-                AlertCount = snapshot.Metrics.AlertCount
+                AlertCount = snapshot.Metrics.AlertCount,
+                GlobalEconomicIndex = snapshot.Metrics.GlobalEconomicIndex
             },
             Events = mergedEvents
         };

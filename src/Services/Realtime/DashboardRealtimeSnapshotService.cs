@@ -42,17 +42,19 @@ public sealed class DashboardRealtimeSnapshotService : IDashboardRealtimeSnapsho
         var transactionsTask = _marketService.GetPlayerTransactionsAsync(playerId, transactionLimit, cancellationToken);
         var standingsTask = _reputationService.GetFactionStandingsAsync(playerId, cancellationToken);
         var escortTask = _fleetService.GetEscortSummaryAsync(playerId, FleetFormation.Defensive, cancellationToken);
+        var shipsTask = _fleetService.GetPlayerShipsAsync(playerId, cancellationToken);
         var routesTask = _routeService.GetAllRoutesAsync(cancellationToken);
         var dangerousRoutesTask = _routeService.GetDangerousRoutesAsync(riskThreshold, cancellationToken);
         var reportsTask = _strategicService.GetIntelligenceReportsAsync(playerId, null, cancellationToken);
         var combatLogsTask = _combatService.GetRecentCombatLogsAsync(combatLimit, cancellationToken);
 
-        await Task.WhenAll(transactionsTask, standingsTask, escortTask, routesTask, dangerousRoutesTask, reportsTask, combatLogsTask);
+        await Task.WhenAll(transactionsTask, standingsTask, escortTask, shipsTask, routesTask, dangerousRoutesTask, reportsTask, combatLogsTask);
 
         return DashboardRealtimeSnapshotProjection.Build(
             transactionsTask.Result,
             standingsTask.Result,
             escortTask.Result,
+            shipsTask.Result,
             routesTask.Result.ToArray(),
             dangerousRoutesTask.Result.ToArray(),
             reportsTask.Result,

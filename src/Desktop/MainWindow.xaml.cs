@@ -33,12 +33,14 @@ public partial class MainWindow : Window
     private readonly CommunicationRealtimeStreamClient _communicationRealtimeClient;
     private readonly DesktopHotkeyBindings _hotkeyBindings;
     private readonly ObservableCollection<EventFeedEntry> _filteredEventFeed = [];
+    private readonly Queue<StatusMetricSnapshot> _metricHistory = [];
     private List<EventFeedEntry> _eventFeedAll = [];
     private bool _isOrbiting;
     private Point _lastMousePoint;
     private bool _isUpdatingSliders;
     private bool _hasLoaded;
     private bool _isRealtimeStarted;
+    private const int MetricHistoryWindow = 7;
 
     public MainWindow(
         StarmapScene scene,
@@ -276,20 +278,22 @@ public partial class MainWindow : Window
             var transactionsTask = _marketApiClient.GetTransactionsAsync(_session.PlayerId, limit: 25);
             var standingsTask = _reputationApiClient.GetFactionStandingsAsync(_session.PlayerId);
             var escortTask = _fleetApiClient.GetEscortSummaryAsync(_session.PlayerId);
+            var shipsTask = _fleetApiClient.GetPlayerShipsAsync(_session.PlayerId);
             var routesTask = _navigationApiClient.GetDangerousRoutesAsync(65);
             var reportsTask = _strategicApiClient.GetIntelligenceReportsAsync(_session.PlayerId);
             var combatLogsTask = _combatApiClient.GetRecentLogsAsync(limit: 25);
-            await Task.WhenAll(transactionsTask, standingsTask, escortTask, routesTask, reportsTask, combatLogsTask);
+            await Task.WhenAll(transactionsTask, standingsTask, escortTask, shipsTask, routesTask, reportsTask, combatLogsTask);
 
             var transactions = transactionsTask.Result;
             var standings = standingsTask.Result;
             var escort = escortTask.Result;
+            var ships = shipsTask.Result;
             var routes = routesTask.Result;
             var reports = reportsTask.Result;
             var combatLogs = combatLogsTask.Result;
 
             var threats = ThreatAlertRanker.Build(routes, reports);
-            var metrics = StatusMetricAggregator.Build(transactions, standings, escort, threats, _scene);
+            var metrics = StatusMetricAggregator.Build(transactions, standings, escort, threats, ships, _scene);
             ApplyMetrics(metrics);
 
             _eventFeedAll = EventFeedBuilder.Build(transactions, combatLogs, reports, DateTime.UtcNow).ToList();
@@ -382,11 +386,43 @@ public partial class MainWindow : Window
 
     private void ApplyMetrics(StatusMetricSnapshot metrics)
     {
+        TrackMetricSnapshot(metrics);
         CreditsMetricText.Text = $"Credits: {metrics.LiquidCredits:N2}";
+        NetWorthMetricText.Text = $"Net Worth: {metrics.NetWorth:N2}";
         ReputationMetricText.Text = $"Reputation: {metrics.ReputationScore}";
         FleetMetricText.Text = $"Fleet: {metrics.FleetStrength}";
+        ProtectionMetricText.Text = $"Protection: {metrics.ProtectionStatus}";
         RoutesMetricText.Text = $"Routes: {metrics.ActiveRoutes}";
+        EconomicIndexMetricText.Text = $"GEI: {metrics.GlobalEconomicIndex:N1}";
         AlertsMetricText.Text = $"Alerts: {metrics.AlertCount}";
+        UpdateMetricTooltips();
+    }
+
+    private void TrackMetricSnapshot(StatusMetricSnapshot metrics)
+    {
+        _metricHistory.Enqueue(metrics);
+        while (_metricHistory.Count > MetricHistoryWindow)
+        {
+            _metricHistory.Dequeue();
+        }
+    }
+
+    private void UpdateMetricTooltips()
+    {
+        if (_metricHistory.Count == 0)
+        {
+            return;
+        }
+
+        var snapshots = _metricHistory.ToArray();
+        CreditsMetricText.ToolTip = TopStatusTooltipBuilder.BuildNumeric("Liquid Credits", snapshots.Select(static snapshot => snapshot.LiquidCredits).ToArray(), "N2");
+        NetWorthMetricText.ToolTip = TopStatusTooltipBuilder.BuildNumeric("Net Worth", snapshots.Select(static snapshot => snapshot.NetWorth).ToArray(), "N2");
+        ReputationMetricText.ToolTip = TopStatusTooltipBuilder.BuildNumeric("Reputation Score", snapshots.Select(static snapshot => (decimal)snapshot.ReputationScore).ToArray(), "N0");
+        FleetMetricText.ToolTip = TopStatusTooltipBuilder.BuildNumeric("Fleet Strength", snapshots.Select(static snapshot => (decimal)snapshot.FleetStrength).ToArray(), "N0");
+        ProtectionMetricText.ToolTip = TopStatusTooltipBuilder.BuildLabelTrend("Protection Status", snapshots.Select(static snapshot => snapshot.ProtectionStatus).ToArray());
+        RoutesMetricText.ToolTip = TopStatusTooltipBuilder.BuildNumeric("Active Routes", snapshots.Select(static snapshot => (decimal)snapshot.ActiveRoutes).ToArray(), "N0");
+        EconomicIndexMetricText.ToolTip = TopStatusTooltipBuilder.BuildNumeric("Global Economic Index", snapshots.Select(static snapshot => snapshot.GlobalEconomicIndex).ToArray(), "N1");
+        AlertsMetricText.ToolTip = TopStatusTooltipBuilder.BuildNumeric("Alerts", snapshots.Select(static snapshot => (decimal)snapshot.AlertCount).ToArray(), "N0");
     }
 
     private void SetDashboardBusy(bool isBusy)
