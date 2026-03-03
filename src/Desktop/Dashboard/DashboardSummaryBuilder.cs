@@ -25,6 +25,8 @@ public static class DashboardSummaryBuilder
             .Select(static transaction => transaction.RemainingPlayerCredits)
             .Reverse()
             .ToArray();
+        var fleetStrength = escortSummary?.FleetStrength ?? 0;
+        var fleetProtectionLevel = ResolveProtectionLevel(fleetStrength);
         var highestReputation = standings.Count > 0
             ? standings.Max(static standing => standing.ReputationScore)
             : 0;
@@ -73,7 +75,8 @@ public static class DashboardSummaryBuilder
             RecentTradeVolume = recentTradeVolume,
             CashFlowTrend = cashFlowTrend,
             ShipCount = ships.Count,
-            FleetStrength = escortSummary?.FleetStrength ?? 0,
+            FleetStrength = fleetStrength,
+            FleetProtectionLevel = fleetProtectionLevel,
             FleetRiskExposure = fleetRiskExposure,
             HighestReputation = highestReputation,
             AccessibleFactions = accessibleFactions,
@@ -85,6 +88,18 @@ public static class DashboardSummaryBuilder
             InterferenceProbability = interferenceProbability,
             ThreatAlerts = alerts,
             IntelligenceReports = activeReports
+        };
+    }
+
+    private static string ResolveProtectionLevel(int fleetStrength)
+    {
+        return fleetStrength switch
+        {
+            >= 150 => "Fortified",
+            >= 80 => "Guarded",
+            >= 30 => "Contested",
+            > 0 => "Fragile",
+            _ => "Unprotected"
         };
     }
 }

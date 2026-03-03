@@ -66,6 +66,7 @@ public sealed class DashboardSummaryBuilderTests
         Assert.Equal([9400m, 9500m], summary.CashFlowTrend);
         Assert.Equal(2, summary.ShipCount);
         Assert.Equal(140, summary.FleetStrength);
+        Assert.Equal("Guarded", summary.FleetProtectionLevel);
         Assert.Equal(50m, summary.FleetRiskExposure);
         Assert.Equal(65, summary.HighestReputation);
         Assert.Equal(2, summary.AccessibleFactions);

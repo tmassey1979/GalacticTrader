@@ -99,6 +99,7 @@ public partial class DashboardPanel : UserControl
             }
             FleetValue.Text = $"Strength {summary.FleetStrength}";
             ShipCountValue.Text = $"Ships {summary.ShipCount}";
+            FleetProtectionValue.Text = $"Protection {summary.FleetProtectionLevel}";
             RiskExposureValue.Text = $"Risk exposure {summary.FleetRiskExposure:N1}%";
             FleetRiskBar.Value = (double)summary.FleetRiskExposure;
             ReputationValue.Text = $"Peak rep {summary.HighestReputation}";

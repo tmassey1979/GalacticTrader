@@ -10,6 +10,7 @@ public sealed class DashboardSummarySnapshot
     public IReadOnlyList<decimal> CashFlowTrend { get; init; } = [];
     public int ShipCount { get; init; }
     public int FleetStrength { get; init; }
+    public string FleetProtectionLevel { get; init; } = "Unknown";
     public decimal FleetRiskExposure { get; init; }
     public int HighestReputation { get; init; }
     public int AccessibleFactions { get; init; }

@@ -134,6 +134,9 @@
                     <TextBlock x:Name="ShipCountValue"
                                Foreground="#9DB7E2"
                                Text="-" />
+                    <TextBlock x:Name="FleetProtectionValue"
+                               Foreground="#9DB7E2"
+                               Text="-" />
                     <TextBlock x:Name="RiskExposureValue"
                                Foreground="#9DB7E2"
                                Text="-" />
