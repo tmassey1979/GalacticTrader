@@ -123,6 +123,15 @@ dotnet run --project src/Gateway
 dotnet run --project src/Desktop
 ```
 
+### Running the Map Generator
+
+```bash
+dotnet run --project src/MapGenerator
+```
+
+Map Generator usage (preview, load current map, publish, bearer token):
+- [docs/map-generator.md](docs/map-generator.md)
+
 ### Running Tests
 
 ```bash

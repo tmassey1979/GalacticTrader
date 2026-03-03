@@ -43,6 +43,77 @@ curl -X POST http://localhost:8080/api/auth/login \
 curl "http://localhost:8080/api/auth/validate?token={accessToken}"
 ```
 
+## Communication Voice Flow Examples
+
+Create a voice channel:
+```bash
+curl -X POST http://localhost:8080/api/communication/voice/channels \
+  -H "Content-Type: application/json" \
+  -d '{
+    "creatorPlayerId": "11111111-1111-1111-1111-111111111111",
+    "mode": 0,
+    "scopeKey": "desktop-feed"
+  }'
+```
+
+Join voice channel:
+```bash
+curl -X POST http://localhost:8080/api/communication/voice/channels/{channelId}/join \
+  -H "Content-Type: application/json" \
+  -d '{
+    "playerId": "22222222-2222-2222-2222-222222222222"
+  }'
+```
+
+Report voice activity:
+```bash
+curl -X POST http://localhost:8080/api/communication/voice/channels/{channelId}/activity \
+  -H "Content-Type: application/json" \
+  -d '{
+    "playerId": "11111111-1111-1111-1111-111111111111",
+    "rmsLevel": 0.6,
+    "packetLossPercent": 0.3,
+    "latencyMs": 32,
+    "jitterMs": 3.8
+  }'
+```
+
+Publish and poll voice signal:
+```bash
+curl -X POST http://localhost:8080/api/communication/voice/channels/{channelId}/signal \
+  -H "Content-Type: application/json" \
+  -d '{
+    "senderId": "11111111-1111-1111-1111-111111111111",
+    "targetPlayerId": "22222222-2222-2222-2222-222222222222",
+    "signalType": "offer",
+    "payload": "sdp-offer"
+  }'
+
+curl "http://localhost:8080/api/communication/voice/channels/{channelId}/signals/22222222-2222-2222-2222-222222222222?limit=25"
+```
+
+Preview spatial audio mix:
+```bash
+curl -X POST http://localhost:8080/api/communication/voice/channels/{channelId}/spatial-audio \
+  -H "Content-Type: application/json" \
+  -d '{
+    "listenerId": "22222222-2222-2222-2222-222222222222",
+    "listenerX": 0,
+    "listenerY": 0,
+    "listenerZ": 0,
+    "falloffDistance": 100,
+    "speakers": [
+      {
+        "playerId": "11111111-1111-1111-1111-111111111111",
+        "x": 18,
+        "y": 0,
+        "z": 0,
+        "baseGain": 1
+      }
+    ]
+  }'
+```
+
 ## Endpoint documentation coverage
 All endpoint groups are documented in Swagger and emitted into `swagger/v1/swagger.json`:
 - Authentication
