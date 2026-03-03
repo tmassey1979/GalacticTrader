@@ -53,9 +53,11 @@ services:
       KC_PROXY: edge
       KC_HOSTNAME: localhost:8180
       KC_HEALTH_ENABLED: "true"
-    command: ["start-dev"]
+    command: ["start-dev", "--import-realm"]
     ports:
       - "8180:8080"
+    volumes:
+      - ./infrastructure/keycloak/galactictrader-realm.json:/opt/keycloak/data/import/galactictrader-realm.json:ro
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
       interval: 10s

@@ -235,6 +235,12 @@ docker-compose down -v
 
 Production authentication is expected through Keycloak OAuth2/OIDC.
 
+In Docker development startup, Keycloak imports `infrastructure/keycloak/galactictrader-realm.json` on boot to provision:
+- realm `galactictrader`
+- roles `player`, `admin`, `map_admin`, `moderator`, `bot`
+- client `map-generator-desktop` (direct access grants enabled for local tooling)
+- seeded dev user `viper` (`epiphanygs@gmail.com`) with `player`, `admin`, `map_admin`
+
 For development and test automation, use the built-in auth endpoints:
 - `POST /api/auth/register`
 - `POST /api/auth/login`

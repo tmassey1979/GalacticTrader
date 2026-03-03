@@ -1,0 +1,92 @@
+{
+  "realm": "galactictrader",
+  "enabled": true,
+  "displayName": "Galactic Trader",
+  "registrationAllowed": false,
+  "rememberMe": true,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "player",
+        "description": "Standard game player access"
+      },
+      {
+        "name": "admin",
+        "description": "Administrative operations"
+      },
+      {
+        "name": "map_admin",
+        "description": "Navigation map management access"
+      },
+      {
+        "name": "moderator",
+        "description": "Moderation operations"
+      },
+      {
+        "name": "bot",
+        "description": "Automation service account role"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "map-generator-desktop",
+      "name": "Map Generator Desktop",
+      "description": "Development desktop client for map bootstrap workflows",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "defaultClientScopes": [
+        "profile",
+        "email",
+        "roles"
+      ],
+      "protocolMappers": [
+        {
+          "name": "audience-account",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "account",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "viper",
+      "enabled": true,
+      "email": "epiphanygs@gmail.com",
+      "emailVerified": true,
+      "firstName": "Viper",
+      "lastName": "Pilot",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ViperDev123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "player",
+        "admin",
+        "map_admin"
+      ]
+    }
+  ]
+}
