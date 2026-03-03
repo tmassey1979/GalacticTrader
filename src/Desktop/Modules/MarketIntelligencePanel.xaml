@@ -44,6 +44,15 @@
                            Foreground="#EAF2FF"
                            FontFamily="Consolas"
                            Text="-" />
+                <TextBlock Foreground="#B9CBE8"
+                           Margin="14,0,0,0"
+                           Text="Trend:"
+                           FontWeight="SemiBold" />
+                <TextBlock x:Name="VolatilityTrendText"
+                           Margin="8,0,0,0"
+                           Foreground="#EAF2FF"
+                           FontFamily="Consolas"
+                           Text="-" />
             </StackPanel>
         </Border>
 

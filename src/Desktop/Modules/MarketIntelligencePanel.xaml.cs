@@ -51,6 +51,7 @@ public partial class MarketIntelligencePanel : UserControl
             var snapshot = MarketIntelligenceProjection.Build(summary);
 
             VolatilityValue.Text = $"{snapshot.VolatilityIndex:N1}";
+            VolatilityTrendText.Text = snapshot.VolatilityTrendSummary;
             ReplaceRows(_heatmapRows, snapshot.Heatmap);
             ReplaceRows(_traderRows, snapshot.TopTraders);
             ReplaceRows(_corridorRows, snapshot.SmugglingCorridors);

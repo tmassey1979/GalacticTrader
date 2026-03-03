@@ -31,6 +31,7 @@ public sealed class MarketIntelligenceProjectionTests
         var snapshot = MarketIntelligenceProjection.Build(summary);
 
         Assert.Equal(42.8m, snapshot.VolatilityIndex);
+        Assert.Equal("Stable (Moderate)", snapshot.VolatilityTrendSummary);
         Assert.Equal("Orion", snapshot.Heatmap[0].SectorName);
         Assert.Equal("nova", snapshot.TopTraders[0].Username);
         Assert.Equal("Draco -> Lyra", snapshot.SmugglingCorridors[0].Corridor);

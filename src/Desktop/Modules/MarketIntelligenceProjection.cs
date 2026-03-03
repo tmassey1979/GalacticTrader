@@ -6,6 +6,9 @@ public static class MarketIntelligenceProjection
 {
     public static MarketIntelligenceSnapshot Build(MarketIntelligenceSummaryApiDto summary)
     {
+        var volatility = decimal.Round(summary.VolatilityIndex, 1);
+        var volatilityTrend = MarketVolatilityTrendProjector.Build(volatility);
+
         var heatmap = summary.RegionalHeatmap
             .OrderByDescending(static point => point.TradeVolume)
             .Select(point => new MarketHeatmapDisplayRow
@@ -55,7 +58,8 @@ public static class MarketIntelligenceProjection
 
         return new MarketIntelligenceSnapshot
         {
-            VolatilityIndex = Math.Round(summary.VolatilityIndex, 1),
+            VolatilityIndex = volatility,
+            VolatilityTrendSummary = volatilityTrend.Summary,
             Heatmap = heatmap,
             TopTraders = traders,
             SmugglingCorridors = corridors,
