@@ -69,6 +69,7 @@ public sealed class DashboardSummaryBuilderTests
         Assert.Equal(50m, summary.FleetRiskExposure);
         Assert.Equal(65, summary.HighestReputation);
         Assert.Equal(2, summary.AccessibleFactions);
+        Assert.Equal(74.2m, summary.TradeReliabilityScore);
         Assert.Equal(75m, summary.ReputationInfluenceIndex);
         Assert.Equal(2, summary.TotalRoutes);
         Assert.Equal(1, summary.HighRiskRoutes);

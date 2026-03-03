@@ -103,6 +103,8 @@ public partial class DashboardPanel : UserControl
             FleetRiskBar.Value = (double)summary.FleetRiskExposure;
             ReputationValue.Text = $"Peak rep {summary.HighestReputation}";
             FactionAccessValue.Text = $"Faction access {summary.AccessibleFactions}";
+            TradeReliabilityValue.Text = $"Trade reliability {summary.TradeReliabilityScore:N1}";
+            TradeReliabilityBar.Value = (double)summary.TradeReliabilityScore;
             InfluenceIndexValue.Text = $"Influence index {summary.ReputationInfluenceIndex:N1}";
             ReputationInfluenceBar.Value = (double)summary.ReputationInfluenceIndex;
             RoutesValue.Text = $"Routes {summary.TotalRoutes}";

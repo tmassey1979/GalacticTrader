@@ -33,6 +33,12 @@ public static class DashboardSummaryBuilder
         var activeReports = reports.Count(static report => !report.IsExpired);
         var alerts = ThreatAlertRanker.Build(dangerousRoutes, reports).Count;
         var totalRoutes = scene.Routes.Count;
+        var averageReputation = standings.Count > 0
+            ? standings.Average(static standing => standing.ReputationScore)
+            : 0d;
+        var averageDiscount = standings.Count > 0
+            ? standings.Average(static standing => standing.TradingDiscount)
+            : 0m;
         var assetLiquidityRatio = netWorth <= 0m
             ? 0m
             : Math.Round((credits / netWorth) * 100m, 1);
@@ -42,6 +48,16 @@ public static class DashboardSummaryBuilder
         var fleetRiskExposure = totalRoutes <= 0
             ? 0m
             : Math.Round((highRiskRoutes / (decimal)totalRoutes) * 100m, 1);
+        var tradeReliability = Math.Round(
+            Math.Clamp(
+                55m +
+                ((decimal)averageReputation * 0.35m) +
+                (averageDiscount * 100m) +
+                (accessibleFactions * 2m) -
+                (highRiskRoutes * 3m),
+                0m,
+                100m),
+            1);
         var reputationInfluence = Math.Round(Math.Clamp(highestReputation + (accessibleFactions * 5m), 0m, 100m), 1);
         var revenuePerRoute = totalRoutes <= 0
             ? 0m
@@ -61,6 +77,7 @@ public static class DashboardSummaryBuilder
             FleetRiskExposure = fleetRiskExposure,
             HighestReputation = highestReputation,
             AccessibleFactions = accessibleFactions,
+            TradeReliabilityScore = tradeReliability,
             ReputationInfluenceIndex = reputationInfluence,
             TotalRoutes = totalRoutes,
             HighRiskRoutes = highRiskRoutes,

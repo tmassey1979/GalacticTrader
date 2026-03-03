@@ -13,6 +13,7 @@ public sealed class DashboardSummarySnapshot
     public decimal FleetRiskExposure { get; init; }
     public int HighestReputation { get; init; }
     public int AccessibleFactions { get; init; }
+    public decimal TradeReliabilityScore { get; init; }
     public decimal ReputationInfluenceIndex { get; init; }
     public int TotalRoutes { get; init; }
     public int HighRiskRoutes { get; init; }

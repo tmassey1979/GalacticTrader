@@ -163,6 +163,16 @@
                     <TextBlock x:Name="FactionAccessValue"
                                Foreground="#9DB7E2"
                                Text="-" />
+                    <TextBlock x:Name="TradeReliabilityValue"
+                               Foreground="#9DB7E2"
+                               Text="-" />
+                    <ProgressBar x:Name="TradeReliabilityBar"
+                                 Margin="0,4,0,0"
+                                 Height="6"
+                                 Maximum="100"
+                                 Value="0"
+                                 Foreground="#38BDF8"
+                                 Background="#0A1630" />
                     <TextBlock x:Name="InfluenceIndexValue"
                                Foreground="#9DB7E2"
                                Text="-" />
