@@ -827,10 +827,24 @@ var npc = app.MapGroup("/api/npc")
     .WithTags("NPC");
 
 npc.MapPost("/agents", async (
+    HttpContext context,
     CreateNpcRequest request,
     INpcService npcService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     try
     {
         var created = await npcService.CreateAgentAsync(request, cancellationToken);
@@ -858,54 +872,140 @@ npc.MapGet("/agents/{agentId:guid}", async (
 });
 
 npc.MapPost("/agents/{agentId:guid}/tick", async (
+    HttpContext context,
     Guid agentId,
     INpcService npcService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await npcService.ProcessDecisionTickAsync(agentId, cancellationToken);
     return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
-npc.MapPost("/tick-all", async (INpcService npcService, CancellationToken cancellationToken) =>
+npc.MapPost("/tick-all", async (
+    HttpContext context,
+    INpcService npcService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await npcService.ProcessAllDecisionTicksAsync(cancellationToken);
     return Results.Ok(result);
 });
 
 npc.MapPost("/agents/{agentId:guid}/fleet/spawn", async (
+    HttpContext context,
     Guid agentId,
     int? ships,
     INpcService npcService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var summary = await npcService.SpawnFleetAsync(agentId, ships ?? 3, cancellationToken);
     return summary is null ? Results.NotFound() : Results.Ok(summary);
 });
 
 npc.MapPost("/agents/{agentId:guid}/route/{targetSectorId:guid}", async (
+    HttpContext context,
     Guid agentId,
     Guid targetSectorId,
     INpcService npcService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var planned = await npcService.PlanRouteAsync(agentId, targetSectorId, cancellationToken);
     return planned ? Results.Accepted() : Results.BadRequest(new { error = "Route planning failed." });
 });
 
 npc.MapPost("/agents/{agentId:guid}/move", async (
+    HttpContext context,
     Guid agentId,
     INpcService npcService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var moved = await npcService.ProcessFleetMovementAsync(agentId, cancellationToken);
     return moved ? Results.Accepted() : Results.BadRequest(new { error = "Movement processing failed." });
 });
 
 npc.MapPost("/agents/{agentId:guid}/trade", async (
+    HttpContext context,
     Guid agentId,
     INpcService npcService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var margin = await npcService.ExecuteNpcTradeAsync(agentId, cancellationToken);
     return margin.HasValue ? Results.Ok(new { margin = margin.Value }) : Results.NotFound();
 });

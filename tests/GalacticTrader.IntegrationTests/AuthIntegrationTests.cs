@@ -154,6 +154,31 @@ public sealed class AuthIntegrationTests : IClassFixture<ApiWebApplicationFactor
         Assert.Equal(HttpStatusCode.OK, adminResponse.StatusCode);
     }
 
+    [Fact]
+    public async Task NpcMutationEndpoints_RequireAdminRole()
+    {
+        var nonAdminUsername = $"npc_user_{Guid.NewGuid():N}".Substring(0, 20);
+        var nonAdminEmail = $"{nonAdminUsername}@gt.test";
+        await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            username = nonAdminUsername,
+            email = nonAdminEmail,
+            password = "WarpDrive123"
+        });
+
+        var nonAdminToken = await LoginAndGetTokenAsync(nonAdminUsername, "WarpDrive123");
+        var adminToken = await LoginAndGetTokenAsync("viper", "ViperDev123!");
+
+        var noTokenResponse = await _client.PostAsync("/api/npc/tick-all", content: null);
+        Assert.Equal(HttpStatusCode.Unauthorized, noTokenResponse.StatusCode);
+
+        var nonAdminResponse = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/npc/tick-all", nonAdminToken);
+        Assert.Equal(HttpStatusCode.Forbidden, nonAdminResponse.StatusCode);
+
+        var adminResponse = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/npc/tick-all", adminToken);
+        Assert.Equal(HttpStatusCode.OK, adminResponse.StatusCode);
+    }
+
     private async Task<string> LoginAndGetTokenAsync(string username, string password)
     {
         var response = await _client.PostAsJsonAsync("/api/auth/login", new
