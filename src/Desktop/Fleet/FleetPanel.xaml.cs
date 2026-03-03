@@ -65,6 +65,7 @@ public partial class FleetPanel : UserControl
         SelectedShipText.Text =
             $"{ship.Name} ({ship.ShipClass}) | Hull {ship.HullIntegrity}/{ship.MaxHullIntegrity} | " +
             $"Cargo {ship.CargoCapacity} | Reactor {ship.ReactorOutput} | " +
+            $"EcoEff {row.EconomicEfficiencyScore:N2} | " +
             $"{FleetInsuranceStatusFormatter.Format(ship.HasInsurance, ship.InsuranceRate)} | " +
             $"Route {ship.AssignedRoute}";
 
@@ -101,6 +102,7 @@ public partial class FleetPanel : UserControl
 
             foreach (var ship in ships)
             {
+                var efficiencyScore = FleetEconomicEfficiencyProjector.Build(ship);
                 _shipsById[ship.Id] = ship;
                 var utilization = FleetCrewUtilizationProjector.Build(ship.CrewCount, ship.CrewSlots);
                 _shipRows.Add(new FleetShipDisplayRow
@@ -112,6 +114,7 @@ public partial class FleetPanel : UserControl
                     MaxHullIntegrity = ship.MaxHullIntegrity,
                     CargoCapacity = ship.CargoCapacity,
                     ModuleCount = ship.Modules.Count,
+                    EconomicEfficiencyScore = efficiencyScore,
                     CrewAssignment = $"{utilization.CrewCount}/{ship.CrewSlots}",
                     CrewStatus = utilization.Status,
                     InsuranceStatus = FleetInsuranceStatusFormatter.Format(ship.HasInsurance, ship.InsuranceRate),

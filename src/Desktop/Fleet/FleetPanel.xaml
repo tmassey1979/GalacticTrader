@@ -63,6 +63,9 @@
                     <DataGridTextColumn Header="Mods"
                                         Binding="{Binding ModuleCount}"
                                         Width="60" />
+                    <DataGridTextColumn Header="Eco Eff"
+                                        Binding="{Binding EconomicEfficiencyScore, StringFormat={}{0:N2}}"
+                                        Width="72" />
                     <DataGridTextColumn Header="Crew"
                                         Binding="{Binding CrewAssignment}"
                                         Width="100" />

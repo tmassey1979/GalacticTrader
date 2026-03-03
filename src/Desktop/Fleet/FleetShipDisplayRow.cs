@@ -9,6 +9,7 @@ public sealed class FleetShipDisplayRow
     public int MaxHullIntegrity { get; init; }
     public int CargoCapacity { get; init; }
     public int ModuleCount { get; init; }
+    public decimal EconomicEfficiencyScore { get; init; }
     public required string CrewAssignment { get; init; }
     public required string CrewStatus { get; init; }
     public required string InsuranceStatus { get; init; }
