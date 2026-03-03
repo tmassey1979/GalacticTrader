@@ -165,11 +165,30 @@
                                Margin="0,0,0,8" />
 
                     <ListBox x:Name="RouteList"
-                             DisplayMemberPath="Name"
                              SelectionChanged="OnRouteSelectionChanged"
                              Background="#0C152A"
                              BorderBrush="#2F4B78"
-                             Foreground="#DCE7FF" />
+                             Foreground="#DCE7FF">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,2,0,2">
+                                    <TextBlock Foreground="#EAF2FF"
+                                               Text="{Binding Name}" />
+                                    <TextBlock Foreground="#9DB7E2"
+                                               FontFamily="Consolas"
+                                               FontSize="11"
+                                               Text="{Binding BaseRiskScore, StringFormat=Risk {0:N1}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock x:Name="RouteTelemetryText"
+                               Margin="0,8,0,0"
+                               Foreground="#A4B8DD"
+                               TextWrapping="Wrap"
+                               FontFamily="Consolas"
+                               FontSize="11"
+                               Text="Select a route to view risk overlay telemetry." />
 
                     <TabControl x:Name="ModuleTabs"
                                 DockPanel.Dock="Bottom"
@@ -249,11 +268,29 @@
                                FontWeight="SemiBold"
                                Text="Starmap 3D View" />
 
-                    <TextBlock Margin="8"
-                               HorizontalAlignment="Right"
-                               VerticalAlignment="Top"
-                               Foreground="#A4B8DD"
-                               Text="Drag: orbit | Wheel: zoom | Select route: focus" />
+                    <StackPanel Margin="8"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top">
+                        <TextBlock Foreground="#A4B8DD"
+                                   Text="Drag: orbit | Wheel: zoom | Select route: focus" />
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,4,0,0"
+                                    HorizontalAlignment="Right">
+                            <Rectangle Width="14"
+                                       Height="7"
+                                       Fill="#FF7C58"
+                                       Margin="0,0,4,0" />
+                            <TextBlock Foreground="#A4B8DD"
+                                       Margin="0,0,10,0"
+                                       Text="High Risk" />
+                            <Rectangle Width="14"
+                                       Height="7"
+                                       Fill="#5CA8FF"
+                                       Margin="0,0,4,0" />
+                            <TextBlock Foreground="#A4B8DD"
+                                       Text="Stable" />
+                        </StackPanel>
+                    </StackPanel>
 
                     <Viewport3D x:Name="StarViewport"
                                 Margin="0,34,0,0"

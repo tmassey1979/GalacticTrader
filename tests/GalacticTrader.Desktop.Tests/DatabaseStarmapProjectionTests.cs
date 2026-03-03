@@ -39,5 +39,8 @@ public sealed class DatabaseStarmapProjectionTests
         Assert.Single(projected);
         Assert.Equal("A -> B", projected[0].Name);
         Assert.True(projected[0].IsHighRisk);
+        Assert.Equal(75f, projected[0].BaseRiskScore);
+        Assert.InRange(projected[0].EconomicDensity, 8f, 95f);
+        Assert.InRange(projected[0].PiratePresenceProbability, 4f, 95f);
     }
 }

@@ -131,6 +131,15 @@ public partial class MainWindow : Window
     {
         RouteList.ItemsSource = scene.Routes;
         SceneModels.Content = scene.Models;
+        if (scene.Routes.Count > 0)
+        {
+            RouteList.SelectedIndex = 0;
+            RouteTelemetryText.Text = StarmapRouteTelemetryFormatter.Build(scene.Routes[0]);
+        }
+        else
+        {
+            RouteTelemetryText.Text = "No routes available.";
+        }
     }
 
     private void ApplyCamera(bool updateSliders)
@@ -210,9 +219,11 @@ public partial class MainWindow : Window
     {
         if (RouteList.SelectedItem is not RouteSegment selected)
         {
+            RouteTelemetryText.Text = "Select a route to view risk overlay telemetry.";
             return;
         }
 
+        RouteTelemetryText.Text = StarmapRouteTelemetryFormatter.Build(selected);
         _cameraController.FocusOnRoute(selected);
         ApplyCamera(updateSliders: true);
     }

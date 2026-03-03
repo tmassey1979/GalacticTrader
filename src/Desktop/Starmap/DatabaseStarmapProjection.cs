@@ -33,11 +33,15 @@ public static class DatabaseStarmapProjection
                 continue;
             }
 
+            var telemetry = StarmapRouteTelemetryProjector.Build(route.BaseRiskScore);
             projected.Add(new RouteSegment(
                 Name: $"{fromSector.Name} -> {toSector.Name}",
                 From: new Point3D(fromSector.X, fromSector.Y, fromSector.Z),
                 To: new Point3D(toSector.X, toSector.Y, toSector.Z),
-                IsHighRisk: route.BaseRiskScore >= 60));
+                IsHighRisk: telemetry.BaseRiskScore >= 60f,
+                BaseRiskScore: telemetry.BaseRiskScore,
+                EconomicDensity: telemetry.EconomicDensity,
+                PiratePresenceProbability: telemetry.PiratePresenceProbability));
         }
 
         return projected;

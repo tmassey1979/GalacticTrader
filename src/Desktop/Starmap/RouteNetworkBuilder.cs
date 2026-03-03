@@ -29,12 +29,19 @@ public static class RouteNetworkBuilder
                 }
 
                 var distance = (neighbor.Position - current.Position).Length;
-                var isHighRisk = distance > 52 || random.NextDouble() > 0.72;
+                var riskScore = (float)Math.Clamp(
+                    (distance * 1.25d) + (random.NextDouble() * 28d),
+                    8d,
+                    96d);
+                var telemetry = StarmapRouteTelemetryProjector.Build(riskScore);
                 routes.Add(new RouteSegment(
                     Name: $"{current.Name} -> {neighbor.Name}",
                     From: current.Position,
                     To: neighbor.Position,
-                    IsHighRisk: isHighRisk));
+                    IsHighRisk: telemetry.BaseRiskScore >= 60f,
+                    BaseRiskScore: telemetry.BaseRiskScore,
+                    EconomicDensity: telemetry.EconomicDensity,
+                    PiratePresenceProbability: telemetry.PiratePresenceProbability));
             }
         }
 
