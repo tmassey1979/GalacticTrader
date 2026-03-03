@@ -134,6 +134,42 @@
                     </ItemsControl>
 
                     <TextBlock Foreground="#B9CBE8"
+                               Text="Archetype Composition" />
+                    <ItemsControl x:Name="ArchetypeDistributionItems"
+                                  Margin="0,4,0,10">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="100" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               VerticalAlignment="Center"
+                                               Foreground="#DCE7FF"
+                                               FontFamily="Consolas"
+                                               Text="{Binding Archetype}" />
+                                    <ProgressBar Grid.Column="1"
+                                                 Margin="8,0,8,0"
+                                                 Height="16"
+                                                 Minimum="0"
+                                                 Maximum="100"
+                                                 Value="{Binding SharePercent}"
+                                                 Foreground="#20C284"
+                                                 Background="#10213E" />
+                                    <TextBlock Grid.Column="2"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Right"
+                                               Foreground="#B9CBE8"
+                                               FontFamily="Consolas"
+                                               Text="{Binding ShareSummary}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Foreground="#B9CBE8"
                                Text="Actions" />
                     <StackPanel Orientation="Horizontal"
                                 Margin="0,4,0,0">

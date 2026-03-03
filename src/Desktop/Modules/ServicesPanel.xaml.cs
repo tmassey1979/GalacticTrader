@@ -11,6 +11,7 @@ public partial class ServicesPanel : UserControl
     private readonly NpcApiClient _npcApiClient;
     private readonly ObservableCollection<ServicesAgentDisplayRow> _rows = [];
     private readonly ObservableCollection<ServicesStrategyBiasDistributionEntry> _biasDistribution = [];
+    private readonly ObservableCollection<ServicesArchetypeDistributionEntry> _archetypeDistribution = [];
     private readonly ObservableCollection<string> _contractLog = [];
     private readonly HashSet<Guid> _blacklistedAgentIds = [];
     private readonly Dictionary<Guid, NpcAgentApiDto> _agentsById = [];
@@ -22,6 +23,7 @@ public partial class ServicesPanel : UserControl
         InitializeComponent();
         AgentsGrid.ItemsSource = _rows;
         BiasDistributionItems.ItemsSource = _biasDistribution;
+        ArchetypeDistributionItems.ItemsSource = _archetypeDistribution;
         ContractLogList.ItemsSource = _contractLog;
         Loaded += OnLoaded;
     }
@@ -175,6 +177,7 @@ public partial class ServicesPanel : UserControl
         }
 
         RebuildBiasDistribution();
+        RebuildArchetypeDistribution();
 
         if (_rows.Count > 0)
         {
@@ -189,6 +192,16 @@ public partial class ServicesPanel : UserControl
         foreach (var entry in distribution)
         {
             _biasDistribution.Add(entry);
+        }
+    }
+
+    private void RebuildArchetypeDistribution()
+    {
+        var distribution = ServicesArchetypeDistributionBuilder.Build(_rows.ToArray());
+        _archetypeDistribution.Clear();
+        foreach (var entry in distribution)
+        {
+            _archetypeDistribution.Add(entry);
         }
     }
 
