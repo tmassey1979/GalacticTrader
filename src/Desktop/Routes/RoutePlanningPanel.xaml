@@ -120,6 +120,50 @@
                            Foreground="#EAF2FF"
                            FontFamily="Consolas"
                            Text="No risk simulation yet." />
+                <WrapPanel Margin="0,6,0,0">
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Risk Band" />
+                    <TextBlock x:Name="RiskBandText"
+                               Margin="8,0,14,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Interception" />
+                    <TextBlock x:Name="InterceptionValueText"
+                               Margin="8,0,14,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Expected Revenue" />
+                    <TextBlock x:Name="ExpectedRevenueValueText"
+                               Margin="8,0,14,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Expected Loss" />
+                    <TextBlock x:Name="ExpectedLossValueText"
+                               Margin="8,0,14,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Protection Cost" />
+                    <TextBlock x:Name="ProtectionCostValueText"
+                               Margin="8,0,0,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                </WrapPanel>
+                <ProgressBar x:Name="RiskBandBar"
+                             Margin="0,6,0,0"
+                             Height="6"
+                             Maximum="100"
+                             Value="0"
+                             Foreground="#EC6B5F"
+                             Background="#0A1630" />
             </StackPanel>
         </Border>
 

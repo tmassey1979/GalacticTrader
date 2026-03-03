@@ -21,6 +21,7 @@ public partial class RoutePlanningPanel : UserControl
         InitializeComponent();
         HopsGrid.ItemsSource = _hops;
         OptimizationGrid.ItemsSource = _optimizations;
+        ResetRiskSimulationDisplay();
         Loaded += OnLoaded;
     }
 
@@ -95,6 +96,7 @@ public partial class RoutePlanningPanel : UserControl
                     _hops.Clear();
                     PlanSummaryText.Text = "No route plan found for selected sectors.";
                     RiskSummaryText.Text = "No risk simulation available.";
+                    ResetRiskSimulationDisplay();
                     return;
                 }
 
@@ -232,10 +234,17 @@ public partial class RoutePlanningPanel : UserControl
             $"Cost {plan.TotalCost:N2} | Fuel {plan.TotalFuelCost:N2} | Time {plan.TotalTravelTimeSeconds}s | Risk {plan.TotalRiskScore:N1}";
 
         var simulation = RouteRiskSimulationBuilder.Build(plan);
+        var display = RouteRiskSimulationDisplayProjector.Build(simulation);
         RiskSummaryText.Text =
             $"RiskBand {simulation.RiskBand} | Intercept {simulation.InterceptionProbability:P1} | " +
             $"Loss {simulation.ExpectedLossProxy:N2} | Revenue {simulation.ExpectedRevenueProxy:N2} | " +
             $"Protection {simulation.ProtectionCostEstimate:N2}";
+        RiskBandText.Text = display.RiskBand;
+        RiskBandBar.Value = display.RiskBandScore;
+        InterceptionValueText.Text = $"{display.InterceptionPercent:N1}%";
+        ExpectedRevenueValueText.Text = display.ExpectedRevenue.ToString("N2");
+        ExpectedLossValueText.Text = display.ExpectedLoss.ToString("N2");
+        ProtectionCostValueText.Text = display.ProtectionCost.ToString("N2");
     }
 
     private void AddOptimization(string profile, RoutePlanApiDto? plan)
@@ -275,5 +284,15 @@ public partial class RoutePlanningPanel : UserControl
         StatusText.Foreground = isError
             ? new SolidColorBrush(Color.FromRgb(255, 147, 147))
             : new SolidColorBrush(Color.FromRgb(157, 183, 226));
+    }
+
+    private void ResetRiskSimulationDisplay()
+    {
+        RiskBandText.Text = "-";
+        RiskBandBar.Value = 0;
+        InterceptionValueText.Text = "-";
+        ExpectedRevenueValueText.Text = "-";
+        ExpectedLossValueText.Text = "-";
+        ProtectionCostValueText.Text = "-";
     }
 }
