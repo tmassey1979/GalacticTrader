@@ -65,6 +65,9 @@
                     <DataGridTextColumn Header="Priority"
                                         Binding="{Binding ProtectionPriority}"
                                         Width="70" />
+                    <DataGridTextColumn Header="Output/System"
+                                        Binding="{Binding EconomicOutputPerSystem, StringFormat={}{0:N2}}"
+                                        Width="96" />
                     <DataGridTextColumn Header="Tax %"
                                         Binding="{Binding TaxRatePercent, StringFormat={}{0:N1}}"
                                         Width="70" />

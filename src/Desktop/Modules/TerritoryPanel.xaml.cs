@@ -49,7 +49,8 @@ public partial class TerritoryPanel : UserControl
 
         SelectedTerritoryText.Text =
             $"{selected.FactionName} | Dominance {selected.DominanceScore:N1} | Heat {selected.HeatHex}\n" +
-            $"Sectors {selected.ControlledSectorCount} | Priority {selected.ProtectionPriority} | Tax {selected.TaxRatePercent:N1}% | Incentive {selected.TradeIncentivePercent:N1}%";
+            $"Sectors {selected.ControlledSectorCount} | Priority {selected.ProtectionPriority} | Output/System {selected.EconomicOutputPerSystem:N2}\n" +
+            $"Tax {selected.TaxRatePercent:N1}% | Incentive {selected.TradeIncentivePercent:N1}%";
 
         TaxRateTextBox.Text = selected.TaxRatePercent.ToString("N1");
         TradeIncentiveTextBox.Text = selected.TradeIncentivePercent.ToString("N1");

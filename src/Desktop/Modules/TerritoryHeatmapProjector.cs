@@ -11,18 +11,24 @@ public static class TerritoryHeatmapProjector
     {
         return records
             .OrderByDescending(static record => record.DominanceScore)
-            .Select(record => new TerritoryDominanceDisplayRow
+            .Select(record =>
             {
-                FactionId = record.FactionId,
-                FactionName = record.FactionName,
-                ControlledSectorCount = record.ControlledSectorCount,
-                InfrastructureControlScore = record.InfrastructureControlScore,
-                WarMomentumScore = record.WarMomentumScore,
-                DominanceScore = record.DominanceScore,
-                HeatHex = ResolveHeatHex(record.DominanceScore),
-                ProtectionPriority = protectionPriorities.TryGetValue(record.FactionId, out var priority) ? priority : "None",
-                TaxRatePercent = ResolveTaxRatePercent(record.FactionId, economicPolicies),
-                TradeIncentivePercent = ResolveTradeIncentivePercent(record.FactionId, economicPolicies)
+                var taxRatePercent = ResolveTaxRatePercent(record.FactionId, economicPolicies);
+                var incentivePercent = ResolveTradeIncentivePercent(record.FactionId, economicPolicies);
+                return new TerritoryDominanceDisplayRow
+                {
+                    FactionId = record.FactionId,
+                    FactionName = record.FactionName,
+                    ControlledSectorCount = record.ControlledSectorCount,
+                    InfrastructureControlScore = record.InfrastructureControlScore,
+                    WarMomentumScore = record.WarMomentumScore,
+                    DominanceScore = record.DominanceScore,
+                    HeatHex = ResolveHeatHex(record.DominanceScore),
+                    ProtectionPriority = protectionPriorities.TryGetValue(record.FactionId, out var priority) ? priority : "None",
+                    EconomicOutputPerSystem = TerritoryEconomicOutputProjector.BuildPerSystem(record, taxRatePercent, incentivePercent),
+                    TaxRatePercent = taxRatePercent,
+                    TradeIncentivePercent = incentivePercent
+                };
             })
             .ToArray();
     }

@@ -13,7 +13,15 @@ public sealed class TerritoryHeatmapProjectorTests
         var records = new[]
         {
             new TerritoryDominanceApiDto { FactionId = alphaId, FactionName = "Alpha", DominanceScore = 42f },
-            new TerritoryDominanceApiDto { FactionId = betaId, FactionName = "Beta", DominanceScore = 78f }
+            new TerritoryDominanceApiDto
+            {
+                FactionId = betaId,
+                FactionName = "Beta",
+                DominanceScore = 78f,
+                ControlledSectorCount = 6,
+                InfrastructureControlScore = 62f,
+                WarMomentumScore = 18f
+            }
         };
 
         var rows = TerritoryHeatmapProjector.Build(
@@ -36,6 +44,7 @@ public sealed class TerritoryHeatmapProjectorTests
         Assert.Equal(2, rows.Count);
         Assert.Equal("Beta", rows[0].FactionName);
         Assert.Equal("High", rows[0].ProtectionPriority);
+        Assert.True(rows[0].EconomicOutputPerSystem > 0m);
         Assert.Equal(11m, rows[0].TaxRatePercent);
         Assert.Equal(4m, rows[0].TradeIncentivePercent);
     }
