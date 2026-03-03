@@ -42,4 +42,40 @@ public sealed class ReputationApiClient
         var payload = await response.Content.ReadFromJsonAsync<List<FactionBenefitApiDto>>(cancellationToken);
         return payload ?? [];
     }
+
+    public async Task<AlignmentAccessApiDto?> GetAlignmentAccessAsync(Guid playerId, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync($"/api/reputation/alignment/{playerId}", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Load alignment access failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<AlignmentAccessApiDto>(cancellationToken);
+    }
+
+    public async Task<AlignmentStateApiDto?> ApplyAlignmentActionAsync(
+        AlignmentActionApiRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync("/api/reputation/alignment/action", request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Apply alignment action failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<AlignmentStateApiDto>(cancellationToken);
+    }
 }

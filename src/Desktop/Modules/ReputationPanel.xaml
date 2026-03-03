@@ -25,32 +25,104 @@
                     Click="OnRefreshClick" />
         </DockPanel>
 
-        <DataGrid Grid.Row="1"
-                  x:Name="ReputationGrid"
-                  Background="#0C152A"
-                  BorderBrush="#2F4B78"
-                  Foreground="#DCE7FF"
-                  AutoGenerateColumns="False"
-                  HeadersVisibility="Column"
-                  IsReadOnly="True"
-                  CanUserAddRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Faction"
-                                    Binding="{Binding FactionId}"
-                                    Width="*" />
-                <DataGridTextColumn Header="Score"
-                                    Binding="{Binding ReputationScore}"
-                                    Width="70" />
-                <DataGridTextColumn Header="Tier"
-                                    Binding="{Binding Tier}"
-                                    Width="90" />
-                <DataGridTextColumn Header="Access"
-                                    Binding="{Binding HasAccess}"
-                                    Width="70" />
-                <DataGridTextColumn Header="Discount"
-                                    Binding="{Binding TradingDiscount, StringFormat={}{0:P1}}"
-                                    Width="90" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid Grid.Column="0"
+                      x:Name="ReputationGrid"
+                      Background="#0C152A"
+                      BorderBrush="#2F4B78"
+                      Foreground="#DCE7FF"
+                      AutoGenerateColumns="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Faction"
+                                        Binding="{Binding FactionId}"
+                                        Width="*" />
+                    <DataGridTextColumn Header="Score"
+                                        Binding="{Binding ReputationScore}"
+                                        Width="70" />
+                    <DataGridTextColumn Header="Tier"
+                                        Binding="{Binding Tier}"
+                                        Width="90" />
+                    <DataGridTextColumn Header="Badge"
+                                        Binding="{Binding Badge}"
+                                        Width="95" />
+                    <DataGridTextColumn Header="Access"
+                                        Binding="{Binding HasAccess}"
+                                        Width="70" />
+                    <DataGridTextColumn Header="Discount"
+                                        Binding="{Binding TradingDiscount, StringFormat={}{0:P1}}"
+                                        Width="90" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Border Grid.Column="2"
+                    Padding="8"
+                    Background="#0E203D"
+                    BorderBrush="#2E4A75"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <StackPanel>
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
+                               Text="Benefits" />
+                    <ListBox x:Name="BenefitsList"
+                             Height="72"
+                             Margin="0,4,0,8"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF" />
+
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
+                               Text="Alignment Access" />
+                    <TextBlock x:Name="AlignmentAccessText"
+                               Margin="0,4,0,8"
+                               Foreground="#EAF2FF"
+                               TextWrapping="Wrap"
+                               Text="-" />
+
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox x:Name="AlignmentActionCombo"
+                                  Width="150"
+                                  Height="28"
+                                  Background="#101F39"
+                                  BorderBrush="#2E4A75"
+                                  Foreground="#EAF2FF">
+                            <ComboBoxItem IsSelected="True" Content="LegalTrade" />
+                            <ComboBoxItem Content="InfrastructureInvestment" />
+                            <ComboBoxItem Content="InsuranceClaim" />
+                            <ComboBoxItem Content="Piracy" />
+                            <ComboBoxItem Content="Smuggling" />
+                            <ComboBoxItem Content="Sabotage" />
+                            <ComboBoxItem Content="SensorSpoofing" />
+                        </ComboBox>
+                        <TextBox x:Name="ActionMagnitudeText"
+                                 Width="40"
+                                 Height="28"
+                                 Margin="6,0,6,0"
+                                 Background="#101F39"
+                                 BorderBrush="#2E4A75"
+                                 Foreground="#EAF2FF"
+                                 Text="1" />
+                        <Button x:Name="ApplyActionButton"
+                                Width="70"
+                                Height="28"
+                                Background="#00A86B"
+                                BorderBrush="#20C284"
+                                Foreground="White"
+                                Content="Apply"
+                                Click="OnApplyActionClick" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
