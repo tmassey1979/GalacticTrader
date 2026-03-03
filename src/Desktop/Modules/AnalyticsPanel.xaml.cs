@@ -99,6 +99,7 @@ public partial class AnalyticsPanel : UserControl
             AvgDurationText.Text = $"{snapshot.AverageCombatDurationSeconds}s";
             InsuranceText.Text = snapshot.InsurancePayoutTotal.ToString("N2");
             RiskAdjustedReturnText.Text = snapshot.RiskAdjustedReturn.ToString("N2");
+            RevenuePerHourText.Text = snapshot.RevenuePerHour.ToString("N2");
             BattleToProfitText.Text = snapshot.BattleToProfitRatio.ToString("N4");
             RoiPerShipText.Text = snapshot.RoiPerShip.ToString("N2");
             MarketShareText.Text = $"{snapshot.MarketSharePercent:N2}%";

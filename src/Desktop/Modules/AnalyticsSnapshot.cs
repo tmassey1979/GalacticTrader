@@ -3,6 +3,7 @@ namespace GalacticTrader.Desktop.Modules;
 public sealed class AnalyticsSnapshot
 {
     public decimal RevenueVolume { get; init; }
+    public decimal RevenuePerHour { get; init; }
     public int TradeCount { get; init; }
     public decimal AverageTradeSize { get; init; }
     public int CombatCount { get; init; }

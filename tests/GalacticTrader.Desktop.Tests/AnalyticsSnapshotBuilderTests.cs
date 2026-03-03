@@ -40,6 +40,7 @@ public sealed class AnalyticsSnapshotBuilderTests
         var snapshot = AnalyticsSnapshotBuilder.Build(trades, combats, ships, topTraders, standings, "pilot");
 
         Assert.Equal(360m, snapshot.RevenueVolume);
+        Assert.Equal(360m, snapshot.RevenuePerHour);
         Assert.Equal(3, snapshot.TradeCount);
         Assert.Equal(120m, snapshot.AverageTradeSize);
         Assert.Equal(2, snapshot.CombatCount);
@@ -57,10 +58,24 @@ public sealed class AnalyticsSnapshotBuilderTests
     {
         var snapshot = AnalyticsSnapshotBuilder.Build([], [], [], [], [], "pilot");
 
+        Assert.Equal(0m, snapshot.RevenuePerHour);
         Assert.Equal(0m, snapshot.RiskAdjustedReturn);
         Assert.Equal(0m, snapshot.BattleToProfitRatio);
         Assert.Equal(0m, snapshot.RoiPerShip);
         Assert.Equal(0m, snapshot.MarketSharePercent);
         Assert.Equal(0m, snapshot.SystemInfluencePercent);
+    }
+
+    [Fact]
+    public void Build_ScalesRevenuePerHourByEstimatedTradeWindow()
+    {
+        var trades = Enumerable.Range(0, 12)
+            .Select(_ => new TradeExecutionResultApiDto { TotalPrice = 100m })
+            .ToArray();
+
+        var snapshot = AnalyticsSnapshotBuilder.Build(trades, [], [], [], [], "pilot");
+
+        Assert.Equal(1200m, snapshot.RevenueVolume);
+        Assert.Equal(600m, snapshot.RevenuePerHour);
     }
 }

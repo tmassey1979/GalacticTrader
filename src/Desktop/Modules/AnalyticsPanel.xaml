@@ -123,6 +123,13 @@
                                FontFamily="Consolas"
                                Text="-" />
                     <TextBlock Foreground="#B9CBE8"
+                               Text="Revenue/Hr:" />
+                    <TextBlock x:Name="RevenuePerHourText"
+                               Margin="6,0,14,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                    <TextBlock Foreground="#B9CBE8"
                                Text="Battle/Profit:" />
                     <TextBlock x:Name="BattleToProfitText"
                                Margin="6,0,14,0"

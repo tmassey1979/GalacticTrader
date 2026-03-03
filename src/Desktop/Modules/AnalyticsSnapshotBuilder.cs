@@ -14,6 +14,7 @@ public static class AnalyticsSnapshotBuilder
     {
         var tradeCount = transactions.Count;
         var revenueVolume = transactions.Sum(static transaction => transaction.TotalPrice);
+        var revenuePerHour = ComputeRevenuePerHour(revenueVolume, tradeCount);
         var averageTradeSize = tradeCount > 0 ? revenueVolume / tradeCount : 0m;
 
         var combatCount = combatLogs.Count;
@@ -36,6 +37,7 @@ public static class AnalyticsSnapshotBuilder
         return new AnalyticsSnapshot
         {
             RevenueVolume = revenueVolume,
+            RevenuePerHour = revenuePerHour,
             TradeCount = tradeCount,
             AverageTradeSize = averageTradeSize,
             CombatCount = combatCount,
@@ -47,6 +49,17 @@ public static class AnalyticsSnapshotBuilder
             MarketSharePercent = marketSharePercent,
             SystemInfluencePercent = systemInfluencePercent
         };
+    }
+
+    private static decimal ComputeRevenuePerHour(decimal revenueVolume, int tradeCount)
+    {
+        if (tradeCount <= 0 || revenueVolume <= 0m)
+        {
+            return 0m;
+        }
+
+        var estimatedWindowHours = Math.Max(1m, tradeCount / 6m);
+        return Math.Round(revenueVolume / estimatedWindowHours, 2, MidpointRounding.AwayFromZero);
     }
 
     private static decimal ComputeMarketSharePercent(
