@@ -37,6 +37,11 @@ public sealed class LeaderboardApiClient
     public async Task<IReadOnlyList<LeaderboardEntryApiDto>> RecalculateAllAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsync("/api/leaderboards/recalculate", content: null, cancellationToken);
+        if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+        {
+            return [];
+        }
+
         if (!response.IsSuccessStatusCode)
         {
             var detail = await response.Content.ReadAsStringAsync(cancellationToken);

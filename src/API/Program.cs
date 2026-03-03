@@ -1083,8 +1083,24 @@ reputation.MapGet("/alignment/{playerId:guid}", async (
 var leaderboards = app.MapGroup("/api/leaderboards")
     .WithTags("Leaderboards");
 
-leaderboards.MapPost("/recalculate", async (ILeaderboardService leaderboardService, CancellationToken cancellationToken) =>
+leaderboards.MapPost("/recalculate", async (
+    HttpContext context,
+    ILeaderboardService leaderboardService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var recalculated = await leaderboardService.RecalculateAllAsync(cancellationToken);
     return Results.Ok(recalculated);
 });
@@ -1142,10 +1158,24 @@ leaderboards.MapGet("/{leaderboardType}/player/{playerId:guid}/history", async (
 });
 
 leaderboards.MapPost("/{leaderboardType}/reset", async (
+    HttpContext context,
     string leaderboardType,
     ILeaderboardService leaderboardService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     try
     {
         var removed = await leaderboardService.ResetLeaderboardAsync(leaderboardType, cancellationToken);
@@ -1812,13 +1842,15 @@ static async Task<IResult?> RequireAnyRoleAsync(
 
     if (userAccount is null)
     {
-        return Results.Forbid();
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
     }
 
     var hasAllowedRole = userAccount.Roles.Any(role =>
         allowedRoles.Any(allowed => role.Equals(allowed, StringComparison.OrdinalIgnoreCase)));
 
-    return hasAllowedRole ? null : Results.Forbid();
+    return hasAllowedRole
+        ? null
+        : Results.StatusCode(StatusCodes.Status403Forbidden);
 }
 
 static bool TryReadBearerToken(HttpContext context, out string token)

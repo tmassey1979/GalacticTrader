@@ -2,6 +2,7 @@ namespace GalacticTrader.IntegrationTests;
 
 using GalacticTrader.Data;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -126,6 +127,53 @@ public sealed class AuthIntegrationTests : IClassFixture<ApiWebApplicationFactor
         var player = dbContext.Players.Single(existing => existing.Username == "viper");
         Assert.True(player.LiquidCredits >= 250_000m);
         Assert.True(dbContext.Ships.Any(ship => ship.PlayerId == player.Id));
+    }
+
+    [Fact]
+    public async Task LeaderboardMaintenanceEndpoints_RequireAdminRole()
+    {
+        var nonAdminUsername = $"leader_user_{Guid.NewGuid():N}".Substring(0, 20);
+        var nonAdminEmail = $"{nonAdminUsername}@gt.test";
+        await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            username = nonAdminUsername,
+            email = nonAdminEmail,
+            password = "WarpDrive123"
+        });
+
+        var nonAdminToken = await LoginAndGetTokenAsync(nonAdminUsername, "WarpDrive123");
+        var adminToken = await LoginAndGetTokenAsync("viper", "ViperDev123!");
+
+        var noTokenResponse = await _client.PostAsync("/api/leaderboards/recalculate", content: null);
+        Assert.Equal(HttpStatusCode.Unauthorized, noTokenResponse.StatusCode);
+
+        var nonAdminResponse = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/leaderboards/recalculate", nonAdminToken);
+        Assert.Equal(HttpStatusCode.Forbidden, nonAdminResponse.StatusCode);
+
+        var adminResponse = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/leaderboards/recalculate", adminToken);
+        Assert.Equal(HttpStatusCode.OK, adminResponse.StatusCode);
+    }
+
+    private async Task<string> LoginAndGetTokenAsync(string username, string password)
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            username,
+            password
+        });
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        Assert.NotNull(payload);
+        Assert.False(string.IsNullOrWhiteSpace(payload!.AccessToken));
+        return payload.AccessToken;
+    }
+
+    private Task<HttpResponseMessage> SendWithBearerTokenAsync(HttpMethod method, string path, string accessToken)
+    {
+        var request = new HttpRequestMessage(method, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return _client.SendAsync(request);
     }
 
     private sealed record LoginResponse(string AccessToken);
