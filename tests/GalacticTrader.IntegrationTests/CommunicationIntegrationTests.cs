@@ -100,6 +100,90 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
         Assert.Equal(HttpStatusCode.NotFound, qosAfterLeave.StatusCode);
     }
 
+    [Fact]
+    public async Task VoiceRealtimeFlow_ActivitySignalAndSpatialMix_Works()
+    {
+        var creatorId = await SeedPlayerAsync("comms-real-a");
+        var listenerId = await SeedPlayerAsync("comms-real-b");
+
+        var create = await _client.PostAsJsonAsync("/api/communication/voice/channels", new
+        {
+            creatorPlayerId = creatorId,
+            mode = 0,
+            scopeKey = "integration-realtime"
+        });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+
+        var channel = await create.Content.ReadFromJsonAsync<VoiceChannelResponse>();
+        Assert.NotNull(channel);
+
+        var join = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{channel!.ChannelId:D}/join", new
+        {
+            playerId = listenerId
+        });
+        Assert.Equal(HttpStatusCode.OK, join.StatusCode);
+
+        var updateActivity = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{channel.ChannelId:D}/activity", new
+        {
+            playerId = creatorId,
+            rmsLevel = 0.61f,
+            packetLossPercent = 0.2f,
+            latencyMs = 31f,
+            jitterMs = 3.5f
+        });
+        Assert.Equal(HttpStatusCode.OK, updateActivity.StatusCode);
+
+        var activity = await updateActivity.Content.ReadFromJsonAsync<VoiceActivityResponse>();
+        Assert.NotNull(activity);
+        Assert.True(activity!.VoiceActivityScore > 0f);
+
+        var publishSignal = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{channel.ChannelId:D}/signal", new
+        {
+            senderId = creatorId,
+            targetPlayerId = listenerId,
+            signalType = "offer",
+            payload = "sdp-offer"
+        });
+        Assert.Equal(HttpStatusCode.OK, publishSignal.StatusCode);
+
+        var signal = await publishSignal.Content.ReadFromJsonAsync<VoiceSignalResponse>();
+        Assert.NotNull(signal);
+        Assert.Equal("offer", signal!.SignalType);
+
+        var dequeue = await _client.GetAsync($"/api/communication/voice/channels/{channel.ChannelId:D}/signals/{listenerId:D}?limit=10");
+        Assert.Equal(HttpStatusCode.OK, dequeue.StatusCode);
+
+        var signals = await dequeue.Content.ReadFromJsonAsync<List<VoiceSignalResponse>>();
+        Assert.NotNull(signals);
+        Assert.Contains(signals!, entry => entry.Payload == "sdp-offer" && entry.SignalType == "offer");
+
+        var spatial = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{channel.ChannelId:D}/spatial-audio", new
+        {
+            listenerId,
+            listenerX = 0f,
+            listenerY = 0f,
+            listenerZ = 0f,
+            falloffDistance = 100f,
+            speakers = new[]
+            {
+                new
+                {
+                    playerId = creatorId,
+                    x = 20f,
+                    y = 0f,
+                    z = 0f,
+                    baseGain = 1f
+                }
+            }
+        });
+        Assert.Equal(HttpStatusCode.OK, spatial.StatusCode);
+
+        var mix = await spatial.Content.ReadFromJsonAsync<SpatialAudioResponse>();
+        Assert.NotNull(mix);
+        Assert.NotEmpty(mix!.Mix);
+        Assert.Equal(creatorId, mix.Mix[0].PlayerId);
+    }
+
     private async Task<Guid> SeedPlayerAsync(string usernamePrefix)
     {
         using var scope = _factory.Services.CreateScope();
@@ -153,4 +237,29 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
         float AveragePacketLossPercent,
         int SpeakingParticipants,
         DateTime SampledAt);
+
+    private sealed record VoiceActivityResponse(
+        Guid ChannelId,
+        Guid PlayerId,
+        bool IsSpeaking,
+        float VoiceActivityScore,
+        DateTime UpdatedAt);
+
+    private sealed record VoiceSignalResponse(
+        Guid ChannelId,
+        Guid SenderId,
+        Guid? TargetPlayerId,
+        string SignalType,
+        string Payload,
+        DateTime CreatedAt);
+
+    private sealed record SpatialAudioResponse(
+        Guid ListenerId,
+        List<SpeakerMixResponse> Mix);
+
+    private sealed record SpeakerMixResponse(
+        Guid PlayerId,
+        float Distance,
+        float Gain,
+        float Pan);
 }
