@@ -58,6 +58,47 @@ public sealed class NavigationApiClient
         return routes ?? [];
     }
 
+    public async Task<RoutePlanApiDto?> GetRoutePlanAsync(
+        Guid fromSectorId,
+        Guid toSectorId,
+        string travelMode = "Standard",
+        string algorithm = "dijkstra",
+        CancellationToken cancellationToken = default)
+    {
+        var escapedMode = Uri.EscapeDataString(travelMode);
+        var escapedAlgorithm = Uri.EscapeDataString(algorithm);
+        var url = $"/api/navigation/planning/{fromSectorId}/{toSectorId}?mode={escapedMode}&algorithm={escapedAlgorithm}";
+        var response = await _httpClient.GetAsync(url, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Route planning failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<RoutePlanApiDto>(cancellationToken);
+    }
+
+    public async Task<RouteOptimizationApiDto> GetRouteOptimizationAsync(
+        Guid fromSectorId,
+        Guid toSectorId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync($"/api/navigation/planning/{fromSectorId}/{toSectorId}/optimize", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Route optimization failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<RouteOptimizationApiDto>(cancellationToken);
+        return payload ?? new RouteOptimizationApiDto();
+    }
+
     public async Task<SectorApiDto> CreateSectorAsync(CreateSectorApiRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("/api/navigation/sectors", request, cancellationToken);

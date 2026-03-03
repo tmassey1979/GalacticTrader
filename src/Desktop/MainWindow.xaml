@@ -166,6 +166,10 @@
                             <ContentControl x:Name="TradingHost"
                                             Margin="12" />
                         </TabItem>
+                        <TabItem Header="Routes">
+                            <ContentControl x:Name="RoutesHost"
+                                            Margin="12" />
+                        </TabItem>
                         <TabItem Header="Fleet">
                             <ContentControl x:Name="FleetHost"
                                             Margin="12" />
