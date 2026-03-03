@@ -32,9 +32,11 @@
                            FontSize="20"
                            FontWeight="SemiBold" />
                 <TextBlock Grid.Row="1"
+                           x:Name="LoginHintText"
                            Margin="0,4,0,12"
                            Foreground="#A3B8DD"
-                           Text="Authenticate to receive a bearer token for map publishing." />
+                           TextWrapping="Wrap"
+                           Text="Authenticate with Keycloak to receive a bearer token for map publishing." />
 
                 <TextBlock Grid.Row="2"
                            Text="Username"

@@ -150,7 +150,9 @@ services:
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=galactictrader;Username=galactic_admin;Password=${DB_PASSWORD:-ChangeMeInProduction}"
       Redis__Connection: "redis:6379"
       Keycloak__ServerUrl: "http://keycloak:8080"
+      Keycloak__IssuerUrl: "http://localhost:8180"
       Keycloak__Realm: "galactictrader"
+      Keycloak__RequireHttpsMetadata: "false"
       Vault__Enabled: ${VAULT_ENABLED:-false}
       Vault__FailFast: "false"
       Vault__Address: "http://vault:8200"

@@ -16,11 +16,13 @@ dotnet run --project src/MapGenerator
 
 ## Authentication
 
-The app supports an optional bearer token in `Bearer Token (Optional)`.
+The app supports bearer token authentication in `Bearer Token`.
 
-- Leave blank for local unsecured development APIs.
-- Provide a token for secured gateway/API deployments.
+- Use `Sign In...` to obtain an access token.
+- The login flow first tries `POST /api/auth/login` on the configured API base URL.
+- If API login is unavailable, it falls back to Keycloak token login (realm `galactictrader` by default).
 - The token is applied as `Authorization: Bearer <token>` on load and publish requests.
+- `GT_KEYCLOAK_BASE_URL`, `GT_KEYCLOAK_REALM`, and `GT_KEYCLOAK_CLIENT_ID` can override Keycloak login defaults.
 
 ## Inputs
 

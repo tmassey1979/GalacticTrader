@@ -131,6 +131,7 @@ dotnet run --project src/MapGenerator
 
 Map Generator usage (preview, load current map, publish, bearer token):
 - [docs/map-generator.md](docs/map-generator.md)
+- Optional identity overrides: `GT_KEYCLOAK_BASE_URL`, `GT_KEYCLOAK_REALM`, `GT_KEYCLOAK_CLIENT_ID`
 
 ### Running Tests
 

@@ -10,17 +10,22 @@ public class KeycloakOptions
     /// <summary>
     /// Keycloak server URL (e.g., http://localhost:8080)
     /// </summary>
-    public string ServerUrl { get; set; } = string.Empty;
+    public string ServerUrl { get; set; } = "http://localhost:8180";
+
+    /// <summary>
+    /// Optional issuer base URL or full issuer URL used for validating incoming tokens.
+    /// </summary>
+    public string IssuerUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// Keycloak realm name (e.g., "galactic-trader")
     /// </summary>
-    public string Realm { get; set; } = string.Empty;
+    public string Realm { get; set; } = "galactictrader";
 
     /// <summary>
     /// OAuth2/OIDC client ID
     /// </summary>
-    public string ClientId { get; set; } = string.Empty;
+    public string ClientId { get; set; } = "map-generator-desktop";
 
     /// <summary>
     /// OAuth2/OIDC client secret (for server-to-server auth)
@@ -30,7 +35,7 @@ public class KeycloakOptions
     /// <summary>
     /// Expected JWT audience claim
     /// </summary>
-    public string Audience { get; set; } = string.Empty;
+    public string Audience { get; set; } = "account";
 
     /// <summary>
     /// Whether to require HTTPS in production

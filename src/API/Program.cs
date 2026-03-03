@@ -106,6 +106,9 @@ builder.Services.AddScoped<IGlobalMetricsService, GlobalMetricsService>();
 builder.Services.AddScoped<IMarketIntelligenceService, MarketIntelligenceService>();
 builder.Services.AddSingleton<IBalanceControlService, BalanceControlService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
+builder.Services.AddOptions<KeycloakOptions>()
+    .Bind(builder.Configuration.GetSection(KeycloakOptions.SectionName));
+builder.Services.AddHttpClient<ITokenValidationService, KeycloakTokenValidationService>();
 builder.Services.AddSingleton<IVoiceService, VoiceService>();
 builder.Services.AddHostedService<TelemetryGaugeRefreshService>();
 
@@ -1927,30 +1930,54 @@ static async Task<IResult?> RequireAnyRoleAsync(
     }
 
     var session = await authService.ValidateTokenAsync(token, cancellationToken);
-    if (session is null)
+    if (session is not null)
+    {
+        var userAccount = await dbContext.UserAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                account =>
+                    account.Username == session.Player.Username ||
+                    account.Email == session.Player.Email,
+                cancellationToken);
+
+        if (userAccount is null)
+        {
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var hasAllowedRole = userAccount.Roles.Any(role =>
+            allowedRoles.Any(allowed => role.Equals(allowed, StringComparison.OrdinalIgnoreCase)));
+
+        return hasAllowedRole
+            ? null
+            : Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    if (!LooksLikeJwt(token))
     {
         return Results.Unauthorized();
     }
 
-    var userAccount = await dbContext.UserAccounts
-        .AsNoTracking()
-        .FirstOrDefaultAsync(
-            account =>
-                account.Username == session.Player.Username ||
-                account.Email == session.Player.Email,
-            cancellationToken);
+    var tokenValidationService = context.RequestServices.GetRequiredService<ITokenValidationService>();
 
-    if (userAccount is null)
+    var principal = await tokenValidationService.ValidateTokenAsync(token);
+    if (principal is null)
     {
-        return Results.StatusCode(StatusCodes.Status403Forbidden);
+        return Results.Unauthorized();
     }
 
-    var hasAllowedRole = userAccount.Roles.Any(role =>
+    var tokenRoles = tokenValidationService.GetRoles(principal);
+    var hasAllowedJwtRole = tokenRoles.Any(role =>
         allowedRoles.Any(allowed => role.Equals(allowed, StringComparison.OrdinalIgnoreCase)));
 
-    return hasAllowedRole
+    return hasAllowedJwtRole
         ? null
         : Results.StatusCode(StatusCodes.Status403Forbidden);
+}
+
+static bool LooksLikeJwt(string token)
+{
+    return token.Count(character => character == '.') == 2;
 }
 
 static bool TryReadBearerToken(HttpContext context, out string token)
