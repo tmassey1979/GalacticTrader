@@ -59,6 +59,8 @@ public partial class App : Application
             npcApiClient.SetBearerToken(loginWindow.Session.AccessToken);
             var combatApiClient = new CombatApiClient(_httpClient);
             combatApiClient.SetBearerToken(loginWindow.Session.AccessToken);
+            var communicationApiClient = new CommunicationApiClient(_httpClient);
+            communicationApiClient.SetBearerToken(loginWindow.Session.AccessToken);
             var reconnectPolicy = new RealtimeReconnectPolicy();
             var strategicRealtimeClient = new StrategicRealtimeStreamClient(
                 apiOptions.BaseUrl,
@@ -86,6 +88,7 @@ public partial class App : Application
                 marketIntelligenceApiClient,
                 npcApiClient,
                 combatApiClient,
+                communicationApiClient,
                 strategicRealtimeClient,
                 communicationRealtimeClient);
             MainWindow = mainWindow;

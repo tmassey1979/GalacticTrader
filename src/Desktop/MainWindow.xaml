@@ -210,6 +210,10 @@
                             <ContentControl x:Name="ServicesHost"
                                             Margin="12" />
                         </TabItem>
+                        <TabItem Header="Comms">
+                            <ContentControl x:Name="CommunicationHost"
+                                            Margin="12" />
+                        </TabItem>
                         <TabItem Header="Reputation">
                             <ContentControl x:Name="ReputationHost"
                                             Margin="12" />

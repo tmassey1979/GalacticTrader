@@ -1,0 +1,103 @@
+<UserControl x:Class="GalacticTrader.Desktop.Modules.CommunicationPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0"
+                   Margin="0,0,0,6">
+            <TextBlock x:Name="StatusText"
+                       VerticalAlignment="Center"
+                       Foreground="#9DB7E2"
+                       Text="Loading channel messages..." />
+            <Button x:Name="RefreshButton"
+                    DockPanel.Dock="Right"
+                    Width="110"
+                    Height="28"
+                    Margin="8,0,0,0"
+                    Background="#1F6FEB"
+                    BorderBrush="#4A89F6"
+                    Foreground="White"
+                    Content="Refresh"
+                    Click="OnRefreshClick" />
+            <TextBox x:Name="ChannelKeyText"
+                     DockPanel.Dock="Right"
+                     Width="180"
+                     Height="28"
+                     Margin="8,0,0,0"
+                     Background="#101F39"
+                     BorderBrush="#2E4A75"
+                     Foreground="#EAF2FF"
+                     VerticalContentAlignment="Center"
+                     Text="desktop-feed" />
+            <ComboBox x:Name="ChannelTypeCombo"
+                      DockPanel.Dock="Right"
+                      Width="110"
+                      Height="28"
+                      Background="#101F39"
+                      BorderBrush="#2E4A75"
+                      Foreground="#EAF2FF">
+                <ComboBoxItem IsSelected="True"
+                              Content="Global" />
+                <ComboBoxItem Content="Sector" />
+                <ComboBoxItem Content="Faction" />
+                <ComboBoxItem Content="Private" />
+                <ComboBoxItem Content="Fleet" />
+            </ComboBox>
+        </DockPanel>
+
+        <DataGrid Grid.Row="1"
+                  x:Name="MessagesGrid"
+                  Background="#0C152A"
+                  BorderBrush="#2F4B78"
+                  Foreground="#DCE7FF"
+                  HeadersVisibility="Column"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Time (UTC)"
+                                    Binding="{Binding CreatedAtUtc, StringFormat={}{0:u}}"
+                                    Width="170" />
+                <DataGridTextColumn Header="Sender"
+                                    Binding="{Binding Sender}"
+                                    Width="95" />
+                <DataGridTextColumn Header="Channel"
+                                    Binding="{Binding Channel}"
+                                    Width="170" />
+                <DataGridTextColumn Header="Moderation"
+                                    Binding="{Binding Moderation}"
+                                    Width="90" />
+                <DataGridTextColumn Header="Message"
+                                    Binding="{Binding Content}"
+                                    Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DockPanel Grid.Row="2"
+                   Margin="0,8,0,0">
+            <Button x:Name="SendButton"
+                    DockPanel.Dock="Right"
+                    Width="110"
+                    Height="30"
+                    Margin="8,0,0,0"
+                    Background="#00A86B"
+                    BorderBrush="#20C284"
+                    Foreground="White"
+                    Content="Send"
+                    Click="OnSendClick" />
+            <TextBox x:Name="MessageText"
+                     Height="30"
+                     Background="#101F39"
+                     BorderBrush="#2E4A75"
+                     Foreground="#EAF2FF"
+                     VerticalContentAlignment="Center"
+                     KeyDown="OnMessageTextKeyDown" />
+        </DockPanel>
+    </Grid>
+</UserControl>
