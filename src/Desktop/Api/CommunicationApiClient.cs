@@ -157,4 +157,49 @@ public sealed class CommunicationApiClient
 
         return await response.Content.ReadFromJsonAsync<VoiceActivityApiDto>(cancellationToken);
     }
+
+    public async Task<VoiceSignalApiDto?> PublishVoiceSignalAsync(
+        Guid channelId,
+        VoiceSignalApiRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"/api/communication/voice/channels/{channelId:D}/signal", request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Publish voice signal failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<VoiceSignalApiDto>(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<VoiceSignalApiDto>> DequeueVoiceSignalsAsync(
+        Guid channelId,
+        Guid playerId,
+        int limit = 25,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync(
+            $"/api/communication/voice/channels/{channelId:D}/signals/{playerId:D}?limit={Math.Clamp(limit, 1, 200)}",
+            cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return [];
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Poll voice signals failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<List<VoiceSignalApiDto>>(cancellationToken);
+        return payload ?? [];
+    }
 }

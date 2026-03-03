@@ -12,6 +12,7 @@ public partial class CommunicationPanel : UserControl
     private readonly DesktopSession _session;
     private readonly CommunicationApiClient _communicationApiClient;
     private readonly ObservableCollection<CommunicationMessageDisplayRow> _rows = [];
+    private readonly ObservableCollection<string> _voiceSignalLog = [];
     private Guid? _activeVoiceChannelId;
     private bool _hasLoaded;
 
@@ -21,6 +22,7 @@ public partial class CommunicationPanel : UserControl
         _communicationApiClient = communicationApiClient;
         InitializeComponent();
         MessagesGrid.ItemsSource = _rows;
+        VoiceSignalLogList.ItemsSource = _voiceSignalLog;
         Loaded += OnLoaded;
     }
 
@@ -68,6 +70,16 @@ public partial class CommunicationPanel : UserControl
     private async void OnReportVoiceActivityClick(object sender, RoutedEventArgs e)
     {
         await ReportVoiceActivityAsync();
+    }
+
+    private async void OnSendVoiceSignalClick(object sender, RoutedEventArgs e)
+    {
+        await SendVoiceSignalAsync();
+    }
+
+    private async void OnPollVoiceSignalsClick(object sender, RoutedEventArgs e)
+    {
+        await PollVoiceSignalsAsync();
     }
 
     private async void OnMessageTextKeyDown(object sender, KeyEventArgs e)
@@ -358,6 +370,93 @@ public partial class CommunicationPanel : UserControl
         }
     }
 
+    private async Task SendVoiceSignalAsync()
+    {
+        if (!TryResolveVoiceChannelId(out var channelId))
+        {
+            SetStatus("Enter a valid voice channel id to send a signal.", isError: true);
+            return;
+        }
+
+        var signalType = VoiceSignalTypeText.Text.Trim();
+        if (string.IsNullOrWhiteSpace(signalType))
+        {
+            SetStatus("Signal type is required.", isError: true);
+            return;
+        }
+
+        var payload = VoiceSignalPayloadText.Text.Trim();
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            SetStatus("Signal payload is required.", isError: true);
+            return;
+        }
+
+        if (!TryResolveSignalTarget(out var targetPlayerId))
+        {
+            SetStatus("Target player id must be blank or a valid GUID.", isError: true);
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var signal = await _communicationApiClient.PublishVoiceSignalAsync(channelId, new VoiceSignalApiRequest
+            {
+                SenderId = _session.PlayerId,
+                TargetPlayerId = targetPlayerId,
+                SignalType = signalType,
+                Payload = payload
+            });
+
+            if (signal is null)
+            {
+                SetStatus("Voice channel not found.", isError: true);
+                return;
+            }
+
+            AppendVoiceSignal(signal);
+            SetStatus($"Voice signal sent ({signal.SignalType}).", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private async Task PollVoiceSignalsAsync()
+    {
+        if (!TryResolveVoiceChannelId(out var channelId))
+        {
+            SetStatus("Enter a valid voice channel id to poll signals.", isError: true);
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var signals = await _communicationApiClient.DequeueVoiceSignalsAsync(channelId, _session.PlayerId, limit: 25);
+            foreach (var signal in signals.OrderBy(static signal => signal.CreatedAt))
+            {
+                AppendVoiceSignal(signal);
+            }
+
+            SetStatus($"Polled {signals.Count} signal(s).", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
     private string ResolveChannelType()
     {
         var selection = (ChannelTypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString();
@@ -419,6 +518,34 @@ public partial class CommunicationPanel : UserControl
         VoiceQosText.Text = $"QoS: {VoiceQosSummaryFormatter.Build(qos)}";
     }
 
+    private bool TryResolveSignalTarget(out Guid? targetPlayerId)
+    {
+        var value = VoiceSignalTargetText.Text.Trim();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            targetPlayerId = null;
+            return true;
+        }
+
+        if (Guid.TryParse(value, out var parsed))
+        {
+            targetPlayerId = parsed;
+            return true;
+        }
+
+        targetPlayerId = null;
+        return false;
+    }
+
+    private void AppendVoiceSignal(VoiceSignalApiDto signal)
+    {
+        _voiceSignalLog.Insert(0, VoiceSignalLogFormatter.Build(signal));
+        while (_voiceSignalLog.Count > 40)
+        {
+            _voiceSignalLog.RemoveAt(_voiceSignalLog.Count - 1);
+        }
+    }
+
     private void SetBusy(bool isBusy)
     {
         RefreshButton.IsEnabled = !isBusy;
@@ -438,6 +565,11 @@ public partial class CommunicationPanel : UserControl
         VoiceLatencyText.IsEnabled = !isBusy;
         VoiceJitterText.IsEnabled = !isBusy;
         ReportVoiceActivityButton.IsEnabled = !isBusy;
+        VoiceSignalTypeText.IsEnabled = !isBusy;
+        VoiceSignalTargetText.IsEnabled = !isBusy;
+        VoiceSignalPayloadText.IsEnabled = !isBusy;
+        SendVoiceSignalButton.IsEnabled = !isBusy;
+        PollVoiceSignalsButton.IsEnabled = !isBusy;
     }
 
     private void SetStatus(string message, bool isError)

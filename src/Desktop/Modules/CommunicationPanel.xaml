@@ -233,6 +233,71 @@
                            Foreground="#B9CBE8"
                            FontFamily="Consolas"
                            Text="QoS: No QoS sample." />
+                <DockPanel Margin="0,8,0,0">
+                    <Button x:Name="PollVoiceSignalsButton"
+                            DockPanel.Dock="Right"
+                            Width="100"
+                            Height="28"
+                            Margin="8,0,0,0"
+                            Background="#2D3D57"
+                            BorderBrush="#4C607F"
+                            Foreground="#EAF2FF"
+                            Content="Poll"
+                            Click="OnPollVoiceSignalsClick" />
+                    <Button x:Name="SendVoiceSignalButton"
+                            DockPanel.Dock="Right"
+                            Width="100"
+                            Height="28"
+                            Margin="8,0,0,0"
+                            Background="#1F6FEB"
+                            BorderBrush="#4A89F6"
+                            Foreground="White"
+                            Content="Send Signal"
+                            Click="OnSendVoiceSignalClick" />
+                    <TextBox x:Name="VoiceSignalPayloadText"
+                             DockPanel.Dock="Right"
+                             Width="220"
+                             Height="28"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             Text="sdp-offer"
+                             ToolTip="Signal payload" />
+                    <TextBox x:Name="VoiceSignalTargetText"
+                             DockPanel.Dock="Right"
+                             Width="220"
+                             Height="28"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             ToolTip="Optional target player id" />
+                    <TextBox x:Name="VoiceSignalTypeText"
+                             Width="110"
+                             Height="28"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             Text="offer"
+                             ToolTip="Signal type" />
+                </DockPanel>
+                <ListBox x:Name="VoiceSignalLogList"
+                         Height="94"
+                         Margin="0,6,0,0"
+                         Background="#101F39"
+                         BorderBrush="#2E4A75"
+                         Foreground="#EAF2FF">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock FontFamily="Consolas"
+                                       Text="{Binding}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </StackPanel>
         </Border>
 
