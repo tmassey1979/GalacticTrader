@@ -1109,6 +1109,30 @@ strategic.MapPost("/territory-dominance/recalculate/{factionId:guid}", async (
     return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
+strategic.MapGet("/territory-economic-policy", async (
+    Guid? factionId,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var policies = await strategicService.GetTerritoryEconomicPoliciesAsync(factionId, cancellationToken);
+    return Results.Ok(policies);
+});
+
+strategic.MapPost("/territory-economic-policy", async (
+    UpsertTerritoryEconomicPolicyApiRequest request,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.UpsertTerritoryEconomicPolicyAsync(new UpsertTerritoryEconomicPolicyRequest
+    {
+        FactionId = request.FactionId,
+        TaxRate = request.TaxRatePercent / 100m,
+        TradeIncentiveModifier = request.TradeIncentivePercent / 100m
+    }, cancellationToken);
+
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
 strategic.MapGet("/insurance/policies/{playerId:guid}", async (
     Guid playerId,
     IStrategicSystemsService strategicService,

@@ -99,6 +99,29 @@ public sealed class StrategicSystemsServiceTests
         Assert.NotEmpty(board);
     }
 
+    [Fact]
+    public async Task UpsertTerritoryEconomicPolicyAsync_UpdatesTaxAndIncentive()
+    {
+        await using var dbContext = CreateDbContext();
+        var seeded = await SeedStrategicDataAsync(dbContext);
+        var service = new StrategicSystemsService(dbContext);
+
+        var updated = await service.UpsertTerritoryEconomicPolicyAsync(new UpsertTerritoryEconomicPolicyRequest
+        {
+            FactionId = seeded.FactionA.Id,
+            TaxRate = 0.18m,
+            TradeIncentiveModifier = 0.06m
+        });
+        var policies = await service.GetTerritoryEconomicPoliciesAsync(seeded.FactionA.Id);
+
+        Assert.NotNull(updated);
+        Assert.Single(policies);
+        Assert.Equal(0.18m, updated!.TaxRate);
+        Assert.Equal(0.06m, updated.TradeIncentiveModifier);
+        Assert.Equal(0.18m, policies[0].TaxRate);
+        Assert.Equal(0.06m, policies[0].TradeIncentiveModifier);
+    }
+
     private static async Task<(Faction FactionA, Faction FactionB, Sector SectorA, Sector SectorB)> SeedStrategicDataAsync(
         GalacticTraderDbContext dbContext)
     {

@@ -33,6 +33,14 @@ public interface IStrategicSystemsService
     Task<IReadOnlyList<TerritoryDominanceDto>> GetTerritoryDominanceAsync(
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<TerritoryEconomicPolicyDto>> GetTerritoryEconomicPoliciesAsync(
+        Guid? factionId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<TerritoryEconomicPolicyDto?> UpsertTerritoryEconomicPolicyAsync(
+        UpsertTerritoryEconomicPolicyRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<InsurancePolicyDto?> UpsertInsurancePolicyAsync(
         UpsertInsurancePolicyRequest request,
         CancellationToken cancellationToken = default);

@@ -12,6 +12,7 @@ public partial class TerritoryPanel : UserControl
     private readonly ObservableCollection<TerritoryDominanceDisplayRow> _rows = [];
     private readonly Dictionary<Guid, string> _protectionPriorities = [];
     private readonly Dictionary<Guid, TerritoryDominanceApiDto> _recordsByFactionId = [];
+    private readonly Dictionary<Guid, TerritoryEconomicPolicyApiDto> _economicPoliciesByFactionId = [];
     private bool _hasLoaded;
 
     public TerritoryPanel(StrategicApiClient strategicApiClient)
@@ -48,7 +49,10 @@ public partial class TerritoryPanel : UserControl
 
         SelectedTerritoryText.Text =
             $"{selected.FactionName} | Dominance {selected.DominanceScore:N1} | Heat {selected.HeatHex}\n" +
-            $"Sectors {selected.ControlledSectorCount} | Priority {selected.ProtectionPriority}";
+            $"Sectors {selected.ControlledSectorCount} | Priority {selected.ProtectionPriority} | Tax {selected.TaxRatePercent:N1}% | Incentive {selected.TradeIncentivePercent:N1}%";
+
+        TaxRateTextBox.Text = selected.TaxRatePercent.ToString("N1");
+        TradeIncentiveTextBox.Text = selected.TradeIncentivePercent.ToString("N1");
     }
 
     private void OnAssignProtectionClick(object sender, RoutedEventArgs e)
@@ -103,14 +107,21 @@ public partial class TerritoryPanel : UserControl
         try
         {
             var dominance = await _strategicApiClient.GetTerritoryDominanceAsync();
+            var policies = await _strategicApiClient.GetTerritoryEconomicPoliciesAsync();
             _recordsByFactionId.Clear();
             foreach (var row in dominance)
             {
                 _recordsByFactionId[row.FactionId] = row;
             }
 
+            _economicPoliciesByFactionId.Clear();
+            foreach (var policy in policies)
+            {
+                _economicPoliciesByFactionId[policy.FactionId] = policy;
+            }
+
             RebuildRows();
-            SetStatus($"Loaded {_rows.Count} territory records.", isError: false);
+            SetStatus($"Loaded {_rows.Count} territory records with economic policy overlays.", isError: false);
         }
         catch (Exception exception)
         {
@@ -124,7 +135,7 @@ public partial class TerritoryPanel : UserControl
 
     private void RebuildRows()
     {
-        var projected = TerritoryHeatmapProjector.Build(_recordsByFactionId.Values.ToArray(), _protectionPriorities);
+        var projected = TerritoryHeatmapProjector.Build(_recordsByFactionId.Values.ToArray(), _protectionPriorities, _economicPoliciesByFactionId);
         _rows.Clear();
         foreach (var row in projected)
         {
@@ -137,11 +148,62 @@ public partial class TerritoryPanel : UserControl
         }
     }
 
+    private async void OnApplyEconomicPolicyClick(object sender, RoutedEventArgs e)
+    {
+        if (TerritoryGrid.SelectedItem is not TerritoryDominanceDisplayRow selected)
+        {
+            SetStatus("Select a faction row first.", isError: true);
+            return;
+        }
+
+        if (!TerritoryEconomicPolicyInputParser.TryParsePercent(TaxRateTextBox.Text, minimum: 0m, maximum: 50m, out var taxRatePercent))
+        {
+            SetStatus("Tax rate must be a number between 0 and 50.", isError: true);
+            return;
+        }
+
+        if (!TerritoryEconomicPolicyInputParser.TryParsePercent(TradeIncentiveTextBox.Text, minimum: -50m, maximum: 50m, out var incentivePercent))
+        {
+            SetStatus("Trade incentive must be a number between -50 and 50.", isError: true);
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var updated = await _strategicApiClient.UpsertTerritoryEconomicPolicyAsync(new UpsertTerritoryEconomicPolicyApiRequest
+            {
+                FactionId = selected.FactionId,
+                TaxRatePercent = taxRatePercent,
+                TradeIncentivePercent = incentivePercent
+            });
+
+            if (updated is null)
+            {
+                SetStatus("Faction was not found for economic policy update.", isError: true);
+                return;
+            }
+
+            _economicPoliciesByFactionId[selected.FactionId] = updated;
+            RebuildRows();
+            SetStatus($"Updated policy for {selected.FactionName}: tax {taxRatePercent:N1}% | incentive {incentivePercent:N1}%.", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
     private void SetBusy(bool isBusy)
     {
         RefreshButton.IsEnabled = !isBusy;
         AssignProtectionButton.IsEnabled = !isBusy;
         RecalculateButton.IsEnabled = !isBusy;
+        ApplyEconomicPolicyButton.IsEnabled = !isBusy;
     }
 
     private void SetStatus(string message, bool isError)

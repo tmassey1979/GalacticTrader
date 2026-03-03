@@ -6,7 +6,8 @@ public static class TerritoryHeatmapProjector
 {
     public static IReadOnlyList<TerritoryDominanceDisplayRow> Build(
         IReadOnlyList<TerritoryDominanceApiDto> records,
-        IReadOnlyDictionary<Guid, string> protectionPriorities)
+        IReadOnlyDictionary<Guid, string> protectionPriorities,
+        IReadOnlyDictionary<Guid, TerritoryEconomicPolicyApiDto> economicPolicies)
     {
         return records
             .OrderByDescending(static record => record.DominanceScore)
@@ -19,9 +20,29 @@ public static class TerritoryHeatmapProjector
                 WarMomentumScore = record.WarMomentumScore,
                 DominanceScore = record.DominanceScore,
                 HeatHex = ResolveHeatHex(record.DominanceScore),
-                ProtectionPriority = protectionPriorities.TryGetValue(record.FactionId, out var priority) ? priority : "None"
+                ProtectionPriority = protectionPriorities.TryGetValue(record.FactionId, out var priority) ? priority : "None",
+                TaxRatePercent = ResolveTaxRatePercent(record.FactionId, economicPolicies),
+                TradeIncentivePercent = ResolveTradeIncentivePercent(record.FactionId, economicPolicies)
             })
             .ToArray();
+    }
+
+    private static decimal ResolveTaxRatePercent(
+        Guid factionId,
+        IReadOnlyDictionary<Guid, TerritoryEconomicPolicyApiDto> economicPolicies)
+    {
+        return economicPolicies.TryGetValue(factionId, out var policy)
+            ? decimal.Round(policy.TaxRate * 100m, 2)
+            : 0m;
+    }
+
+    private static decimal ResolveTradeIncentivePercent(
+        Guid factionId,
+        IReadOnlyDictionary<Guid, TerritoryEconomicPolicyApiDto> economicPolicies)
+    {
+        return economicPolicies.TryGetValue(factionId, out var policy)
+            ? decimal.Round(policy.TradeIncentiveModifier * 100m, 2)
+            : 0m;
     }
 
     private static string ResolveHeatHex(float dominanceScore)

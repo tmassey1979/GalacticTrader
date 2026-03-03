@@ -314,6 +314,52 @@ public sealed class StrategicSystemsService : IStrategicSystemsService
             .ToList();
     }
 
+    public async Task<IReadOnlyList<TerritoryEconomicPolicyDto>> GetTerritoryEconomicPoliciesAsync(
+        Guid? factionId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Factions
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (factionId.HasValue && factionId.Value != Guid.Empty)
+        {
+            query = query.Where(faction => faction.Id == factionId.Value);
+        }
+
+        var factions = await query
+            .OrderBy(faction => faction.Name)
+            .ToListAsync(cancellationToken);
+
+        var observedAt = DateTime.UtcNow;
+        return factions
+            .Select(faction => MapTerritoryEconomicPolicy(faction, observedAt))
+            .ToList();
+    }
+
+    public async Task<TerritoryEconomicPolicyDto?> UpsertTerritoryEconomicPolicyAsync(
+        UpsertTerritoryEconomicPolicyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.FactionId == Guid.Empty)
+        {
+            return null;
+        }
+
+        var faction = await _dbContext.Factions
+            .FirstOrDefaultAsync(existing => existing.Id == request.FactionId, cancellationToken);
+        if (faction is null)
+        {
+            return null;
+        }
+
+        faction.TaxRate = Math.Clamp(decimal.Round(request.TaxRate, 4), 0m, 0.50m);
+        faction.TradeGoodModifier = Math.Clamp(decimal.Round(request.TradeIncentiveModifier, 4), -0.50m, 0.50m);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapTerritoryEconomicPolicy(faction, DateTime.UtcNow);
+    }
+
     public async Task<InsurancePolicyDto?> UpsertInsurancePolicyAsync(
         UpsertInsurancePolicyRequest request,
         CancellationToken cancellationToken = default)
@@ -673,6 +719,18 @@ public sealed class StrategicSystemsService : IStrategicSystemsService
             WarMomentumScore = record.WarMomentumScore,
             DominanceScore = record.DominanceScore,
             UpdatedAt = record.UpdatedAt
+        };
+    }
+
+    private static TerritoryEconomicPolicyDto MapTerritoryEconomicPolicy(Faction faction, DateTime observedAtUtc)
+    {
+        return new TerritoryEconomicPolicyDto
+        {
+            FactionId = faction.Id,
+            FactionName = faction.Name,
+            TaxRate = faction.TaxRate,
+            TradeIncentiveModifier = faction.TradeGoodModifier,
+            ObservedAtUtc = observedAtUtc
         };
     }
 

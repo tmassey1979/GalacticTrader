@@ -10,4 +10,6 @@ public sealed class TerritoryDominanceDisplayRow
     public float DominanceScore { get; init; }
     public required string HeatHex { get; init; }
     public required string ProtectionPriority { get; init; }
+    public decimal TaxRatePercent { get; init; }
+    public decimal TradeIncentivePercent { get; init; }
 }
