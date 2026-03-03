@@ -9,6 +9,7 @@ public static class EventFeedBuilder
         IReadOnlyList<CombatLogApiDto> combatLogs,
         IReadOnlyList<IntelligenceReportApiDto> intelligenceReports,
         IReadOnlyList<TerritoryDominanceApiDto> territoryDominance,
+        IReadOnlyList<NpcAgentApiDto> serviceAgents,
         DateTime capturedAtUtc)
     {
         var tradeEvents = transactions.Select(transaction => new EventFeedEntry
@@ -38,11 +39,13 @@ public static class EventFeedBuilder
             });
 
         var territoryEvents = TerritoryConflictEventProjector.Build(territoryDominance, capturedAtUtc);
+        var serviceEvents = ServicesEventProjector.Build(serviceAgents, capturedAtUtc);
 
         return tradeEvents
             .Concat(combatEvents)
             .Concat(intelEvents)
             .Concat(territoryEvents)
+            .Concat(serviceEvents)
             .OrderByDescending(static entry => entry.OccurredAtUtc)
             .ToArray();
     }

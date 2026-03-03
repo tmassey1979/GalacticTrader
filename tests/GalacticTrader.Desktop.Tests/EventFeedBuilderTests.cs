@@ -75,11 +75,25 @@ public sealed class EventFeedBuilderTests
             }
         };
 
-        var events = EventFeedBuilder.Build(transactions, combatLogs, reports, territory, capturedAt);
+        var serviceAgents = new[]
+        {
+            new NpcAgentApiDto
+            {
+                Name = "Broker-7",
+                Archetype = "Trade Conglomerate",
+                CurrentGoal = "Secure route contracts",
+                Wealth = 15000m,
+                FleetSize = 3,
+                InfluenceScore = 0.7f
+            }
+        };
 
-        Assert.Equal(4, events.Count);
+        var events = EventFeedBuilder.Build(transactions, combatLogs, reports, territory, serviceAgents, capturedAt);
+
+        Assert.Equal(5, events.Count);
         Assert.Equal("Trade", events[0].Category);
         Assert.Contains(events, static entry => entry.Category == "Territory" && entry.Title.Contains("Orion Syndicate", StringComparison.Ordinal));
+        Assert.Contains(events, static entry => entry.Category == "Services" && entry.Title.Contains("Broker-7", StringComparison.Ordinal));
         Assert.DoesNotContain(events, static entry => entry.Title.Contains("OldSignal", StringComparison.Ordinal));
         Assert.DoesNotContain(events, static entry => entry.Title.Contains("Stable League", StringComparison.Ordinal));
     }
