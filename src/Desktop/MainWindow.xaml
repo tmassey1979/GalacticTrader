@@ -271,6 +271,17 @@
 
                 <DockPanel Grid.Row="0"
                            Margin="0,0,0,8">
+                    <Button x:Name="ExportEventFeedButton"
+                            DockPanel.Dock="Right"
+                            Width="130"
+                            Height="30"
+                            Margin="6,0,0,0"
+                            Background="#2D3D57"
+                            BorderBrush="#4C607F"
+                            Foreground="#EAF2FF"
+                            FontWeight="SemiBold"
+                            Content="Export Events"
+                            Click="OnExportEventFeedClick" />
                     <Button x:Name="RefreshEventFeedButton"
                             DockPanel.Dock="Right"
                             Width="150"
@@ -293,6 +304,30 @@
                         <ComboBoxItem Content="Trade" />
                         <ComboBoxItem Content="Combat" />
                         <ComboBoxItem Content="Intel" />
+                    </ComboBox>
+                    <TextBox x:Name="EventKeywordFilter"
+                             Width="200"
+                             Height="30"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             TextChanged="OnEventKeywordTextChanged"
+                             ToolTip="Keyword filter" />
+                    <ComboBox x:Name="EventTimeWindowFilter"
+                              Width="120"
+                              Height="30"
+                              Margin="8,0,0,0"
+                              Background="#101F39"
+                              BorderBrush="#2E4A75"
+                              Foreground="#EAF2FF"
+                              SelectionChanged="OnEventFilterChanged">
+                        <ComboBoxItem IsSelected="True"
+                                      Content="All Time" />
+                        <ComboBoxItem Content="Last 1h" />
+                        <ComboBoxItem Content="Last 24h" />
+                        <ComboBoxItem Content="Last 7d" />
                     </ComboBox>
                 </DockPanel>
 

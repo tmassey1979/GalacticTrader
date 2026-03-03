@@ -9,6 +9,7 @@ using GalacticTrader.Desktop.Settings;
 using GalacticTrader.Desktop.Starmap;
 using GalacticTrader.Desktop.Trading;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -211,6 +212,34 @@ public partial class MainWindow : Window
         ApplyEventFilter();
     }
 
+    private void OnEventKeywordTextChanged(object sender, TextChangedEventArgs e)
+    {
+        ApplyEventFilter();
+    }
+
+    private void OnExportEventFeedClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var entries = _filteredEventFeed.ToArray();
+            var csv = EventFeedCsvExporter.BuildCsv(entries);
+            var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GalacticTrader");
+            Directory.CreateDirectory(root);
+            var filename = $"event-feed-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
+            var path = Path.Combine(root, filename);
+            File.WriteAllText(path, csv);
+            MessageBox.Show($"Event feed exported to {path}", "Galactic Trader", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                $"Event feed export failed: {exception.Message}",
+                "Galactic Trader",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
     private void OnMainWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
@@ -277,10 +306,23 @@ public partial class MainWindow : Window
 
     private void ApplyEventFilter()
     {
-        var selectedCategory = (EventCategoryFilter.SelectedItem as ComboBoxItem)?.Content?.ToString();
-        var filtered = string.IsNullOrWhiteSpace(selectedCategory) || string.Equals(selectedCategory, "All", StringComparison.OrdinalIgnoreCase)
-            ? _eventFeedAll
-            : _eventFeedAll.Where(entry => string.Equals(entry.Category, selectedCategory, StringComparison.OrdinalIgnoreCase)).ToList();
+        var selectedCategory = (EventCategoryFilter.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "All";
+        var keyword = EventKeywordFilter.Text ?? string.Empty;
+        var window = (EventTimeWindowFilter.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        var options = new EventFeedFilterOptions
+        {
+            Category = selectedCategory,
+            Keyword = keyword,
+            MaxAge = window switch
+            {
+                "Last 1h" => TimeSpan.FromHours(1),
+                "Last 24h" => TimeSpan.FromHours(24),
+                "Last 7d" => TimeSpan.FromDays(7),
+                _ => null
+            }
+        };
+
+        var filtered = EventFeedFilter.Apply(_eventFeedAll, options, DateTime.UtcNow);
 
         _filteredEventFeed.Clear();
         foreach (var entry in filtered)
