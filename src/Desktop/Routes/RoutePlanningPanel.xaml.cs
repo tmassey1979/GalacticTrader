@@ -11,6 +11,7 @@ public partial class RoutePlanningPanel : UserControl
     private readonly NavigationApiClient _navigationApiClient;
     private readonly ObservableCollection<RouteHopDisplayRow> _hops = [];
     private readonly ObservableCollection<RouteOptimizationDisplayRow> _optimizations = [];
+    private IReadOnlyList<RouteSectorSelectionItem> _sectorItems = [];
     private bool _hasLoaded;
 
     public RoutePlanningPanel(NavigationApiClient navigationApiClient)
@@ -48,6 +49,7 @@ public partial class RoutePlanningPanel : UserControl
                     Name = sector.Name
                 })
                 .ToArray();
+            _sectorItems = items;
 
             FromSectorCombo.ItemsSource = items;
             ToSectorCombo.ItemsSource = items;
@@ -72,7 +74,7 @@ public partial class RoutePlanningPanel : UserControl
 
     private async void OnCalculateClick(object sender, RoutedEventArgs e)
     {
-        if (!TryGetSelectedSectors(out var fromSectorId, out var toSectorId))
+        if (!TryBuildRoutePoints(out var routePoints))
         {
             return;
         }
@@ -83,17 +85,28 @@ public partial class RoutePlanningPanel : UserControl
         SetBusy(true);
         try
         {
-            var plan = await _navigationApiClient.GetRoutePlanAsync(fromSectorId, toSectorId, mode, algorithm);
-            if (plan is null)
+            var segments = new List<RoutePlanApiDto>();
+            for (var index = 0; index < routePoints.Count - 1; index++)
             {
-                _hops.Clear();
-                PlanSummaryText.Text = "No route plan found for selected sectors.";
-                RiskSummaryText.Text = "No risk simulation available.";
-                return;
+                var plan = await _navigationApiClient.GetRoutePlanAsync(routePoints[index], routePoints[index + 1], mode, algorithm);
+                if (plan is null)
+                {
+                    _hops.Clear();
+                    PlanSummaryText.Text = "No route plan found for selected sectors.";
+                    RiskSummaryText.Text = "No risk simulation available.";
+                    return;
+                }
+
+                segments.Add(plan);
             }
 
-            RenderPlan(plan);
-            SetStatus("Route plan calculated.", isError: false);
+            var mergedPlan = RoutePlanAssembler.Combine(segments);
+            RenderPlan(mergedPlan);
+            var waypointCount = routePoints.Count - 2;
+            SetStatus(waypointCount > 0
+                ? $"Route plan calculated with {waypointCount} waypoint(s)."
+                : "Route plan calculated.",
+                isError: false);
         }
         catch (Exception exception)
         {
@@ -107,7 +120,7 @@ public partial class RoutePlanningPanel : UserControl
 
     private async void OnOptimizeClick(object sender, RoutedEventArgs e)
     {
-        if (!TryGetSelectedSectors(out var fromSectorId, out var toSectorId))
+        if (!TryBuildRoutePoints(out var routePoints))
         {
             return;
         }
@@ -115,13 +128,27 @@ public partial class RoutePlanningPanel : UserControl
         SetBusy(true);
         try
         {
-            var optimization = await _navigationApiClient.GetRouteOptimizationAsync(fromSectorId, toSectorId);
+            var segmentOptimizations = new List<RouteOptimizationApiDto>();
+            for (var index = 0; index < routePoints.Count - 1; index++)
+            {
+                var optimization = await _navigationApiClient.GetRouteOptimizationAsync(routePoints[index], routePoints[index + 1]);
+                segmentOptimizations.Add(optimization);
+            }
+
+            var mergedOptimization = segmentOptimizations.Count == 1
+                ? segmentOptimizations[0]
+                : RouteOptimizationAssembler.Combine(segmentOptimizations);
+
             _optimizations.Clear();
-            AddOptimization("Fastest", optimization.Fastest);
-            AddOptimization("Cheapest", optimization.Cheapest);
-            AddOptimization("Safest", optimization.Safest);
-            AddOptimization("Balanced", optimization.Balanced);
-            SetStatus($"Loaded {_optimizations.Count} optimization profiles.", isError: false);
+            AddOptimization("Fastest", mergedOptimization.Fastest);
+            AddOptimization("Cheapest", mergedOptimization.Cheapest);
+            AddOptimization("Safest", mergedOptimization.Safest);
+            AddOptimization("Balanced", mergedOptimization.Balanced);
+            var waypointCount = routePoints.Count - 2;
+            SetStatus(waypointCount > 0
+                ? $"Loaded {_optimizations.Count} optimization profiles across {waypointCount} waypoint(s)."
+                : $"Loaded {_optimizations.Count} optimization profiles.",
+                isError: false);
         }
         catch (Exception exception)
         {
@@ -153,6 +180,33 @@ public partial class RoutePlanningPanel : UserControl
 
         fromSectorId = fromItem.SectorId;
         toSectorId = toItem.SectorId;
+        return true;
+    }
+
+    private bool TryBuildRoutePoints(out IReadOnlyList<Guid> routePoints)
+    {
+        routePoints = [];
+        if (!TryGetSelectedSectors(out var fromSectorId, out var toSectorId))
+        {
+            return false;
+        }
+
+        if (!RouteWaypointParser.TryParse(
+                WaypointsText.Text,
+                _sectorItems,
+                fromSectorId,
+                toSectorId,
+                out var waypointSectorIds,
+                out var error))
+        {
+            SetStatus(error ?? "Invalid waypoint list.", isError: true);
+            return false;
+        }
+
+        var points = new List<Guid> { fromSectorId };
+        points.AddRange(waypointSectorIds);
+        points.Add(toSectorId);
+        routePoints = points;
         return true;
     }
 
@@ -207,6 +261,7 @@ public partial class RoutePlanningPanel : UserControl
     {
         CalculateButton.IsEnabled = !isBusy;
         OptimizeButton.IsEnabled = !isBusy;
+        WaypointsText.IsEnabled = !isBusy;
     }
 
     private void SetStatus(string message, bool isError)

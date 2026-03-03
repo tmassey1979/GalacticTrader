@@ -37,6 +37,18 @@
             </StackPanel>
             <StackPanel Margin="0,0,8,0">
                 <TextBlock Foreground="#B9CBE8"
+                           Text="Waypoints" />
+                <TextBox x:Name="WaypointsText"
+                         Width="220"
+                         Height="30"
+                         ToolTip="Comma-separated sector names"
+                         Background="#101F39"
+                         BorderBrush="#2E4A75"
+                         Foreground="#EAF2FF"
+                         VerticalContentAlignment="Center" />
+            </StackPanel>
+            <StackPanel Margin="0,0,8,0">
+                <TextBlock Foreground="#B9CBE8"
                            Text="Mode" />
                 <ComboBox x:Name="TravelModeCombo"
                           Width="130"
