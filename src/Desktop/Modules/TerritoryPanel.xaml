@@ -25,32 +25,104 @@
                     Click="OnRefreshClick" />
         </DockPanel>
 
-        <DataGrid Grid.Row="1"
-                  x:Name="TerritoryGrid"
-                  Background="#0C152A"
-                  BorderBrush="#2F4B78"
-                  Foreground="#DCE7FF"
-                  AutoGenerateColumns="False"
-                  HeadersVisibility="Column"
-                  IsReadOnly="True"
-                  CanUserAddRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Faction"
-                                    Binding="{Binding FactionName}"
-                                    Width="*" />
-                <DataGridTextColumn Header="Sectors"
-                                    Binding="{Binding ControlledSectorCount}"
-                                    Width="70" />
-                <DataGridTextColumn Header="Infra"
-                                    Binding="{Binding InfrastructureControlScore, StringFormat={}{0:N1}}"
-                                    Width="70" />
-                <DataGridTextColumn Header="Momentum"
-                                    Binding="{Binding WarMomentumScore, StringFormat={}{0:N1}}"
-                                    Width="80" />
-                <DataGridTextColumn Header="Dominance"
-                                    Binding="{Binding DominanceScore, StringFormat={}{0:N1}}"
-                                    Width="80" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid Grid.Column="0"
+                      x:Name="TerritoryGrid"
+                      Background="#0C152A"
+                      BorderBrush="#2F4B78"
+                      Foreground="#DCE7FF"
+                      AutoGenerateColumns="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      SelectionMode="Single"
+                      SelectionChanged="OnTerritorySelectionChanged">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Faction"
+                                        Binding="{Binding FactionName}"
+                                        Width="*" />
+                    <DataGridTextColumn Header="Sectors"
+                                        Binding="{Binding ControlledSectorCount}"
+                                        Width="70" />
+                    <DataGridTextColumn Header="Infra"
+                                        Binding="{Binding InfrastructureControlScore, StringFormat={}{0:N1}}"
+                                        Width="70" />
+                    <DataGridTextColumn Header="Momentum"
+                                        Binding="{Binding WarMomentumScore, StringFormat={}{0:N1}}"
+                                        Width="80" />
+                    <DataGridTextColumn Header="Dominance"
+                                        Binding="{Binding DominanceScore, StringFormat={}{0:N1}}"
+                                        Width="80" />
+                    <DataGridTextColumn Header="Heat"
+                                        Binding="{Binding HeatHex}"
+                                        Width="80" />
+                    <DataGridTextColumn Header="Priority"
+                                        Binding="{Binding ProtectionPriority}"
+                                        Width="70" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Border Grid.Column="2"
+                    Padding="8"
+                    Background="#0E203D"
+                    BorderBrush="#2E4A75"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <StackPanel>
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
+                               Text="Territory Heatmap Control" />
+                    <TextBlock x:Name="SelectedTerritoryText"
+                               Margin="0,4,0,8"
+                               Foreground="#EAF2FF"
+                               TextWrapping="Wrap"
+                               Text="Select a faction row." />
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center"
+                                   Foreground="#B9CBE8"
+                                   Text="Protection" />
+                        <ComboBox x:Name="ProtectionPriorityCombo"
+                                  Width="90"
+                                  Height="28"
+                                  Margin="8,0,0,0"
+                                  Background="#101F39"
+                                  BorderBrush="#2E4A75"
+                                  Foreground="#EAF2FF">
+                            <ComboBoxItem IsSelected="True" Content="Low" />
+                            <ComboBoxItem Content="Medium" />
+                            <ComboBoxItem Content="High" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                Margin="0,8,0,0">
+                        <Button x:Name="AssignProtectionButton"
+                                Width="125"
+                                Height="28"
+                                Margin="0,0,6,0"
+                                Background="#00A86B"
+                                BorderBrush="#20C284"
+                                Foreground="White"
+                                Content="Assign Protection"
+                                Click="OnAssignProtectionClick" />
+                        <Button x:Name="RecalculateButton"
+                                Width="95"
+                                Height="28"
+                                Background="#1F6FEB"
+                                BorderBrush="#4A89F6"
+                                Foreground="White"
+                                Content="Recalculate"
+                                Click="OnRecalculateClick" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

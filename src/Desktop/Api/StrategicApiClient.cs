@@ -44,4 +44,23 @@ public sealed class StrategicApiClient
         var payload = await response.Content.ReadFromJsonAsync<List<TerritoryDominanceApiDto>>(cancellationToken);
         return payload ?? [];
     }
+
+    public async Task<TerritoryDominanceApiDto?> RecalculateTerritoryDominanceAsync(
+        Guid factionId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync($"/api/strategic/territory-dominance/recalculate/{factionId}", content: null, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Recalculate territory dominance failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<TerritoryDominanceApiDto>(cancellationToken);
+    }
 }

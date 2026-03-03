@@ -1,0 +1,38 @@
+using GalacticTrader.Desktop.Api;
+
+namespace GalacticTrader.Desktop.Modules;
+
+public static class TerritoryHeatmapProjector
+{
+    public static IReadOnlyList<TerritoryDominanceDisplayRow> Build(
+        IReadOnlyList<TerritoryDominanceApiDto> records,
+        IReadOnlyDictionary<Guid, string> protectionPriorities)
+    {
+        return records
+            .OrderByDescending(static record => record.DominanceScore)
+            .Select(record => new TerritoryDominanceDisplayRow
+            {
+                FactionId = record.FactionId,
+                FactionName = record.FactionName,
+                ControlledSectorCount = record.ControlledSectorCount,
+                InfrastructureControlScore = record.InfrastructureControlScore,
+                WarMomentumScore = record.WarMomentumScore,
+                DominanceScore = record.DominanceScore,
+                HeatHex = ResolveHeatHex(record.DominanceScore),
+                ProtectionPriority = protectionPriorities.TryGetValue(record.FactionId, out var priority) ? priority : "None"
+            })
+            .ToArray();
+    }
+
+    private static string ResolveHeatHex(float dominanceScore)
+    {
+        return dominanceScore switch
+        {
+            < 20f => "#2E7D32",
+            < 40f => "#558B2F",
+            < 60f => "#F9A825",
+            < 80f => "#EF6C00",
+            _ => "#C62828"
+        };
+    }
+}
