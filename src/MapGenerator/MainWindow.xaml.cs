@@ -1,5 +1,6 @@
 using GalacticTrader.MapGenerator.Api;
 using GalacticTrader.MapGenerator.Generation;
+using System.Globalization;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Input;
@@ -18,8 +19,8 @@ public partial class MainWindow : Window
 
         var options = MapGeneratorApiOptions.FromEnvironment();
         ApiBaseUrlText.Text = options.BaseUrl;
-        SeedText.Text = DateTime.UtcNow.Ticks.ToString();
-        SectorCountText.Text = "32";
+        SeedText.Text = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+        SectorCountText.Text = "1200";
         RouteDensityText.Text = "2";
     }
 
@@ -27,7 +28,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var seed = ParseInteger(SeedText.Text, "seed");
+            var seed = ParseSeed(SeedText.Text);
             var sectorCount = ParseInteger(SectorCountText.Text, "sector count");
             var routeDensity = ParseInteger(RouteDensityText.Text, "route density");
 
@@ -68,15 +69,26 @@ public partial class MainWindow : Window
 
             if (ReplaceExistingCheck.IsChecked == true)
             {
-                await ReplaceExistingMapAsync(apiClient);
+                var replacementResult = await ReplaceExistingMapAsync(apiClient);
+                if (replacementResult.SectorDeleteWarnings.Count > 0)
+                {
+                    SetStatus(
+                        $"Replace-existing completed with warnings. Routes deleted: {replacementResult.RoutesDeleted}, sectors deleted: {replacementResult.SectorsDeleted}, sectors kept: {replacementResult.SectorDeleteWarnings.Count}. Publishing new map anyway.",
+                        isError: false);
+                }
             }
 
-            var sectorIdByIndex = await CreateSectorsAsync(apiClient, _generatedLayout);
+            var createWarnings = new List<string>();
+            var sectorIdByIndex = await CreateSectorsAsync(apiClient, _generatedLayout, createWarnings);
             await CreateRoutesAsync(apiClient, _generatedLayout, sectorIdByIndex);
 
-            SetStatus(
-                $"Published {_generatedLayout.Sectors.Count} sectors and {_generatedLayout.Routes.Count} routes to {ApiBaseUrlText.Text.Trim()}.",
-                isError: false);
+            var publishMessage = $"Published {_generatedLayout.Sectors.Count} sectors and {_generatedLayout.Routes.Count} routes to {ApiBaseUrlText.Text.Trim()}.";
+            if (createWarnings.Count > 0)
+            {
+                publishMessage += $" {createWarnings.Count} sector name conflict(s) were auto-resolved.";
+            }
+
+            SetStatus(publishMessage, isError: false);
         }
         catch (Exception exception)
         {
@@ -138,18 +150,42 @@ public partial class MainWindow : Window
         SetStatus("Bearer token acquired. You can now load and publish map data.", isError: false);
     }
 
-    private static async Task<Dictionary<int, Guid>> CreateSectorsAsync(MapNavigationApiClient apiClient, GeneratedMapLayout layout)
+    private static async Task<Dictionary<int, Guid>> CreateSectorsAsync(
+        MapNavigationApiClient apiClient,
+        GeneratedMapLayout layout,
+        ICollection<string> warnings)
     {
         var sectorIdByIndex = new Dictionary<int, Guid>();
         foreach (var sector in layout.Sectors)
         {
-            var created = await apiClient.CreateSectorAsync(new CreateSectorApiRequest
+            var sectorName = sector.Name;
+            SectorApiDto? created = null;
+            for (var attempt = 0; attempt < 4; attempt++)
             {
-                Name = sector.Name,
-                X = sector.X,
-                Y = sector.Y,
-                Z = sector.Z
-            });
+                try
+                {
+                    created = await apiClient.CreateSectorAsync(new CreateSectorApiRequest
+                    {
+                        Name = sectorName,
+                        X = sector.X,
+                        Y = sector.Y,
+                        Z = sector.Z
+                    });
+                    break;
+                }
+                catch (InvalidOperationException exception) when (
+                    IsConflict(exception) &&
+                    attempt < 3)
+                {
+                    sectorName = $"{sector.Name}-{sector.Index + 1}-{attempt + 1}";
+                    warnings.Add($"Sector '{sector.Name}' already existed. Created '{sectorName}' instead.");
+                }
+            }
+
+            if (created is null)
+            {
+                throw new InvalidOperationException($"Failed to create sector '{sector.Name}' after conflict retries.");
+            }
 
             sectorIdByIndex[sector.Index] = created.Id;
         }
@@ -184,19 +220,33 @@ public partial class MainWindow : Window
         }
     }
 
-    private static async Task ReplaceExistingMapAsync(MapNavigationApiClient apiClient)
+    private static async Task<(int RoutesDeleted, int SectorsDeleted, List<string> SectorDeleteWarnings)> ReplaceExistingMapAsync(MapNavigationApiClient apiClient)
     {
         var routes = await apiClient.GetRoutesAsync();
+        var routesDeleted = 0;
         foreach (var route in routes)
         {
             await apiClient.DeleteRouteAsync(route.Id);
+            routesDeleted++;
         }
 
         var sectors = await apiClient.GetSectorsAsync();
+        var sectorsDeleted = 0;
+        var warnings = new List<string>();
         foreach (var sector in sectors)
         {
-            await apiClient.DeleteSectorAsync(sector.Id);
+            try
+            {
+                await apiClient.DeleteSectorAsync(sector.Id);
+                sectorsDeleted++;
+            }
+            catch (InvalidOperationException exception)
+            {
+                warnings.Add($"{sector.Name}: {exception.Message}");
+            }
         }
+
+        return (routesDeleted, sectorsDeleted, warnings);
     }
 
     private void SetBusy(bool isBusy)
@@ -224,5 +274,61 @@ public partial class MainWindow : Window
         }
 
         return parsed;
+    }
+
+    private static int ParseSeed(string value)
+    {
+        var trimmed = value.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            throw new InvalidOperationException("Invalid seed. Enter a number or short text.");
+        }
+
+        if (int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intSeed))
+        {
+            return intSeed;
+        }
+
+        if (long.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longSeed))
+        {
+            return FoldLongToInt(longSeed);
+        }
+
+        if (ulong.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unsignedSeed))
+        {
+            return FoldLongToInt(unchecked((long)unsignedSeed));
+        }
+
+        return HashSeedText(trimmed);
+    }
+
+    private static int FoldLongToInt(long value)
+    {
+        unchecked
+        {
+            return (int)(value ^ (value >> 32));
+        }
+    }
+
+    private static int HashSeedText(string text)
+    {
+        unchecked
+        {
+            var hash = 2166136261;
+            foreach (var character in text)
+            {
+                hash ^= character;
+                hash *= 16777619;
+            }
+
+            return (int)hash;
+        }
+    }
+
+    private static bool IsConflict(InvalidOperationException exception)
+    {
+        return exception.Message.Contains("409", StringComparison.OrdinalIgnoreCase) ||
+               exception.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase) ||
+               exception.Message.Contains("conflict", StringComparison.OrdinalIgnoreCase);
     }
 }

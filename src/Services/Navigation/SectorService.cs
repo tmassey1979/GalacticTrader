@@ -1,12 +1,15 @@
 namespace GalacticTrader.Services.Navigation;
 
+using GalacticTrader.Data;
 using GalacticTrader.Data.Models;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 public sealed class SectorService : ISectorService
 {
+    private readonly GalacticTraderDbContext _dbContext;
     private readonly ISectorRepository _sectorRepository;
     private readonly IRouteRepository _routeRepository;
     private readonly IGraphValidationService _graphValidationService;
@@ -14,12 +17,14 @@ public sealed class SectorService : ISectorService
     private readonly ILogger<SectorService> _logger;
 
     public SectorService(
+        GalacticTraderDbContext dbContext,
         ISectorRepository sectorRepository,
         IRouteRepository routeRepository,
         IGraphValidationService graphValidationService,
         ICacheService cache,
         ILogger<SectorService> logger)
     {
+        _dbContext = dbContext;
         _sectorRepository = sectorRepository;
         _routeRepository = routeRepository;
         _graphValidationService = graphValidationService;
@@ -198,6 +203,51 @@ public sealed class SectorService : ISectorService
         if (sector is null)
         {
             return false;
+        }
+
+        var shipsToUpdate = await _dbContext.Ships
+            .Where(ship => ship.CurrentSectorId == sectorId || ship.TargetSectorId == sectorId)
+            .ToListAsync(cancellationToken);
+        foreach (var ship in shipsToUpdate)
+        {
+            if (ship.CurrentSectorId == sectorId)
+            {
+                ship.CurrentSectorId = null;
+            }
+
+            if (ship.TargetSectorId == sectorId)
+            {
+                ship.TargetSectorId = null;
+            }
+        }
+
+        var npcAgentsToUpdate = await _dbContext.NPCAgents
+            .Where(agent => agent.CurrentLocationId == sectorId || agent.TargetLocationId == sectorId)
+            .ToListAsync(cancellationToken);
+        foreach (var agent in npcAgentsToUpdate)
+        {
+            if (agent.CurrentLocationId == sectorId)
+            {
+                agent.CurrentLocationId = null;
+            }
+
+            if (agent.TargetLocationId == sectorId)
+            {
+                agent.TargetLocationId = null;
+            }
+        }
+
+        var npcShipsToUpdate = await _dbContext.Set<NPCShip>()
+            .Where(ship => ship.CurrentSectorId == sectorId)
+            .ToListAsync(cancellationToken);
+        foreach (var npcShip in npcShipsToUpdate)
+        {
+            npcShip.CurrentSectorId = null;
+        }
+
+        if (shipsToUpdate.Count > 0 || npcAgentsToUpdate.Count > 0 || npcShipsToUpdate.Count > 0)
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
         var attachedRoutes = await _routeRepository.GetBySectorIdAsync(sectorId, cancellationToken);

@@ -82,7 +82,7 @@
                              Foreground="#EBF4FF"
                              FontFamily="Consolas" />
 
-                    <TextBlock Text="Sector Count"
+                    <TextBlock Text="Sector Count (4-1200)"
                                Foreground="#B9CBE8" />
                     <TextBox x:Name="SectorCountText"
                              Margin="0,6,0,12"

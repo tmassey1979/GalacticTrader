@@ -2,9 +2,12 @@ namespace GalacticTrader.MapGenerator.Generation;
 
 public sealed class MapLayoutGenerator
 {
+    private const int MinimumSectorCount = 4;
+    private const int MaximumSectorCount = 1200;
+
     public GeneratedMapLayout Generate(int seed, int sectorCount, int routeDensity)
     {
-        var normalizedSectorCount = Math.Clamp(sectorCount, 4, 160);
+        var normalizedSectorCount = Math.Clamp(sectorCount, MinimumSectorCount, MaximumSectorCount);
         var normalizedRouteDensity = Math.Clamp(routeDensity, 1, 4);
         var random = new Random(seed);
 
@@ -31,7 +34,8 @@ public sealed class MapLayoutGenerator
             AddRoute(uniqueEdges, routes, from, to, isHighRisk: false);
         }
 
-        var targetRouteCount = normalizedSectorCount * normalizedRouteDensity;
+        var maxUniqueRoutes = (normalizedSectorCount * (normalizedSectorCount - 1)) / 2;
+        var targetRouteCount = Math.Min(normalizedSectorCount * normalizedRouteDensity, maxUniqueRoutes);
         while (routes.Count < targetRouteCount)
         {
             var from = random.Next(0, normalizedSectorCount);
