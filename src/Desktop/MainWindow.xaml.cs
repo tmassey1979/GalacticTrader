@@ -1,4 +1,5 @@
 using GalacticTrader.Desktop.Api;
+using GalacticTrader.Desktop.Fleet;
 using GalacticTrader.Desktop.Starmap;
 using GalacticTrader.Desktop.Trading;
 using System.Windows;
@@ -20,13 +21,15 @@ public partial class MainWindow : Window
         StarmapScene scene,
         DesktopSession session,
         EconomyApiClient economyApiClient,
-        MarketApiClient marketApiClient)
+        MarketApiClient marketApiClient,
+        FleetApiClient fleetApiClient)
     {
         _scene = scene;
         _session = session;
         InitializeComponent();
         BuildStarmap(_scene);
         TradingHost.Content = new TradingPanel(_session, economyApiClient, marketApiClient);
+        FleetHost.Content = new FleetPanel(_session, fleetApiClient);
         ApplyCamera(updateSliders: true);
 
         if (!string.IsNullOrWhiteSpace(session.Username))

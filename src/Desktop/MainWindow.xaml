@@ -114,10 +114,8 @@
                                         Margin="12" />
                     </TabItem>
                     <TabItem Header="Fleet">
-                        <TextBlock Margin="12"
-                                   Foreground="#CFDDFC"
-                                   TextWrapping="Wrap"
-                                   Text="Fleet management placeholder for ship loadouts, escorts, and crew assignments." />
+                        <ContentControl x:Name="FleetHost"
+                                        Margin="12" />
                     </TabItem>
                     <TabItem Header="Intel">
                         <TextBlock Margin="12"
