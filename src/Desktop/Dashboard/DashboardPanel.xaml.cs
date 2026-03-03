@@ -15,6 +15,7 @@ public partial class DashboardPanel : UserControl
     private readonly FleetApiClient _fleetApiClient;
     private readonly ReputationApiClient _reputationApiClient;
     private readonly StrategicApiClient _strategicApiClient;
+    private readonly TelemetryApiClient _telemetryApiClient;
     private bool _hasLoaded;
 
     public DashboardPanel(
@@ -24,7 +25,8 @@ public partial class DashboardPanel : UserControl
         MarketApiClient marketApiClient,
         FleetApiClient fleetApiClient,
         ReputationApiClient reputationApiClient,
-        StrategicApiClient strategicApiClient)
+        StrategicApiClient strategicApiClient,
+        TelemetryApiClient telemetryApiClient)
     {
         _session = session;
         _scene = scene;
@@ -33,6 +35,7 @@ public partial class DashboardPanel : UserControl
         _fleetApiClient = fleetApiClient;
         _reputationApiClient = reputationApiClient;
         _strategicApiClient = strategicApiClient;
+        _telemetryApiClient = telemetryApiClient;
 
         InitializeComponent();
         Loaded += OnLoaded;
@@ -65,7 +68,8 @@ public partial class DashboardPanel : UserControl
             var standingsTask = _reputationApiClient.GetFactionStandingsAsync(_session.PlayerId);
             var dangerousRoutesTask = _navigationApiClient.GetDangerousRoutesAsync(65);
             var reportsTask = _strategicApiClient.GetIntelligenceReportsAsync(_session.PlayerId);
-            await Task.WhenAll(transactionsTask, shipsTask, escortTask, standingsTask, dangerousRoutesTask, reportsTask);
+            var globalSummaryTask = _telemetryApiClient.GetGlobalSummaryAsync();
+            await Task.WhenAll(transactionsTask, shipsTask, escortTask, standingsTask, dangerousRoutesTask, reportsTask, globalSummaryTask);
 
             var summary = DashboardSummaryBuilder.Build(
                 transactionsTask.Result,
@@ -86,6 +90,14 @@ public partial class DashboardPanel : UserControl
             RiskRoutesValue.Text = $"High risk {summary.HighRiskRoutes}";
             IntelReportsValue.Text = summary.IntelligenceReports.ToString();
             ThreatsValue.Text = summary.ThreatAlerts.ToString();
+
+            var globalMetrics = DashboardGlobalMetricsBuilder.Build(globalSummaryTask.Result);
+            GlobalUsersValue.Text = globalMetrics.TotalUsers.ToString("N0");
+            GlobalActivePlayersValue.Text = globalMetrics.ActivePlayers24h.ToString("N0");
+            GlobalBattlesPerHourValue.Text = globalMetrics.AvgBattlesPerHour.ToString("N2");
+            GlobalEconomicStabilityValue.Text = globalMetrics.EconomicStabilityIndex.ToString("N1");
+            GlobalTopReputationValue.Text = globalMetrics.TopReputationPlayerDisplay;
+            GlobalTopFinancialValue.Text = globalMetrics.TopFinancialPlayerDisplay;
             SetStatus("Strategic dashboard refreshed.", isError: false);
         }
         catch (Exception exception)

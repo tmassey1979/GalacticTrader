@@ -6,6 +6,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0"
@@ -140,5 +141,71 @@
                 </StackPanel>
             </Border>
         </UniformGrid>
+
+        <Border Grid.Row="2"
+                Margin="0,8,0,0"
+                Padding="8"
+                Background="#0E203D"
+                BorderBrush="#2E4A75"
+                BorderThickness="1"
+                CornerRadius="6">
+            <StackPanel>
+                <TextBlock Foreground="#B9CBE8"
+                           FontWeight="SemiBold"
+                           Text="Global Strategic Metrics" />
+                <UniformGrid Margin="0,8,0,0"
+                             Rows="2"
+                             Columns="3">
+                    <StackPanel Margin="0,0,8,6">
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Total Users" />
+                        <TextBlock x:Name="GlobalUsersValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,8,6">
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Active Players (24h)" />
+                        <TextBlock x:Name="GlobalActivePlayersValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,0,6">
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Avg Battles / Hour" />
+                        <TextBlock x:Name="GlobalBattlesPerHourValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,8,0">
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Economic Stability Index" />
+                        <TextBlock x:Name="GlobalEconomicStabilityValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,8,0">
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Top Reputation Player" />
+                        <TextBlock x:Name="GlobalTopReputationValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Top Financial Player" />
+                        <TextBlock x:Name="GlobalTopFinancialValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                </UniformGrid>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

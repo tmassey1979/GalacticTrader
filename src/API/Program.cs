@@ -18,6 +18,7 @@ using GalacticTrader.Services.Npc;
 using GalacticTrader.Services.Reputation;
 using GalacticTrader.Services.Strategic;
 using GalacticTrader.Services.Realtime;
+using GalacticTrader.Services.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Prometheus;
@@ -99,6 +100,7 @@ builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IStrategicSystemsService, StrategicSystemsService>();
 builder.Services.AddScoped<IDashboardRealtimeSnapshotService, DashboardRealtimeSnapshotService>();
+builder.Services.AddScoped<IGlobalMetricsService, GlobalMetricsService>();
 builder.Services.AddSingleton<IBalanceControlService, BalanceControlService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IVoiceService, VoiceService>();
@@ -145,6 +147,17 @@ app.Use(async (context, next) =>
 });
 
 app.MapMetrics("/metrics");
+
+var telemetry = app.MapGroup("/api/telemetry")
+    .WithTags("Telemetry");
+
+telemetry.MapGet("/global-summary", async (
+    IGlobalMetricsService globalMetricsService,
+    CancellationToken cancellationToken) =>
+{
+    var summary = await globalMetricsService.GetGlobalSummaryAsync(cancellationToken);
+    return Results.Ok(summary);
+});
 
 var auth = app.MapGroup("/api/auth")
     .WithTags("Authentication");
