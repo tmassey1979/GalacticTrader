@@ -22,10 +22,15 @@ using GalacticTrader.Services.Strategic;
 using GalacticTrader.Services.Realtime;
 using GalacticTrader.Services.Telemetry;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Prometheus;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Security.Cryptography;
+using System.Security.Claims;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -259,11 +264,58 @@ auth.MapPost("/register", async (
 auth.MapPost("/login", async (
     LoginPlayerApiRequest request,
     IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    IOptions<KeycloakOptions> keycloakOptionsAccessor,
+    IHttpClientFactory httpClientFactory,
     CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
     {
         return Results.BadRequest(new { error = "Username and password are required." });
+    }
+
+    var keycloakOptions = keycloakOptionsAccessor.Value;
+    var keycloakAttempt = await TryLoginAgainstKeycloakAsync(
+        request.Username,
+        request.Password,
+        keycloakOptions,
+        httpClientFactory,
+        cancellationToken);
+
+    if (keycloakAttempt.Success &&
+        keycloakAttempt.Session is { } keycloakSession)
+    {
+        var normalizedRoles = keycloakSession.Roles
+            .Where(role => !string.IsNullOrWhiteSpace(role))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (!normalizedRoles.Contains(AuthorizationPolicies.PlayerRole, StringComparer.OrdinalIgnoreCase))
+        {
+            normalizedRoles.Add(AuthorizationPolicies.PlayerRole);
+        }
+
+        var identity = await EnsurePlayerIdentityForKeycloakLoginAsync(
+            dbContext,
+            keycloakSession.KeycloakUserId,
+            keycloakSession.KeycloakUserIdAsGuid,
+            keycloakSession.Username,
+            keycloakSession.Email,
+            normalizedRoles,
+            cancellationToken);
+
+        await BootstrapNewPlayerAsync(
+            dbContext,
+            identity,
+            cancellationToken,
+            keycloakSession.KeycloakUserIdAsGuid);
+
+        return Results.Ok(new LoginResult(identity, keycloakSession.AccessToken, keycloakSession.ExpiresAtUtc));
+    }
+
+    if (keycloakAttempt.InvalidCredentials)
+    {
+        return Results.Unauthorized();
     }
 
     var loginResult = await authService.LoginAsync(
@@ -1903,6 +1955,240 @@ communication.Map("/ws/{channelType}/{channelKey}", async (
 
 app.Run();
 
+static async Task<(bool Success, bool InvalidCredentials, (string AccessToken, DateTimeOffset ExpiresAtUtc, string KeycloakUserId, Guid KeycloakUserIdAsGuid, string Username, string Email, IReadOnlyCollection<string> Roles)? Session)> TryLoginAgainstKeycloakAsync(
+    string username,
+    string password,
+    KeycloakOptions options,
+    IHttpClientFactory httpClientFactory,
+    CancellationToken cancellationToken)
+{
+    if (string.IsNullOrWhiteSpace(options.ServerUrl) ||
+        string.IsNullOrWhiteSpace(options.Realm) ||
+        string.IsNullOrWhiteSpace(options.ClientId))
+    {
+        return (false, false, null);
+    }
+
+    var tokenEndpoint = $"{options.ServerUrl.TrimEnd('/')}/realms/{Uri.EscapeDataString(options.Realm.Trim())}/protocol/openid-connect/token";
+    var payload = new Dictionary<string, string>
+    {
+        ["grant_type"] = "password",
+        ["client_id"] = options.ClientId.Trim(),
+        ["username"] = username.Trim(),
+        ["password"] = password,
+        ["scope"] = "openid profile email"
+    };
+
+    if (!string.IsNullOrWhiteSpace(options.ClientSecret))
+    {
+        payload["client_secret"] = options.ClientSecret.Trim();
+    }
+
+    using var form = new FormUrlEncodedContent(payload);
+    return await ExecuteKeycloakLoginRequestAsync(
+        tokenEndpoint,
+        form,
+        username,
+        httpClientFactory,
+        cancellationToken);
+}
+
+static async Task<(bool Success, bool InvalidCredentials, (string AccessToken, DateTimeOffset ExpiresAtUtc, string KeycloakUserId, Guid KeycloakUserIdAsGuid, string Username, string Email, IReadOnlyCollection<string> Roles)? Session)> ExecuteKeycloakLoginRequestAsync(
+    string tokenEndpoint,
+    FormUrlEncodedContent form,
+    string requestedUsername,
+    IHttpClientFactory httpClientFactory,
+    CancellationToken cancellationToken)
+{
+    using var httpClient = httpClientFactory.CreateClient();
+    HttpResponseMessage response;
+    try
+    {
+        response = await httpClient.PostAsync(tokenEndpoint, form, cancellationToken);
+    }
+    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+    {
+        return (false, false, null);
+    }
+    catch (HttpRequestException)
+    {
+        return (false, false, null);
+    }
+
+    if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
+    {
+        return (false, true, null);
+    }
+
+    if (!response.IsSuccessStatusCode)
+    {
+        return (false, false, null);
+    }
+
+    using var payloadJson = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken);
+    if (payloadJson is null ||
+        !payloadJson.RootElement.TryGetProperty("access_token", out var accessTokenElement) ||
+        accessTokenElement.ValueKind != JsonValueKind.String)
+    {
+        return (false, false, null);
+    }
+
+    var accessToken = accessTokenElement.GetString();
+    if (string.IsNullOrWhiteSpace(accessToken))
+    {
+        return (false, false, null);
+    }
+
+    var expiresInSeconds =
+        payloadJson.RootElement.TryGetProperty("expires_in", out var expiresElement) &&
+        expiresElement.ValueKind == JsonValueKind.Number &&
+        expiresElement.TryGetInt32(out var parsedSeconds)
+            ? parsedSeconds
+            : 0;
+
+    JwtSecurityToken jwt;
+    try
+    {
+        jwt = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+    }
+    catch (ArgumentException)
+    {
+        return (false, false, null);
+    }
+
+    var keycloakUserId = jwt.Claims.FirstOrDefault(claim => claim.Type == "sub")?.Value;
+    if (string.IsNullOrWhiteSpace(keycloakUserId))
+    {
+        return (false, false, null);
+    }
+
+    var resolvedUsername =
+        jwt.Claims.FirstOrDefault(claim => claim.Type == "preferred_username")?.Value
+        ?? requestedUsername.Trim();
+    var resolvedEmail =
+        jwt.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.Email)?.Value
+        ?? jwt.Claims.FirstOrDefault(claim => claim.Type == "email")?.Value
+        ?? $"{resolvedUsername}@local.invalid";
+
+    var expiresAtUtc = expiresInSeconds > 0
+        ? DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds)
+        : (jwt.ValidTo > DateTime.MinValue ? new DateTimeOffset(jwt.ValidTo) : DateTimeOffset.UtcNow.AddHours(1));
+
+    var roles = ExtractRolesFromToken(jwt);
+    var keycloakGuid = ParseKeycloakSubjectAsGuid(keycloakUserId);
+
+    return (true, false, (accessToken, expiresAtUtc, keycloakUserId, keycloakGuid, resolvedUsername, resolvedEmail, roles));
+}
+
+static IReadOnlyCollection<string> ExtractRolesFromToken(JwtSecurityToken token)
+{
+    var roles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    foreach (var claim in token.Claims.Where(claim =>
+                 claim.Type == ClaimTypes.Role ||
+                 claim.Type.Equals("role", StringComparison.OrdinalIgnoreCase) ||
+                 claim.Type.Equals("roles", StringComparison.OrdinalIgnoreCase)))
+    {
+        foreach (var role in claim.Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            roles.Add(role);
+        }
+    }
+
+    var realmAccess = token.Claims.FirstOrDefault(claim => claim.Type.Equals("realm_access", StringComparison.OrdinalIgnoreCase))?.Value;
+    if (!string.IsNullOrWhiteSpace(realmAccess))
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(realmAccess);
+            if (json.RootElement.TryGetProperty("roles", out var roleArray) &&
+                roleArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var roleElement in roleArray.EnumerateArray())
+                {
+                    if (roleElement.ValueKind != JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    var role = roleElement.GetString();
+                    if (!string.IsNullOrWhiteSpace(role))
+                    {
+                        roles.Add(role);
+                    }
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Ignore malformed realm access role payloads.
+        }
+    }
+
+    return roles.ToList();
+}
+
+static Guid ParseKeycloakSubjectAsGuid(string subject)
+{
+    if (Guid.TryParse(subject, out var parsed))
+    {
+        return parsed;
+    }
+
+    var hash = SHA256.HashData(Encoding.UTF8.GetBytes(subject));
+    var guidBytes = new byte[16];
+    Array.Copy(hash, guidBytes, guidBytes.Length);
+    return new Guid(guidBytes);
+}
+
+static async Task<PlayerIdentity> EnsurePlayerIdentityForKeycloakLoginAsync(
+    GalacticTraderDbContext dbContext,
+    string keycloakUserId,
+    Guid keycloakUserIdAsGuid,
+    string username,
+    string email,
+    IReadOnlyCollection<string> requiredRoles,
+    CancellationToken cancellationToken)
+{
+    var normalizedUsername = username.Trim();
+    var normalizedEmail = email.Trim();
+
+    var existingUserAccount = await dbContext.UserAccounts
+        .AsNoTracking()
+        .FirstOrDefaultAsync(
+            account =>
+                account.KeycloakId == keycloakUserId ||
+                account.Username == normalizedUsername ||
+                account.Email == normalizedEmail,
+            cancellationToken);
+
+    var existingPlayer = await dbContext.Players
+        .AsNoTracking()
+        .FirstOrDefaultAsync(
+            player =>
+                player.KeycloakUserId == keycloakUserIdAsGuid ||
+                player.Username == normalizedUsername ||
+                player.Email == normalizedEmail,
+            cancellationToken);
+
+    var playerId = existingPlayer?.Id ?? existingUserAccount?.Id ?? Guid.NewGuid();
+
+    await EnsureUserAccountRolesAsync(
+        dbContext,
+        playerId,
+        normalizedUsername,
+        normalizedEmail,
+        requiredRoles,
+        cancellationToken,
+        keycloakUserId);
+
+    var registeredAt = existingPlayer is null
+        ? DateTimeOffset.UtcNow
+        : new DateTimeOffset(DateTime.SpecifyKind(existingPlayer.CreatedAt, DateTimeKind.Utc));
+
+    return new PlayerIdentity(playerId, normalizedUsername, normalizedEmail, registeredAt);
+}
+
 static async Task<IResult?> RequireMapAdminAsync(
     HttpContext context,
     IAuthService authService,
@@ -2068,10 +2354,14 @@ static async Task EnsureUserAccountRolesAsync(
     string username,
     string email,
     IReadOnlyCollection<string> requiredRoles,
-    CancellationToken cancellationToken)
+    CancellationToken cancellationToken,
+    string? keycloakId = null)
 {
     var normalizedUsername = username.Trim();
     var normalizedEmail = email.Trim();
+    var resolvedKeycloakId = string.IsNullOrWhiteSpace(keycloakId)
+        ? playerId.ToString("D")
+        : keycloakId.Trim();
 
     var userAccount = await dbContext.UserAccounts
         .FirstOrDefaultAsync(
@@ -2090,7 +2380,7 @@ static async Task EnsureUserAccountRolesAsync(
             Email = normalizedEmail,
             FirstName = normalizedUsername,
             LastName = "Pilot",
-            KeycloakId = playerId.ToString("D"),
+            KeycloakId = resolvedKeycloakId,
             Roles = []
         };
 
@@ -2100,7 +2390,7 @@ static async Task EnsureUserAccountRolesAsync(
     {
         userAccount.Username = normalizedUsername;
         userAccount.Email = normalizedEmail;
-        userAccount.KeycloakId = playerId.ToString("D");
+        userAccount.KeycloakId = resolvedKeycloakId;
     }
 
     foreach (var role in requiredRoles.Where(role => !string.IsNullOrWhiteSpace(role)))
@@ -2119,11 +2409,13 @@ static async Task EnsureUserAccountRolesAsync(
 static async Task BootstrapNewPlayerAsync(
     GalacticTraderDbContext dbContext,
     PlayerIdentity identity,
-    CancellationToken cancellationToken)
+    CancellationToken cancellationToken,
+    Guid? keycloakUserId = null)
 {
     const decimal starterCredits = 250_000m;
     const decimal starterShipValue = 95_000m;
     var now = DateTime.UtcNow;
+    var resolvedKeycloakUserId = keycloakUserId ?? identity.PlayerId;
 
     var starterSector = await EnsureStarterSectorAsync(dbContext, cancellationToken);
     var player = await dbContext.Players
@@ -2141,7 +2433,7 @@ static async Task BootstrapNewPlayerAsync(
             Id = identity.PlayerId,
             Username = identity.Username,
             Email = identity.Email,
-            KeycloakUserId = identity.PlayerId,
+            KeycloakUserId = resolvedKeycloakUserId,
             NetWorth = starterCredits + starterShipValue,
             LiquidCredits = starterCredits,
             ReputationScore = 0,
@@ -2159,7 +2451,10 @@ static async Task BootstrapNewPlayerAsync(
     {
         player.Username = identity.Username;
         player.Email = identity.Email;
-        player.KeycloakUserId = identity.PlayerId;
+        if (keycloakUserId.HasValue || player.KeycloakUserId == Guid.Empty)
+        {
+            player.KeycloakUserId = resolvedKeycloakUserId;
+        }
         player.LastActiveAt = now;
         player.IsActive = true;
         player.ProtectionStatus = string.IsNullOrWhiteSpace(player.ProtectionStatus)
