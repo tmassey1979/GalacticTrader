@@ -1,5 +1,6 @@
 using GalacticTrader.Desktop.Api;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,6 +16,7 @@ public partial class CreateUserWindow : Window
     {
         _authApiClient = authApiClient;
         InitializeComponent();
+        PopulateTimeZones();
         StatusText.Text = $"API: {apiBaseUrl}";
     }
 
@@ -33,7 +35,7 @@ public partial class CreateUserWindow : Window
         var nickname = NormalizeOptional(NicknameText.Text);
         var phoneNumber = NormalizeOptional(PhoneNumberText.Text);
         var locale = NormalizeOptional(LocaleText.Text);
-        var timeZone = NormalizeOptional(TimeZoneText.Text);
+        var timeZone = NormalizeOptional(TimeZoneCombo.SelectedItem?.ToString());
         var website = NormalizeOptional(WebsiteText.Text);
         var birthdateInput = NormalizeOptional(BirthdateText.Text);
         var birthdate = TryParseBirthdate(birthdateInput);
@@ -146,6 +148,17 @@ public partial class CreateUserWindow : Window
         }
 
         return selected;
+    }
+
+    private void PopulateTimeZones()
+    {
+        var timeZoneIds = TimeZoneInfo.GetSystemTimeZones()
+            .Select(zone => zone.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToList();
+
+        TimeZoneCombo.ItemsSource = timeZoneIds;
+        TimeZoneCombo.SelectedItem = TimeZoneInfo.Local.Id;
     }
 
     private static DateOnly? TryParseBirthdate(string? value)

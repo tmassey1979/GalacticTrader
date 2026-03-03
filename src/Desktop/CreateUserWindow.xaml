@@ -65,15 +65,25 @@
             <Setter Property="Padding"
                     Value="8,4" />
             <Setter Property="Background"
-                    Value="#0F1D15" />
+                    Value="#DFF2E7" />
             <Setter Property="Foreground"
-                    Value="#D1FFE1" />
+                    Value="#000000" />
             <Setter Property="BorderBrush"
                     Value="#2D7D4C" />
             <Setter Property="BorderThickness"
                     Value="1" />
             <Setter Property="FontFamily"
                     Value="Consolas" />
+            <Setter Property="ItemContainerStyle"
+                    Value="{StaticResource ComboBoxItemStyle}" />
+        </Style>
+
+        <Style x:Key="ComboBoxItemStyle"
+               TargetType="ComboBoxItem">
+            <Setter Property="Foreground"
+                    Value="#000000" />
+            <Setter Property="Background"
+                    Value="#FFFFFF" />
         </Style>
     </Window.Resources>
 
@@ -231,8 +241,9 @@
                                 Margin="0,12,0,0">
                         <TextBlock Text="Time Zone"
                                    Style="{StaticResource LabelStyle}" />
-                        <TextBox x:Name="TimeZoneText"
-                                 Style="{StaticResource TextBoxStyle}" />
+                        <ComboBox x:Name="TimeZoneCombo"
+                                  Style="{StaticResource ComboBoxStyle}"
+                                  IsTextSearchEnabled="True" />
                     </StackPanel>
 
                     <StackPanel Grid.Row="6"
