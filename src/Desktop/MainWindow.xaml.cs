@@ -98,7 +98,13 @@ public partial class MainWindow : Window
         ServicesHost.Content = new ServicesPanel(_npcApiClient);
         ReputationHost.Content = new ReputationPanel(_session, _reputationApiClient);
         TerritoryHost.Content = new TerritoryPanel(_strategicApiClient);
-        AnalyticsHost.Content = new AnalyticsPanel(_session, _marketApiClient, _combatApiClient);
+        AnalyticsHost.Content = new AnalyticsPanel(
+            _session,
+            _marketApiClient,
+            _combatApiClient,
+            _fleetApiClient,
+            marketIntelligenceApiClient,
+            _reputationApiClient);
         SettingsHost.Content = new SettingsPanel(_session);
         EventFeedGrid.ItemsSource = _filteredEventFeed;
         PlayerMetricText.Text = $"Player: {_session.Username}";

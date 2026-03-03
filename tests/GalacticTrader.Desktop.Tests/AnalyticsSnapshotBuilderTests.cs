@@ -21,7 +21,23 @@ public sealed class AnalyticsSnapshotBuilderTests
             new CombatLogApiDto { DurationSeconds = 40, InsurancePayout = 2m }
         };
 
-        var snapshot = AnalyticsSnapshotBuilder.Build(trades, combats);
+        var ships = new[]
+        {
+            new ShipApiDto(),
+            new ShipApiDto()
+        };
+        var topTraders = new[]
+        {
+            new TopTraderInsightApiDto { Username = "pilot", TradeVolume = 300m },
+            new TopTraderInsightApiDto { Username = "other", TradeVolume = 700m }
+        };
+        var standings = new[]
+        {
+            new PlayerFactionStandingApiDto { ReputationScore = 80, HasAccess = true },
+            new PlayerFactionStandingApiDto { ReputationScore = 20, HasAccess = false }
+        };
+
+        var snapshot = AnalyticsSnapshotBuilder.Build(trades, combats, ships, topTraders, standings, "pilot");
 
         Assert.Equal(360m, snapshot.RevenueVolume);
         Assert.Equal(3, snapshot.TradeCount);
@@ -29,5 +45,22 @@ public sealed class AnalyticsSnapshotBuilderTests
         Assert.Equal(2, snapshot.CombatCount);
         Assert.Equal(30, snapshot.AverageCombatDurationSeconds);
         Assert.Equal(7m, snapshot.InsurancePayoutTotal);
+        Assert.Equal(271.54m, snapshot.RiskAdjustedReturn);
+        Assert.Equal(55.5556m, snapshot.BattleToProfitRatio);
+        Assert.Equal(176.5m, snapshot.RoiPerShip);
+        Assert.Equal(30m, snapshot.MarketSharePercent);
+        Assert.Equal(65m, snapshot.SystemInfluencePercent);
+    }
+
+    [Fact]
+    public void Build_ReturnsZeroedAdvancedMetrics_WhenNoReferenceData()
+    {
+        var snapshot = AnalyticsSnapshotBuilder.Build([], [], [], [], [], "pilot");
+
+        Assert.Equal(0m, snapshot.RiskAdjustedReturn);
+        Assert.Equal(0m, snapshot.BattleToProfitRatio);
+        Assert.Equal(0m, snapshot.RoiPerShip);
+        Assert.Equal(0m, snapshot.MarketSharePercent);
+        Assert.Equal(0m, snapshot.SystemInfluencePercent);
     }
 }

@@ -11,6 +11,9 @@ public partial class AnalyticsPanel : UserControl
     private readonly DesktopSession _session;
     private readonly MarketApiClient _marketApiClient;
     private readonly CombatApiClient _combatApiClient;
+    private readonly FleetApiClient _fleetApiClient;
+    private readonly MarketIntelligenceApiClient _marketIntelligenceApiClient;
+    private readonly ReputationApiClient _reputationApiClient;
     private IReadOnlyList<TradeExecutionResultApiDto> _latestTrades = [];
     private IReadOnlyList<CombatLogApiDto> _latestCombats = [];
     private bool _hasLoaded;
@@ -18,11 +21,17 @@ public partial class AnalyticsPanel : UserControl
     public AnalyticsPanel(
         DesktopSession session,
         MarketApiClient marketApiClient,
-        CombatApiClient combatApiClient)
+        CombatApiClient combatApiClient,
+        FleetApiClient fleetApiClient,
+        MarketIntelligenceApiClient marketIntelligenceApiClient,
+        ReputationApiClient reputationApiClient)
     {
         _session = session;
         _marketApiClient = marketApiClient;
         _combatApiClient = combatApiClient;
+        _fleetApiClient = fleetApiClient;
+        _marketIntelligenceApiClient = marketIntelligenceApiClient;
+        _reputationApiClient = reputationApiClient;
         InitializeComponent();
         Loaded += OnLoaded;
     }
@@ -69,17 +78,31 @@ public partial class AnalyticsPanel : UserControl
         {
             var tradesTask = _marketApiClient.GetTransactionsAsync(_session.PlayerId, limit: 60);
             var combatsTask = _combatApiClient.GetRecentLogsAsync(limit: 60);
-            await Task.WhenAll(tradesTask, combatsTask);
+            var shipsTask = _fleetApiClient.GetPlayerShipsAsync(_session.PlayerId);
+            var marketIntelTask = _marketIntelligenceApiClient.GetSummaryAsync(limit: 8);
+            var standingsTask = _reputationApiClient.GetFactionStandingsAsync(_session.PlayerId);
+            await Task.WhenAll(tradesTask, combatsTask, shipsTask, marketIntelTask, standingsTask);
 
             _latestTrades = tradesTask.Result;
             _latestCombats = combatsTask.Result;
-            var snapshot = AnalyticsSnapshotBuilder.Build(_latestTrades, _latestCombats);
+            var snapshot = AnalyticsSnapshotBuilder.Build(
+                _latestTrades,
+                _latestCombats,
+                shipsTask.Result,
+                marketIntelTask.Result.TopTraders,
+                standingsTask.Result,
+                _session.Username);
             RevenueText.Text = snapshot.RevenueVolume.ToString("N2");
             TradesText.Text = snapshot.TradeCount.ToString();
             AvgTradeText.Text = snapshot.AverageTradeSize.ToString("N2");
             CombatsText.Text = snapshot.CombatCount.ToString();
             AvgDurationText.Text = $"{snapshot.AverageCombatDurationSeconds}s";
             InsuranceText.Text = snapshot.InsurancePayoutTotal.ToString("N2");
+            RiskAdjustedReturnText.Text = snapshot.RiskAdjustedReturn.ToString("N2");
+            BattleToProfitText.Text = snapshot.BattleToProfitRatio.ToString("N4");
+            RoiPerShipText.Text = snapshot.RoiPerShip.ToString("N2");
+            MarketShareText.Text = $"{snapshot.MarketSharePercent:N2}%";
+            SystemInfluenceText.Text = $"{snapshot.SystemInfluencePercent:N2}%";
             TrendBars.ItemsSource = AnalyticsTrendBuilder.BuildRevenueBars(_latestTrades);
             SetStatus("Analytics refreshed.", isError: false);
         }
