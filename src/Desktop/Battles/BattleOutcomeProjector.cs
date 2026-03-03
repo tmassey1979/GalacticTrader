@@ -14,12 +14,14 @@ public static class BattleOutcomeProjector
         var reputationDelta = ResolveReputationDelta(normalized);
         var impactMultiplier = ResolveImpactMultiplier(normalized);
         var economicImpact = Math.Round(baseImpact * impactMultiplier, 2, MidpointRounding.AwayFromZero);
+        var resourceChange = ResolveResourceChange(log, impactMultiplier);
         var environmentalModifier = ResolveEnvironmentalModifier(log);
         var protectionModifier = ResolveProtectionModifier(log);
 
         return new BattleOutcomeProjection
         {
             ReputationDelta = reputationDelta,
+            ResourceChange = resourceChange,
             EnvironmentalModifier = environmentalModifier,
             ProtectionModifier = protectionModifier,
             EconomicImpactProjection = economicImpact,
@@ -106,5 +108,13 @@ public static class BattleOutcomeProjector
         var insurancePenalty = log.InsurancePayout / 20_000m;
         var modifier = (durabilitySignal * 0.25m) - insurancePenalty;
         return Math.Round(Math.Clamp(modifier, -0.25m, 0.25m), 3, MidpointRounding.AwayFromZero);
+    }
+
+    private static decimal ResolveResourceChange(CombatLogApiDto log, decimal impactMultiplier)
+    {
+        var baseline = (log.DurationSeconds * 8m) + (log.TotalTicks * 40m);
+        var insuranceOffset = log.InsurancePayout * 0.12m;
+        var signed = (baseline + insuranceOffset) * impactMultiplier;
+        return Math.Round(signed, 2, MidpointRounding.AwayFromZero);
     }
 }
