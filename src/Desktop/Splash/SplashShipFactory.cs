@@ -1,3 +1,4 @@
+using GalacticTrader.Desktop.Assets;
 using GalacticTrader.Desktop.Rendering;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
@@ -6,7 +7,34 @@ namespace GalacticTrader.Desktop.Splash;
 
 public static class SplashShipFactory
 {
-    public static IReadOnlyList<GeometryModel3D> CreateShipModels()
+    private static readonly Lazy<Model3D?> ExternalSplashShip = new(() =>
+    {
+        var loader = new ExternalModelLoader();
+        return loader.TryLoad(ExternalModelCatalog.SplashShip);
+    });
+
+    public static IReadOnlyList<Model3D> CreateShipModels()
+    {
+        var importedShip = ExternalSplashShip.Value;
+        if (importedShip is not null)
+        {
+            var shipClone = importedShip.Clone();
+            var transform = new Transform3DGroup();
+            transform.Children.Add(new ScaleTransform3D(64, 64, 64));
+            transform.Children.Add(new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(0, 1, 0), -88)));
+            transform.Children.Add(new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(1, 0, 0), -12)));
+            shipClone.Transform = transform;
+
+            return
+            [
+                shipClone
+            ];
+        }
+
+        return CreateProceduralFallback();
+    }
+
+    private static IReadOnlyList<Model3D> CreateProceduralFallback()
     {
         return
         [
