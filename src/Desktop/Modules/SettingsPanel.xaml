@@ -8,12 +8,23 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock x:Name="HeaderText"
-                   Grid.Row="0"
-                   Margin="0,0,0,8"
-                   Foreground="#EAF2FF"
-                   FontWeight="SemiBold"
-                   Text="Settings" />
+        <DockPanel Grid.Row="0"
+                   Margin="0,0,0,8">
+            <TextBlock x:Name="HeaderText"
+                       VerticalAlignment="Center"
+                       Foreground="#EAF2FF"
+                       FontWeight="SemiBold"
+                       Text="Settings" />
+            <Button x:Name="SaveButton"
+                    DockPanel.Dock="Right"
+                    Width="110"
+                    Height="28"
+                    Background="#00A86B"
+                    BorderBrush="#20C284"
+                    Foreground="White"
+                    Content="Save"
+                    Click="OnSaveClick" />
+        </DockPanel>
 
         <StackPanel Grid.Row="1">
             <CheckBox x:Name="AutoRefreshCheck"
@@ -38,6 +49,42 @@
                          Foreground="#EAF2FF"
                          Text="30" />
             </StackPanel>
+            <StackPanel Orientation="Horizontal"
+                        Margin="0,8,0,0">
+                <TextBlock VerticalAlignment="Center"
+                           Foreground="#B9CBE8"
+                           Text="Refresh dashboard hotkey" />
+                <TextBox x:Name="DashboardHotkeyText"
+                         Width="120"
+                         Margin="8,0,0,0"
+                         Background="#101F39"
+                         BorderBrush="#2E4A75"
+                         Foreground="#EAF2FF"
+                         Text="Ctrl+Shift+D" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal"
+                        Margin="0,8,0,0">
+                <TextBlock VerticalAlignment="Center"
+                           Foreground="#B9CBE8"
+                           Text="Refresh events hotkey" />
+                <TextBox x:Name="EventsHotkeyText"
+                         Width="120"
+                         Margin="8,0,0,0"
+                         Background="#101F39"
+                         BorderBrush="#2E4A75"
+                         Foreground="#EAF2FF"
+                         Text="Ctrl+Shift+E" />
+            </StackPanel>
+            <TextBlock x:Name="StatusText"
+                       Margin="0,8,0,0"
+                       Foreground="#9DB7E2"
+                       Text="Preferences loaded." />
+            <TextBlock x:Name="PathText"
+                       Margin="0,6,0,0"
+                       Foreground="#6E8BB4"
+                       FontSize="11"
+                       TextWrapping="Wrap"
+                       Text="-" />
         </StackPanel>
     </Grid>
 </UserControl>
