@@ -107,7 +107,8 @@ public partial class MainWindow : Window
             _combatApiClient,
             _fleetApiClient,
             marketIntelligenceApiClient,
-            _reputationApiClient);
+            _reputationApiClient,
+            leaderboardApiClient);
         SettingsHost.Content = new SettingsPanel(_session);
         EventFeedGrid.ItemsSource = _filteredEventFeed;
         PlayerMetricText.Text = $"Player: {_session.Username}";

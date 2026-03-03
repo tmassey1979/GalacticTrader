@@ -178,6 +178,36 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                <WrapPanel Margin="0,8,0,0">
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Top Wealth:" />
+                    <TextBlock x:Name="TopWealthLeaderText"
+                               Margin="6,0,14,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Top Trade:" />
+                    <TextBlock x:Name="TopTradeLeaderText"
+                               Margin="6,0,14,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Top Combat:" />
+                    <TextBlock x:Name="TopCombatLeaderText"
+                               Margin="6,0,14,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                    <TextBlock Foreground="#B9CBE8"
+                               Text="Top Reputation:" />
+                    <TextBlock x:Name="TopReputationLeaderText"
+                               Margin="6,0,0,0"
+                               Foreground="#EAF2FF"
+                               FontFamily="Consolas"
+                               Text="-" />
+                </WrapPanel>
             </StackPanel>
         </Border>
     </Grid>

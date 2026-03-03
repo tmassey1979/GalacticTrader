@@ -14,6 +14,7 @@ public partial class AnalyticsPanel : UserControl
     private readonly FleetApiClient _fleetApiClient;
     private readonly MarketIntelligenceApiClient _marketIntelligenceApiClient;
     private readonly ReputationApiClient _reputationApiClient;
+    private readonly LeaderboardApiClient _leaderboardApiClient;
     private IReadOnlyList<TradeExecutionResultApiDto> _latestTrades = [];
     private IReadOnlyList<CombatLogApiDto> _latestCombats = [];
     private bool _hasLoaded;
@@ -24,7 +25,8 @@ public partial class AnalyticsPanel : UserControl
         CombatApiClient combatApiClient,
         FleetApiClient fleetApiClient,
         MarketIntelligenceApiClient marketIntelligenceApiClient,
-        ReputationApiClient reputationApiClient)
+        ReputationApiClient reputationApiClient,
+        LeaderboardApiClient leaderboardApiClient)
     {
         _session = session;
         _marketApiClient = marketApiClient;
@@ -32,6 +34,7 @@ public partial class AnalyticsPanel : UserControl
         _fleetApiClient = fleetApiClient;
         _marketIntelligenceApiClient = marketIntelligenceApiClient;
         _reputationApiClient = reputationApiClient;
+        _leaderboardApiClient = leaderboardApiClient;
         InitializeComponent();
         Loaded += OnLoaded;
     }
@@ -81,7 +84,20 @@ public partial class AnalyticsPanel : UserControl
             var shipsTask = _fleetApiClient.GetPlayerShipsAsync(_session.PlayerId);
             var marketIntelTask = _marketIntelligenceApiClient.GetSummaryAsync(limit: 8);
             var standingsTask = _reputationApiClient.GetFactionStandingsAsync(_session.PlayerId);
-            await Task.WhenAll(tradesTask, combatsTask, shipsTask, marketIntelTask, standingsTask);
+            var wealthLeaderboardTask = _leaderboardApiClient.GetLeaderboardAsync("wealth", limit: 5);
+            var tradeLeaderboardTask = _leaderboardApiClient.GetLeaderboardAsync("trade", limit: 5);
+            var combatLeaderboardTask = _leaderboardApiClient.GetLeaderboardAsync("combat", limit: 5);
+            var reputationLeaderboardTask = _leaderboardApiClient.GetLeaderboardAsync("reputation", limit: 5);
+            await Task.WhenAll(
+                tradesTask,
+                combatsTask,
+                shipsTask,
+                marketIntelTask,
+                standingsTask,
+                wealthLeaderboardTask,
+                tradeLeaderboardTask,
+                combatLeaderboardTask,
+                reputationLeaderboardTask);
 
             _latestTrades = tradesTask.Result;
             _latestCombats = combatsTask.Result;
@@ -105,6 +121,15 @@ public partial class AnalyticsPanel : UserControl
             MarketShareText.Text = $"{snapshot.MarketSharePercent:N2}%";
             SystemInfluenceText.Text = $"{snapshot.SystemInfluencePercent:N2}%";
             TrendBars.ItemsSource = AnalyticsTrendBuilder.BuildRevenueBars(_latestTrades);
+            var leaderboardSnapshot = AnalyticsLeaderboardSnapshotBuilder.Build(
+                wealthLeaderboardTask.Result,
+                tradeLeaderboardTask.Result,
+                combatLeaderboardTask.Result,
+                reputationLeaderboardTask.Result);
+            TopWealthLeaderText.Text = leaderboardSnapshot.WealthLeader;
+            TopTradeLeaderText.Text = leaderboardSnapshot.TradeLeader;
+            TopCombatLeaderText.Text = leaderboardSnapshot.CombatLeader;
+            TopReputationLeaderText.Text = leaderboardSnapshot.ReputationLeader;
             SetStatus("Analytics refreshed.", isError: false);
         }
         catch (Exception exception)
