@@ -1,0 +1,56 @@
+<UserControl x:Class="GalacticTrader.Desktop.Modules.ReputationPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0"
+                   Margin="0,0,0,6">
+            <TextBlock x:Name="StatusText"
+                       VerticalAlignment="Center"
+                       Foreground="#9DB7E2"
+                       Text="Loading reputation standings..." />
+            <Button x:Name="RefreshButton"
+                    DockPanel.Dock="Right"
+                    Width="120"
+                    Height="28"
+                    Background="#1F6FEB"
+                    BorderBrush="#4A89F6"
+                    Foreground="White"
+                    Content="Refresh"
+                    Click="OnRefreshClick" />
+        </DockPanel>
+
+        <DataGrid Grid.Row="1"
+                  x:Name="ReputationGrid"
+                  Background="#0C152A"
+                  BorderBrush="#2F4B78"
+                  Foreground="#DCE7FF"
+                  AutoGenerateColumns="False"
+                  HeadersVisibility="Column"
+                  IsReadOnly="True"
+                  CanUserAddRows="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Faction"
+                                    Binding="{Binding FactionId}"
+                                    Width="*" />
+                <DataGridTextColumn Header="Score"
+                                    Binding="{Binding ReputationScore}"
+                                    Width="70" />
+                <DataGridTextColumn Header="Tier"
+                                    Binding="{Binding Tier}"
+                                    Width="90" />
+                <DataGridTextColumn Header="Access"
+                                    Binding="{Binding HasAccess}"
+                                    Width="70" />
+                <DataGridTextColumn Header="Discount"
+                                    Binding="{Binding TradingDiscount, StringFormat={}{0:P1}}"
+                                    Width="90" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

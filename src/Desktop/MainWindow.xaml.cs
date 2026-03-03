@@ -3,6 +3,7 @@ using GalacticTrader.Desktop.Battles;
 using GalacticTrader.Desktop.Dashboard;
 using GalacticTrader.Desktop.Fleet;
 using GalacticTrader.Desktop.Intel;
+using GalacticTrader.Desktop.Modules;
 using GalacticTrader.Desktop.Routes;
 using GalacticTrader.Desktop.Starmap;
 using GalacticTrader.Desktop.Trading;
@@ -23,6 +24,7 @@ public partial class MainWindow : Window
     private readonly FleetApiClient _fleetApiClient;
     private readonly ReputationApiClient _reputationApiClient;
     private readonly StrategicApiClient _strategicApiClient;
+    private readonly NpcApiClient _npcApiClient;
     private readonly CombatApiClient _combatApiClient;
     private readonly ObservableCollection<EventFeedEntry> _filteredEventFeed = [];
     private List<EventFeedEntry> _eventFeedAll = [];
@@ -40,6 +42,7 @@ public partial class MainWindow : Window
         FleetApiClient fleetApiClient,
         ReputationApiClient reputationApiClient,
         StrategicApiClient strategicApiClient,
+        NpcApiClient npcApiClient,
         CombatApiClient combatApiClient)
     {
         _scene = scene;
@@ -49,6 +52,7 @@ public partial class MainWindow : Window
         _fleetApiClient = fleetApiClient;
         _reputationApiClient = reputationApiClient;
         _strategicApiClient = strategicApiClient;
+        _npcApiClient = npcApiClient;
         _combatApiClient = combatApiClient;
 
         InitializeComponent();
@@ -66,6 +70,11 @@ public partial class MainWindow : Window
         BattlesHost.Content = new BattlePanel(_combatApiClient);
         FleetHost.Content = new FleetPanel(_session, fleetApiClient);
         IntelHost.Content = new IntelPanel(_session, navigationApiClient, reputationApiClient, strategicApiClient);
+        ServicesHost.Content = new ServicesPanel(_npcApiClient);
+        ReputationHost.Content = new ReputationPanel(_session, _reputationApiClient);
+        TerritoryHost.Content = new TerritoryPanel(_strategicApiClient);
+        AnalyticsHost.Content = new AnalyticsPanel(_session, _marketApiClient, _combatApiClient);
+        SettingsHost.Content = new SettingsPanel(_session);
         EventFeedGrid.ItemsSource = _filteredEventFeed;
         PlayerMetricText.Text = $"Player: {_session.Username}";
         ApplyCamera(updateSliders: true);

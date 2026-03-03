@@ -182,6 +182,26 @@
                             <ContentControl x:Name="IntelHost"
                                             Margin="12" />
                         </TabItem>
+                        <TabItem Header="Services">
+                            <ContentControl x:Name="ServicesHost"
+                                            Margin="12" />
+                        </TabItem>
+                        <TabItem Header="Reputation">
+                            <ContentControl x:Name="ReputationHost"
+                                            Margin="12" />
+                        </TabItem>
+                        <TabItem Header="Territory">
+                            <ContentControl x:Name="TerritoryHost"
+                                            Margin="12" />
+                        </TabItem>
+                        <TabItem Header="Analytics">
+                            <ContentControl x:Name="AnalyticsHost"
+                                            Margin="12" />
+                        </TabItem>
+                        <TabItem Header="Settings">
+                            <ContentControl x:Name="SettingsHost"
+                                            Margin="12" />
+                        </TabItem>
                     </TabControl>
                 </DockPanel>
             </Border>

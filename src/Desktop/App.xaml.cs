@@ -46,6 +46,8 @@ public partial class App : Application
             reputationApiClient.SetBearerToken(loginWindow.Session.AccessToken);
             var strategicApiClient = new StrategicApiClient(httpClient);
             strategicApiClient.SetBearerToken(loginWindow.Session.AccessToken);
+            var npcApiClient = new NpcApiClient(httpClient);
+            npcApiClient.SetBearerToken(loginWindow.Session.AccessToken);
             var combatApiClient = new CombatApiClient(httpClient);
             combatApiClient.SetBearerToken(loginWindow.Session.AccessToken);
 
@@ -61,6 +63,7 @@ public partial class App : Application
                 fleetApiClient,
                 reputationApiClient,
                 strategicApiClient,
+                npcApiClient,
                 combatApiClient);
             MainWindow = mainWindow;
             mainWindow.Show();

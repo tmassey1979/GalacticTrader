@@ -31,4 +31,17 @@ public sealed class StrategicApiClient
         var payload = await response.Content.ReadFromJsonAsync<List<IntelligenceReportApiDto>>(cancellationToken);
         return payload ?? [];
     }
+
+    public async Task<IReadOnlyList<TerritoryDominanceApiDto>> GetTerritoryDominanceAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync("/api/strategic/territory-dominance", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Load territory dominance failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<List<TerritoryDominanceApiDto>>(cancellationToken);
+        return payload ?? [];
+    }
 }

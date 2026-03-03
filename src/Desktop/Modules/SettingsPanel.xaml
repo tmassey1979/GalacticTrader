@@ -1,0 +1,43 @@
+<UserControl x:Class="GalacticTrader.Desktop.Modules.SettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="HeaderText"
+                   Grid.Row="0"
+                   Margin="0,0,0,8"
+                   Foreground="#EAF2FF"
+                   FontWeight="SemiBold"
+                   Text="Settings" />
+
+        <StackPanel Grid.Row="1">
+            <CheckBox x:Name="AutoRefreshCheck"
+                      Foreground="#CFDDFC"
+                      IsChecked="True"
+                      Content="Enable auto-refresh panels" />
+            <CheckBox x:Name="ShowRiskBadgesCheck"
+                      Margin="0,8,0,0"
+                      Foreground="#CFDDFC"
+                      IsChecked="True"
+                      Content="Highlight high-risk routes and threats" />
+            <StackPanel Orientation="Horizontal"
+                        Margin="0,10,0,0">
+                <TextBlock VerticalAlignment="Center"
+                           Foreground="#B9CBE8"
+                           Text="Refresh interval (s)" />
+                <TextBox x:Name="RefreshIntervalText"
+                         Width="70"
+                         Margin="8,0,0,0"
+                         Background="#101F39"
+                         BorderBrush="#2E4A75"
+                         Foreground="#EAF2FF"
+                         Text="30" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

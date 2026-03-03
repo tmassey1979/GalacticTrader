@@ -1,0 +1,56 @@
+<UserControl x:Class="GalacticTrader.Desktop.Modules.ServicesPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="Transparent">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0"
+                   Margin="0,0,0,6">
+            <TextBlock x:Name="StatusText"
+                       VerticalAlignment="Center"
+                       Foreground="#9DB7E2"
+                       Text="Loading NPC services..." />
+            <Button x:Name="RefreshButton"
+                    DockPanel.Dock="Right"
+                    Width="120"
+                    Height="28"
+                    Background="#1F6FEB"
+                    BorderBrush="#4A89F6"
+                    Foreground="White"
+                    Content="Refresh"
+                    Click="OnRefreshClick" />
+        </DockPanel>
+
+        <DataGrid Grid.Row="1"
+                  x:Name="AgentsGrid"
+                  Background="#0C152A"
+                  BorderBrush="#2F4B78"
+                  Foreground="#DCE7FF"
+                  AutoGenerateColumns="False"
+                  HeadersVisibility="Column"
+                  IsReadOnly="True"
+                  CanUserAddRows="False">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Agent"
+                                    Binding="{Binding Name}"
+                                    Width="*" />
+                <DataGridTextColumn Header="Archetype"
+                                    Binding="{Binding Archetype}"
+                                    Width="100" />
+                <DataGridTextColumn Header="Wealth"
+                                    Binding="{Binding Wealth, StringFormat={}{0:N0}}"
+                                    Width="90" />
+                <DataGridTextColumn Header="Fleet"
+                                    Binding="{Binding FleetSize}"
+                                    Width="55" />
+                <DataGridTextColumn Header="Goal"
+                                    Binding="{Binding CurrentGoal}"
+                                    Width="120" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>
