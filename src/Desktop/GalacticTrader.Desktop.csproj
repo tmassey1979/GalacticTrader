@@ -9,6 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Prevent local scratch builds from polluting compile/item discovery. -->
+    <Compile Remove="tmp\**\*.cs;obj\**\*.cs;bin\**\*.cs" />
+    <Page Remove="tmp\**\*.xaml;obj\**\*.xaml;bin\**\*.xaml" />
+    <ApplicationDefinition Remove="tmp\**\*.xaml;obj\**\*.xaml;bin\**\*.xaml" />
+    <Resource Remove="tmp\**\*;obj\**\*;bin\**\*" />
+    <EmbeddedResource Remove="tmp\**\*;obj\**\*;bin\**\*" />
+    <None Remove="tmp\**\*;obj\**\*;bin\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AssimpNet" Version="4.1.0" />
   </ItemGroup>
 
@@ -17,5 +27,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <Target Name="CleanDesktopTempBuildArtifacts"
+          BeforeTargets="PrepareForBuild">
+    <RemoveDir Directories="$(MSBuildProjectDirectory)\tmp" />
+  </Target>
 
 </Project>
