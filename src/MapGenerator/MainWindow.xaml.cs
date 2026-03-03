@@ -121,6 +121,23 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnFetchTokenClick(object sender, RoutedEventArgs e)
+    {
+        var loginWindow = new MapGeneratorLoginWindow(ApiBaseUrlText.Text.Trim())
+        {
+            Owner = this
+        };
+
+        var result = loginWindow.ShowDialog();
+        if (result != true || string.IsNullOrWhiteSpace(loginWindow.AccessToken))
+        {
+            return;
+        }
+
+        ApiTokenText.Text = loginWindow.AccessToken;
+        SetStatus("Bearer token acquired. You can now load and publish map data.", isError: false);
+    }
+
     private static async Task<Dictionary<int, Guid>> CreateSectorsAsync(MapNavigationApiClient apiClient, GeneratedMapLayout layout)
     {
         var sectorIdByIndex = new Dictionary<int, Guid>();
@@ -187,6 +204,7 @@ public partial class MainWindow : Window
         GenerateButton.IsEnabled = !isBusy;
         PublishButton.IsEnabled = !isBusy;
         LoadCurrentButton.IsEnabled = !isBusy;
+        FetchTokenButton.IsEnabled = !isBusy;
         Mouse.OverrideCursor = isBusy ? System.Windows.Input.Cursors.Wait : null;
     }
 

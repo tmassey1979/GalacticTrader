@@ -43,16 +43,33 @@
                              Foreground="#EBF4FF"
                              FontFamily="Consolas" />
 
-                    <TextBlock Text="Bearer Token (Optional)"
+                    <TextBlock Text="Bearer Token"
                                Foreground="#B9CBE8" />
-                    <TextBox x:Name="ApiTokenText"
-                             Margin="0,6,0,12"
-                             Height="34"
-                             Padding="8,6"
-                             Background="#12223E"
-                             BorderBrush="#35598D"
-                             Foreground="#EBF4FF"
-                             FontFamily="Consolas" />
+                    <Grid Margin="0,6,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="ApiTokenText"
+                                 Grid.Column="0"
+                                 Height="34"
+                                 Padding="8,6"
+                                 Background="#12223E"
+                                 BorderBrush="#35598D"
+                                 Foreground="#EBF4FF"
+                                 FontFamily="Consolas" />
+                        <Button x:Name="FetchTokenButton"
+                                Grid.Column="2"
+                                Width="110"
+                                Height="34"
+                                Background="#2A4A7C"
+                                BorderBrush="#4B6EA6"
+                                Foreground="#EAF2FF"
+                                FontWeight="SemiBold"
+                                Content="Sign In..."
+                                Click="OnFetchTokenClick" />
+                    </Grid>
 
                     <TextBlock Text="Seed"
                                Foreground="#B9CBE8" />
