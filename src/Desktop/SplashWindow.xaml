@@ -103,6 +103,8 @@
 
                 <ModelVisual3D x:Name="StarfieldVisual" />
 
+                <ModelVisual3D x:Name="BackdropVisual" />
+
                 <ModelVisual3D>
                     <ModelVisual3D.Transform>
                         <Transform3DGroup>

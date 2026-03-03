@@ -81,6 +81,7 @@ public partial class SplashWindow : Window
     private void BuildSplashScene()
     {
         StarfieldVisual.Content = SplashStarfieldFactory.CreateStarfield();
+        BackdropVisual.Content = SplashSceneFactory.CreateBackdropModels();
         ShipModelGroup.Children.Clear();
 
         foreach (var model in SplashShipFactory.CreateShipModels())
