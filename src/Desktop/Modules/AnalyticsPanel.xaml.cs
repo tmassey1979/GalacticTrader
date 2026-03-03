@@ -117,6 +117,7 @@ public partial class AnalyticsPanel : UserControl
             RiskAdjustedReturnText.Text = snapshot.RiskAdjustedReturn.ToString("N2");
             RevenuePerHourText.Text = snapshot.RevenuePerHour.ToString("N2");
             BattleToProfitText.Text = snapshot.BattleToProfitRatio.ToString("N4");
+            BattleToProfitBandText.Text = $"[{snapshot.BattleToProfitBand}]";
             RoiPerShipText.Text = snapshot.RoiPerShip.ToString("N2");
             MarketShareText.Text = $"{snapshot.MarketSharePercent:N2}%";
             SystemInfluenceText.Text = $"{snapshot.SystemInfluencePercent:N2}%";

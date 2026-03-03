@@ -11,6 +11,7 @@ public sealed class AnalyticsSnapshot
     public decimal InsurancePayoutTotal { get; init; }
     public decimal RiskAdjustedReturn { get; init; }
     public decimal BattleToProfitRatio { get; init; }
+    public required string BattleToProfitBand { get; init; }
     public decimal RoiPerShip { get; init; }
     public decimal MarketSharePercent { get; init; }
     public decimal SystemInfluencePercent { get; init; }

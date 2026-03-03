@@ -48,6 +48,7 @@ public sealed class AnalyticsSnapshotBuilderTests
         Assert.Equal(7m, snapshot.InsurancePayoutTotal);
         Assert.Equal(271.54m, snapshot.RiskAdjustedReturn);
         Assert.Equal(55.5556m, snapshot.BattleToProfitRatio);
+        Assert.Equal("Exposed", snapshot.BattleToProfitBand);
         Assert.Equal(176.5m, snapshot.RoiPerShip);
         Assert.Equal(30m, snapshot.MarketSharePercent);
         Assert.Equal(65m, snapshot.SystemInfluencePercent);
@@ -61,6 +62,7 @@ public sealed class AnalyticsSnapshotBuilderTests
         Assert.Equal(0m, snapshot.RevenuePerHour);
         Assert.Equal(0m, snapshot.RiskAdjustedReturn);
         Assert.Equal(0m, snapshot.BattleToProfitRatio);
+        Assert.Equal("Efficient", snapshot.BattleToProfitBand);
         Assert.Equal(0m, snapshot.RoiPerShip);
         Assert.Equal(0m, snapshot.MarketSharePercent);
         Assert.Equal(0m, snapshot.SystemInfluencePercent);

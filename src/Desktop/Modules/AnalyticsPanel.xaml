@@ -136,6 +136,11 @@
                                Foreground="#EAF2FF"
                                FontFamily="Consolas"
                                Text="-" />
+                    <TextBlock x:Name="BattleToProfitBandText"
+                               Margin="0,0,14,0"
+                               Foreground="#B9CBE8"
+                               FontFamily="Consolas"
+                               Text="-" />
                     <TextBlock Foreground="#B9CBE8"
                                Text="ROI/Ship:" />
                     <TextBlock x:Name="RoiPerShipText"

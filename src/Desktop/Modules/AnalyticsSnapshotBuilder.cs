@@ -27,6 +27,7 @@ public static class AnalyticsSnapshotBuilder
         var battleToProfitRatio = revenueVolume > 0m
             ? Math.Round(combatCount / (revenueVolume / 10_000m), 4)
             : 0m;
+        var battleToProfitBand = BattleProfitRiskBandProjector.Build(battleToProfitRatio);
         var shipCount = ships.Count;
         var roiPerShip = shipCount > 0
             ? (revenueVolume - insuranceTotal) / shipCount
@@ -45,6 +46,7 @@ public static class AnalyticsSnapshotBuilder
             InsurancePayoutTotal = insuranceTotal,
             RiskAdjustedReturn = Math.Round(riskAdjustedReturn, 2),
             BattleToProfitRatio = battleToProfitRatio,
+            BattleToProfitBand = battleToProfitBand,
             RoiPerShip = Math.Round(roiPerShip, 2),
             MarketSharePercent = marketSharePercent,
             SystemInfluencePercent = systemInfluencePercent
