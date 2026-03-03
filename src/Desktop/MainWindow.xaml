@@ -368,6 +368,7 @@
                                       Content="All" />
                         <ComboBoxItem Content="Trade" />
                         <ComboBoxItem Content="Market" />
+                        <ComboBoxItem Content="Interception" />
                         <ComboBoxItem Content="Combat" />
                         <ComboBoxItem Content="Intel" />
                         <ComboBoxItem Content="Territory" />

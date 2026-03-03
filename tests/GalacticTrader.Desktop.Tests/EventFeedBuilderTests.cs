@@ -120,4 +120,31 @@ public sealed class EventFeedBuilderTests
 
         Assert.Contains(events, static entry => entry.Category == "Market");
     }
+
+    [Fact]
+    public void Build_IncludesInterceptionEvents_ForRetreatOutcomes()
+    {
+        var capturedAt = new DateTime(2026, 3, 2, 21, 0, 0, DateTimeKind.Utc);
+        var logs = new[]
+        {
+            new CombatLogApiDto
+            {
+                BattleOutcome = "Retreat",
+                BattleEndedAt = capturedAt.AddMinutes(-3),
+                DurationSeconds = 32,
+                TotalTicks = 4,
+                InsurancePayout = 0m
+            }
+        };
+
+        var events = EventFeedBuilder.Build(
+            [],
+            logs,
+            [],
+            [],
+            [],
+            capturedAt);
+
+        Assert.Contains(events, static entry => entry.Category == "Interception");
+    }
 }
