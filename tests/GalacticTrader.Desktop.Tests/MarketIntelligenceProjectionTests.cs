@@ -35,5 +35,7 @@ public sealed class MarketIntelligenceProjectionTests
         Assert.Equal("nova", snapshot.TopTraders[0].Username);
         Assert.Equal("Draco -> Lyra", snapshot.SmugglingCorridors[0].Corridor);
         Assert.Equal(8, snapshot.SmugglingCorridors[0].SmugglingRuns);
+        Assert.Equal("Draco -> Lyra", snapshot.TradeFlows[0].Flow);
+        Assert.Equal("###########-", snapshot.TradeFlows[0].Diagram);
     }
 }

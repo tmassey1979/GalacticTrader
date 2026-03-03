@@ -143,36 +143,77 @@
                 CornerRadius="6"
                 Padding="8">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <TextBlock Foreground="#B9CBE8"
-                           FontWeight="SemiBold"
-                           Text="Emerging Smuggling Corridors" />
-                <DataGrid Grid.Row="1"
-                          x:Name="CorridorsGrid"
-                          Margin="0,8,0,0"
-                          AutoGenerateColumns="False"
-                          CanUserAddRows="False"
-                          CanUserDeleteRows="False"
-                          IsReadOnly="True"
-                          Background="#08182F"
-                          BorderBrush="#2E4A75"
-                          Foreground="#EAF2FF"
-                          HeadersVisibility="Column">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Corridor"
-                                            Binding="{Binding Corridor}"
-                                            Width="*" />
-                        <DataGridTextColumn Header="Runs"
-                                            Binding="{Binding SmugglingRuns}"
-                                            Width="80" />
-                        <DataGridTextColumn Header="Avg Value"
-                                            Binding="{Binding AverageTradeValue, StringFormat=N2}"
-                                            Width="120" />
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
+                               Text="Emerging Smuggling Corridors" />
+                    <DataGrid Grid.Row="1"
+                              x:Name="CorridorsGrid"
+                              Margin="0,8,0,0"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              IsReadOnly="True"
+                              Background="#08182F"
+                              BorderBrush="#2E4A75"
+                              Foreground="#EAF2FF"
+                              HeadersVisibility="Column">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Corridor"
+                                                Binding="{Binding Corridor}"
+                                                Width="*" />
+                            <DataGridTextColumn Header="Runs"
+                                                Binding="{Binding SmugglingRuns}"
+                                                Width="80" />
+                            <DataGridTextColumn Header="Avg Value"
+                                                Binding="{Binding AverageTradeValue, StringFormat=N2}"
+                                                Width="120" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
+                               Text="Trade Flow Diagrams" />
+                    <DataGrid Grid.Row="1"
+                              x:Name="TradeFlowGrid"
+                              Margin="0,8,0,0"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              IsReadOnly="True"
+                              Background="#08182F"
+                              BorderBrush="#2E4A75"
+                              Foreground="#EAF2FF"
+                              HeadersVisibility="Column">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Flow"
+                                                Binding="{Binding Flow}"
+                                                Width="*" />
+                            <DataGridTextColumn Header="Index"
+                                                Binding="{Binding FlowIndex, StringFormat=N1}"
+                                                Width="80" />
+                            <DataGridTextColumn Header="Diagram"
+                                                Binding="{Binding Diagram}"
+                                                Width="120" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

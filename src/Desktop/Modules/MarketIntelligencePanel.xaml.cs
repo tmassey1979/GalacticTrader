@@ -12,6 +12,7 @@ public partial class MarketIntelligencePanel : UserControl
     private readonly ObservableCollection<MarketHeatmapDisplayRow> _heatmapRows = [];
     private readonly ObservableCollection<MarketTraderDisplayRow> _traderRows = [];
     private readonly ObservableCollection<SmugglingCorridorDisplayRow> _corridorRows = [];
+    private readonly ObservableCollection<MarketTradeFlowDisplayRow> _flowRows = [];
     private bool _hasLoaded;
 
     public MarketIntelligencePanel(MarketIntelligenceApiClient marketIntelligenceApiClient)
@@ -21,6 +22,7 @@ public partial class MarketIntelligencePanel : UserControl
         HeatmapGrid.ItemsSource = _heatmapRows;
         TopTradersGrid.ItemsSource = _traderRows;
         CorridorsGrid.ItemsSource = _corridorRows;
+        TradeFlowGrid.ItemsSource = _flowRows;
         Loaded += OnLoaded;
     }
 
@@ -52,6 +54,7 @@ public partial class MarketIntelligencePanel : UserControl
             ReplaceRows(_heatmapRows, snapshot.Heatmap);
             ReplaceRows(_traderRows, snapshot.TopTraders);
             ReplaceRows(_corridorRows, snapshot.SmugglingCorridors);
+            ReplaceRows(_flowRows, snapshot.TradeFlows);
 
             SetStatus("Market intelligence refreshed.", isError: false);
         }

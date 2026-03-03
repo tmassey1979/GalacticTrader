@@ -6,4 +6,5 @@ public sealed class MarketIntelligenceSnapshot
     public IReadOnlyList<MarketHeatmapDisplayRow> Heatmap { get; init; } = [];
     public IReadOnlyList<MarketTraderDisplayRow> TopTraders { get; init; } = [];
     public IReadOnlyList<SmugglingCorridorDisplayRow> SmugglingCorridors { get; init; } = [];
+    public IReadOnlyList<MarketTradeFlowDisplayRow> TradeFlows { get; init; } = [];
 }

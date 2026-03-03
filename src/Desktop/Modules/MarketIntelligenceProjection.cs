@@ -37,12 +37,29 @@ public static class MarketIntelligenceProjection
             })
             .ToArray();
 
+        var flowRows = summary.SmugglingCorridors
+            .Select(corridor =>
+            {
+                var flowIndex = Math.Round(Math.Clamp((corridor.SmugglingRuns * 8m) + (corridor.AverageTradeValue / 12m), 0m, 100m), 1);
+                return new MarketTradeFlowDisplayRow
+                {
+                    Flow = $"{corridor.FromSectorName} -> {corridor.ToSectorName}",
+                    FlowIndex = flowIndex,
+                    Diagram = MarketTradeFlowDiagramBuilder.Build(flowIndex)
+                };
+            })
+            .OrderByDescending(static row => row.FlowIndex)
+            .ThenBy(static row => row.Flow, StringComparer.OrdinalIgnoreCase)
+            .Take(8)
+            .ToArray();
+
         return new MarketIntelligenceSnapshot
         {
             VolatilityIndex = Math.Round(summary.VolatilityIndex, 1),
             Heatmap = heatmap,
             TopTraders = traders,
-            SmugglingCorridors = corridors
+            SmugglingCorridors = corridors,
+            TradeFlows = flowRows
         };
     }
 }
