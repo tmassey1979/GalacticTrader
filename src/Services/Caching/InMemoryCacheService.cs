@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 public sealed class InMemoryCacheService : ICacheService
     , ICacheMetricsProvider
 {
-    private readonly ConcurrentDictionary<string, CacheEntry> _entries = new();
+    private readonly ConcurrentDictionary<string, InMemoryCacheEntry> _entries = new();
     private long _cacheHits;
     private long _cacheMisses;
 
@@ -54,7 +54,7 @@ public sealed class InMemoryCacheService : ICacheService
         }
 
         DateTime? expiresAt = expiration.HasValue ? DateTime.UtcNow.Add(expiration.Value) : null;
-        _entries[key] = new CacheEntry(value!, expiresAt);
+        _entries[key] = new InMemoryCacheEntry(value!, expiresAt);
         return Task.CompletedTask;
     }
 
@@ -121,6 +121,4 @@ public sealed class InMemoryCacheService : ICacheService
 
         return Task.FromResult(true);
     }
-
-    private sealed record CacheEntry(object Value, DateTime? ExpiresAtUtc);
 }
