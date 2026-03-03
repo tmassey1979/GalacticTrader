@@ -1,0 +1,57 @@
+name: docker-compose-smoke
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  compose-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and Start Backend Stack
+        run: >
+          docker compose up -d --build
+          postgres redis keycloak vault api gateway
+
+      - name: Wait for Gateway Readiness
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8081/health/live >/dev/null; then
+              echo "Gateway is ready."
+              exit 0
+            fi
+
+            echo "Waiting for gateway... ($attempt/60)"
+            sleep 5
+          done
+
+          echo "Gateway did not become ready in time." >&2
+          exit 1
+
+      - name: Gateway Smoke Checks
+        run: bash ./scripts/smoke-gateway.sh
+
+      - name: Compose Logs
+        if: always()
+        run: docker compose logs --no-color > compose-smoke.log
+
+      - name: Upload Compose Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compose-smoke-logs
+          path: compose-smoke.log
+
+      - name: Tear Down Stack
+        if: always()
+        run: docker compose down -v --remove-orphans
