@@ -7,6 +7,7 @@ public static class AuthorizationPolicies
 {
     // Role definitions
     public const string AdminRole = "admin";
+    public const string MapAdminRole = "map_admin";
     public const string ModeratorRole = "moderator";
     public const string PlayerRole = "player";
     public const string BotRole = "bot";
@@ -19,10 +20,10 @@ public static class AuthorizationPolicies
     /// <summary>
     /// All available game roles.
     /// </summary>
-    public static readonly string[] AllRoles = { AdminRole, ModeratorRole, PlayerRole, BotRole };
+    public static readonly string[] AllRoles = { AdminRole, MapAdminRole, ModeratorRole, PlayerRole, BotRole };
 
     /// <summary>
     /// Roles allowed to manage game.
     /// </summary>
-    public static readonly string[] ManagementRoles = { AdminRole, ModeratorRole };
+    public static readonly string[] ManagementRoles = { AdminRole, MapAdminRole, ModeratorRole };
 }

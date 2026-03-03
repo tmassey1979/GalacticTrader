@@ -7,6 +7,7 @@ using GalacticTrader.Data.Models;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
 using GalacticTrader.Services.Admin;
+using GalacticTrader.Services.Authentication;
 using GalacticTrader.Services.Communication;
 using GalacticTrader.Services.Combat;
 using GalacticTrader.Services.Economy;
@@ -315,8 +316,20 @@ sectors.MapGet("/high-risk", async (int? threshold, ISectorService service, Canc
     return Results.Ok(result);
 });
 
-sectors.MapPost("/", async (CreateSectorRequest request, ISectorService service, CancellationToken cancellationToken) =>
+sectors.MapPost("/", async (
+    HttpContext context,
+    CreateSectorRequest request,
+    ISectorService service,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
+    var denied = await RequireMapAdminAsync(context, authService, dbContext, cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     try
     {
         var created = await service.CreateSectorAsync(request.Name, request.X, request.Y, request.Z, cancellationToken);
@@ -328,8 +341,21 @@ sectors.MapPost("/", async (CreateSectorRequest request, ISectorService service,
     }
 });
 
-sectors.MapPut("/{sectorId:guid}", async (Guid sectorId, UpdateSectorRequest request, ISectorService service, CancellationToken cancellationToken) =>
+sectors.MapPut("/{sectorId:guid}", async (
+    HttpContext context,
+    Guid sectorId,
+    UpdateSectorRequest request,
+    ISectorService service,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
+    var denied = await RequireMapAdminAsync(context, authService, dbContext, cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var updated = await service.UpdateSectorAsync(
         sectorId,
         request.SecurityLevel,
@@ -340,8 +366,20 @@ sectors.MapPut("/{sectorId:guid}", async (Guid sectorId, UpdateSectorRequest req
     return updated is null ? Results.NotFound() : Results.Ok(updated);
 });
 
-sectors.MapDelete("/{sectorId:guid}", async (Guid sectorId, ISectorService service, CancellationToken cancellationToken) =>
+sectors.MapDelete("/{sectorId:guid}", async (
+    HttpContext context,
+    Guid sectorId,
+    ISectorService service,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
+    var denied = await RequireMapAdminAsync(context, authService, dbContext, cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var deleted = await service.DeleteSectorAsync(sectorId, cancellationToken);
     return deleted ? Results.NoContent() : Results.NotFound();
 });
@@ -395,8 +433,20 @@ routes.MapGet("/legal", async (IRouteService service, CancellationToken cancella
     return Results.Ok(result);
 });
 
-routes.MapPost("/", async (CreateRouteRequest request, IRouteService service, CancellationToken cancellationToken) =>
+routes.MapPost("/", async (
+    HttpContext context,
+    CreateRouteRequest request,
+    IRouteService service,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
+    var denied = await RequireMapAdminAsync(context, authService, dbContext, cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     try
     {
         var created = await service.CreateRouteAsync(
@@ -413,14 +463,39 @@ routes.MapPost("/", async (CreateRouteRequest request, IRouteService service, Ca
     }
 });
 
-routes.MapPut("/{routeId:guid}", async (Guid routeId, UpdateRouteRequest request, IRouteService service, CancellationToken cancellationToken) =>
+routes.MapPut("/{routeId:guid}", async (
+    HttpContext context,
+    Guid routeId,
+    UpdateRouteRequest request,
+    IRouteService service,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
+    var denied = await RequireMapAdminAsync(context, authService, dbContext, cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var updated = await service.UpdateRouteAsync(routeId, request.LegalStatus, request.BaseRiskScore, cancellationToken);
     return updated is null ? Results.NotFound() : Results.Ok(updated);
 });
 
-routes.MapDelete("/{routeId:guid}", async (Guid routeId, IRouteService service, CancellationToken cancellationToken) =>
+routes.MapDelete("/{routeId:guid}", async (
+    HttpContext context,
+    Guid routeId,
+    IRouteService service,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
+    var denied = await RequireMapAdminAsync(context, authService, dbContext, cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var deleted = await service.DeleteRouteAsync(routeId, cancellationToken);
     return deleted ? Results.NoContent() : Results.NotFound();
 });
@@ -1656,6 +1731,68 @@ communication.Map("/ws/{channelType}/{channelKey}", async (
 });
 
 app.Run();
+
+static async Task<IResult?> RequireMapAdminAsync(
+    HttpContext context,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken)
+{
+    if (!TryReadBearerToken(context, out var token))
+    {
+        return Results.Unauthorized();
+    }
+
+    var session = await authService.ValidateTokenAsync(token, cancellationToken);
+    if (session is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var userAccount = await dbContext.UserAccounts
+        .AsNoTracking()
+        .FirstOrDefaultAsync(
+            account =>
+                account.Username == session.Player.Username ||
+                account.Email == session.Player.Email,
+            cancellationToken);
+
+    if (userAccount is null)
+    {
+        return Results.Forbid();
+    }
+
+    var hasMapAccess = userAccount.Roles.Any(role =>
+        role.Equals(AuthorizationPolicies.AdminRole, StringComparison.OrdinalIgnoreCase) ||
+        role.Equals(AuthorizationPolicies.MapAdminRole, StringComparison.OrdinalIgnoreCase));
+
+    return hasMapAccess ? null : Results.Forbid();
+}
+
+static bool TryReadBearerToken(HttpContext context, out string token)
+{
+    token = string.Empty;
+    if (!context.Request.Headers.TryGetValue("Authorization", out var authorizationHeader))
+    {
+        return false;
+    }
+
+    var headerValue = authorizationHeader.ToString();
+    const string prefix = "Bearer ";
+    if (!headerValue.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+    {
+        return false;
+    }
+
+    var extractedToken = headerValue[prefix.Length..].Trim();
+    if (string.IsNullOrWhiteSpace(extractedToken))
+    {
+        return false;
+    }
+
+    token = extractedToken;
+    return true;
+}
 
 static async Task BootstrapNewPlayerAsync(
     GalacticTraderDbContext dbContext,
