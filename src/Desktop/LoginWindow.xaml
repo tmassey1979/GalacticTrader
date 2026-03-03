@@ -125,6 +125,7 @@
                        Style="{StaticResource TerminalLabelStyle}" />
             <TextBox x:Name="LoginUsernameText"
                      Grid.Row="4"
+                     KeyDown="OnCredentialsKeyDown"
                      Style="{StaticResource TerminalTextBoxStyle}" />
 
             <TextBlock Grid.Row="5"
@@ -133,6 +134,7 @@
                        Style="{StaticResource TerminalLabelStyle}" />
             <PasswordBox x:Name="LoginPasswordBox"
                          Grid.Row="6"
+                         KeyDown="OnCredentialsKeyDown"
                          Style="{StaticResource TerminalPasswordBoxStyle}" />
 
             <StackPanel Grid.Row="7"

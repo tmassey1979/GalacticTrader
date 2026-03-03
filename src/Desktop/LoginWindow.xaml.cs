@@ -11,6 +11,7 @@ public partial class LoginWindow : Window
 
     private readonly AuthApiClient _authApiClient;
     private readonly string _apiBaseUrl;
+    private bool _isAuthenticating;
 
     public LoginWindow(AuthApiClient authApiClient, string apiBaseUrl)
     {
@@ -24,6 +25,27 @@ public partial class LoginWindow : Window
 
     private async void OnLoginClick(object sender, RoutedEventArgs e)
     {
+        await TryLoginAsync();
+    }
+
+    private async void OnCredentialsKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key is not Key.Enter)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        await TryLoginAsync();
+    }
+
+    private async Task TryLoginAsync()
+    {
+        if (_isAuthenticating)
+        {
+            return;
+        }
+
         var username = Normalize(LoginUsernameText.Text);
         var password = LoginPasswordBox.Password;
 
@@ -33,6 +55,7 @@ public partial class LoginWindow : Window
             return;
         }
 
+        _isAuthenticating = true;
         SetBusy(true);
         using var loginTimeoutCts = new CancellationTokenSource(LoginTimeout);
         try
@@ -53,6 +76,7 @@ public partial class LoginWindow : Window
         finally
         {
             SetBusy(false);
+            _isAuthenticating = false;
         }
     }
 
