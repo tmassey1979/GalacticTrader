@@ -46,6 +46,8 @@ public partial class App : Application
             reputationApiClient.SetBearerToken(loginWindow.Session.AccessToken);
             var strategicApiClient = new StrategicApiClient(httpClient);
             strategicApiClient.SetBearerToken(loginWindow.Session.AccessToken);
+            var combatApiClient = new CombatApiClient(httpClient);
+            combatApiClient.SetBearerToken(loginWindow.Session.AccessToken);
 
             var starmapLoader = new DatabaseStarmapSceneLoader(navigationApiClient);
             var scene = await starmapLoader.LoadAsync();
@@ -58,7 +60,8 @@ public partial class App : Application
                 marketApiClient,
                 fleetApiClient,
                 reputationApiClient,
-                strategicApiClient);
+                strategicApiClient,
+                combatApiClient);
             MainWindow = mainWindow;
             mainWindow.Show();
         }

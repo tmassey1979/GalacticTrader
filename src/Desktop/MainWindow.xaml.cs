@@ -1,8 +1,10 @@
 using GalacticTrader.Desktop.Api;
+using GalacticTrader.Desktop.Dashboard;
 using GalacticTrader.Desktop.Fleet;
 using GalacticTrader.Desktop.Intel;
 using GalacticTrader.Desktop.Starmap;
 using GalacticTrader.Desktop.Trading;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -14,9 +16,18 @@ public partial class MainWindow : Window
     private readonly OrbitCameraController _cameraController = new();
     private readonly StarmapScene _scene;
     private readonly DesktopSession _session;
+    private readonly NavigationApiClient _navigationApiClient;
+    private readonly MarketApiClient _marketApiClient;
+    private readonly FleetApiClient _fleetApiClient;
+    private readonly ReputationApiClient _reputationApiClient;
+    private readonly StrategicApiClient _strategicApiClient;
+    private readonly CombatApiClient _combatApiClient;
+    private readonly ObservableCollection<EventFeedEntry> _filteredEventFeed = [];
+    private List<EventFeedEntry> _eventFeedAll = [];
     private bool _isOrbiting;
     private Point _lastMousePoint;
     private bool _isUpdatingSliders;
+    private bool _hasLoaded;
 
     public MainWindow(
         StarmapScene scene,
@@ -26,15 +37,25 @@ public partial class MainWindow : Window
         MarketApiClient marketApiClient,
         FleetApiClient fleetApiClient,
         ReputationApiClient reputationApiClient,
-        StrategicApiClient strategicApiClient)
+        StrategicApiClient strategicApiClient,
+        CombatApiClient combatApiClient)
     {
         _scene = scene;
         _session = session;
+        _navigationApiClient = navigationApiClient;
+        _marketApiClient = marketApiClient;
+        _fleetApiClient = fleetApiClient;
+        _reputationApiClient = reputationApiClient;
+        _strategicApiClient = strategicApiClient;
+        _combatApiClient = combatApiClient;
+
         InitializeComponent();
         BuildStarmap(_scene);
-        TradingHost.Content = new TradingPanel(_session, economyApiClient, marketApiClient);
+        TradingHost.Content = new TradingPanel(_session, economyApiClient, _marketApiClient);
         FleetHost.Content = new FleetPanel(_session, fleetApiClient);
         IntelHost.Content = new IntelPanel(_session, navigationApiClient, reputationApiClient, strategicApiClient);
+        EventFeedGrid.ItemsSource = _filteredEventFeed;
+        PlayerMetricText.Text = $"Player: {_session.Username}";
         ApplyCamera(updateSliders: true);
 
         if (!string.IsNullOrWhiteSpace(session.Username))
@@ -46,6 +67,7 @@ public partial class MainWindow : Window
         StarViewport.MouseLeftButtonUp += OnViewportMouseLeftButtonUp;
         StarViewport.MouseMove += OnViewportMouseMove;
         StarViewport.MouseWheel += OnViewportMouseWheel;
+        Loaded += OnMainWindowLoaded;
     }
 
     private void BuildStarmap(StarmapScene scene)
@@ -136,5 +158,97 @@ public partial class MainWindow : Window
 
         _cameraController.FocusOnRoute(selected);
         ApplyCamera(updateSliders: true);
+    }
+
+    private async void OnMainWindowLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_hasLoaded)
+        {
+            return;
+        }
+
+        _hasLoaded = true;
+        await RefreshDashboardAndEventsAsync();
+    }
+
+    private async void OnRefreshDashboardClick(object sender, RoutedEventArgs e)
+    {
+        await RefreshDashboardAndEventsAsync();
+    }
+
+    private async void OnRefreshEventFeedClick(object sender, RoutedEventArgs e)
+    {
+        await RefreshDashboardAndEventsAsync();
+    }
+
+    private void OnEventFilterChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ApplyEventFilter();
+    }
+
+    private async Task RefreshDashboardAndEventsAsync()
+    {
+        SetDashboardBusy(true);
+        try
+        {
+            var transactionsTask = _marketApiClient.GetTransactionsAsync(_session.PlayerId, limit: 25);
+            var standingsTask = _reputationApiClient.GetFactionStandingsAsync(_session.PlayerId);
+            var escortTask = _fleetApiClient.GetEscortSummaryAsync(_session.PlayerId);
+            var routesTask = _navigationApiClient.GetDangerousRoutesAsync(65);
+            var reportsTask = _strategicApiClient.GetIntelligenceReportsAsync(_session.PlayerId);
+            var combatLogsTask = _combatApiClient.GetRecentLogsAsync(limit: 25);
+            await Task.WhenAll(transactionsTask, standingsTask, escortTask, routesTask, reportsTask, combatLogsTask);
+
+            var transactions = transactionsTask.Result;
+            var standings = standingsTask.Result;
+            var escort = escortTask.Result;
+            var routes = routesTask.Result;
+            var reports = reportsTask.Result;
+            var combatLogs = combatLogsTask.Result;
+
+            var threats = ThreatAlertRanker.Build(routes, reports);
+            var metrics = StatusMetricAggregator.Build(transactions, standings, escort, threats, _scene);
+            CreditsMetricText.Text = $"Credits: {metrics.LiquidCredits:N2}";
+            ReputationMetricText.Text = $"Reputation: {metrics.ReputationScore}";
+            FleetMetricText.Text = $"Fleet: {metrics.FleetStrength}";
+            RoutesMetricText.Text = $"Routes: {metrics.ActiveRoutes}";
+            AlertsMetricText.Text = $"Alerts: {metrics.AlertCount}";
+
+            _eventFeedAll = EventFeedBuilder.Build(transactions, combatLogs, reports, DateTime.UtcNow).ToList();
+            ApplyEventFilter();
+        }
+        catch (Exception exception)
+        {
+            AlertsMetricText.Text = $"Alerts: error";
+            MessageBox.Show(
+                $"Dashboard refresh failed: {exception.Message}",
+                "Galactic Trader",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        finally
+        {
+            SetDashboardBusy(false);
+        }
+    }
+
+    private void ApplyEventFilter()
+    {
+        var selectedCategory = (EventCategoryFilter.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        var filtered = string.IsNullOrWhiteSpace(selectedCategory) || string.Equals(selectedCategory, "All", StringComparison.OrdinalIgnoreCase)
+            ? _eventFeedAll
+            : _eventFeedAll.Where(entry => string.Equals(entry.Category, selectedCategory, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        _filteredEventFeed.Clear();
+        foreach (var entry in filtered)
+        {
+            _filteredEventFeed.Add(entry);
+        }
+    }
+
+    private void SetDashboardBusy(bool isBusy)
+    {
+        RefreshDashboardButton.IsEnabled = !isBusy;
+        RefreshEventFeedButton.IsEnabled = !isBusy;
     }
 }

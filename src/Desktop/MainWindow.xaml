@@ -13,164 +13,287 @@
         WindowStartupLocation="CenterScreen"
         Background="#081225">
     <Grid Margin="16">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="320" />
-            <ColumnDefinition Width="16" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="180" />
+        </Grid.RowDefinitions>
 
-        <Border Grid.Column="0"
+        <Border Grid.Row="0"
                 Background="#111B33"
                 BorderBrush="#2F4B78"
                 BorderThickness="1"
                 CornerRadius="12"
-                Padding="16">
-            <DockPanel LastChildFill="True">
-                <TextBlock DockPanel.Dock="Top"
-                           Text="Galactic Trader"
-                           Foreground="#E8F0FF"
-                           FontSize="24"
-                           FontWeight="SemiBold" />
+                Padding="10"
+                Margin="0,0,0,10">
+            <DockPanel>
+                <Button x:Name="RefreshDashboardButton"
+                        DockPanel.Dock="Right"
+                        Width="150"
+                        Height="34"
+                        Margin="10,0,0,0"
+                        Background="#1F6FEB"
+                        BorderBrush="#4A89F6"
+                        Foreground="White"
+                        FontWeight="SemiBold"
+                        Content="Refresh Metrics"
+                        Click="OnRefreshDashboardClick" />
+                <WrapPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="PlayerMetricText"
+                               Margin="0,0,20,0"
+                               Foreground="#EAF2FF"
+                               FontWeight="SemiBold"
+                               Text="Player: -" />
+                    <TextBlock x:Name="CreditsMetricText"
+                               Margin="0,0,20,0"
+                               Foreground="#CFDDFC"
+                               Text="Credits: -" />
+                    <TextBlock x:Name="ReputationMetricText"
+                               Margin="0,0,20,0"
+                               Foreground="#CFDDFC"
+                               Text="Reputation: -" />
+                    <TextBlock x:Name="FleetMetricText"
+                               Margin="0,0,20,0"
+                               Foreground="#CFDDFC"
+                               Text="Fleet: -" />
+                    <TextBlock x:Name="RoutesMetricText"
+                               Margin="0,0,20,0"
+                               Foreground="#CFDDFC"
+                               Text="Routes: -" />
+                    <TextBlock x:Name="AlertsMetricText"
+                               Foreground="#CFDDFC"
+                               Text="Alerts: -" />
+                </WrapPanel>
+            </DockPanel>
+        </Border>
 
-                <TextBlock DockPanel.Dock="Top"
-                           Margin="0,6,0,12"
-                           Text="Desktop command interface with tactical 3D starmap"
-                           Foreground="#A4B8DD"
-                           TextWrapping="Wrap" />
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="320" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-                <StackPanel DockPanel.Dock="Top"
-                            Orientation="Vertical"
-                            Margin="0,0,0,16">
-                    <TextBlock Text="Camera Controls"
+            <Border Grid.Column="0"
+                    Background="#111B33"
+                    BorderBrush="#2F4B78"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="16">
+                <DockPanel LastChildFill="True">
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Galactic Trader"
+                               Foreground="#E8F0FF"
+                               FontSize="24"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock DockPanel.Dock="Top"
+                               Margin="0,6,0,12"
+                               Text="Desktop command interface with tactical 3D starmap"
+                               Foreground="#A4B8DD"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Vertical"
+                                Margin="0,0,0,16">
+                        <TextBlock Text="Camera Controls"
+                                   Foreground="#D5E3FF"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8" />
+
+                        <TextBlock Text="Yaw"
+                                   Foreground="#A4B8DD" />
+                        <Slider x:Name="YawSlider"
+                                Minimum="0"
+                                Maximum="360"
+                                Value="48"
+                                TickFrequency="30"
+                                ValueChanged="OnCameraSliderChanged" />
+
+                        <TextBlock Text="Pitch"
+                                   Foreground="#A4B8DD"
+                                   Margin="0,8,0,0" />
+                        <Slider x:Name="PitchSlider"
+                                Minimum="-80"
+                                Maximum="-5"
+                                Value="-24"
+                                TickFrequency="5"
+                                ValueChanged="OnCameraSliderChanged" />
+
+                        <TextBlock Text="Zoom"
+                                   Foreground="#A4B8DD"
+                                   Margin="0,8,0,0" />
+                        <Slider x:Name="ZoomSlider"
+                                Minimum="60"
+                                Maximum="420"
+                                Value="220"
+                                TickFrequency="20"
+                                ValueChanged="OnCameraSliderChanged" />
+
+                        <Button Margin="0,12,0,0"
+                                Padding="10,6"
+                                Background="#1F6FEB"
+                                BorderBrush="#4A89F6"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                Content="Reset Camera"
+                                Click="OnResetCameraClick" />
+                    </StackPanel>
+
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Key Trade Routes"
                                Foreground="#D5E3FF"
                                FontWeight="SemiBold"
                                Margin="0,0,0,8" />
 
-                    <TextBlock Text="Yaw"
-                               Foreground="#A4B8DD" />
-                    <Slider x:Name="YawSlider"
-                            Minimum="0"
-                            Maximum="360"
-                            Value="48"
-                            TickFrequency="30"
-                            ValueChanged="OnCameraSliderChanged" />
+                    <ListBox x:Name="RouteList"
+                             DisplayMemberPath="Name"
+                             SelectionChanged="OnRouteSelectionChanged"
+                             Background="#0C152A"
+                             BorderBrush="#2F4B78"
+                             Foreground="#DCE7FF" />
 
-                    <TextBlock Text="Pitch"
+                    <TabControl DockPanel.Dock="Bottom"
+                                Margin="0,16,0,0"
+                                Height="190"
+                                Background="#0D1A33"
+                                BorderBrush="#2F4B78">
+                        <TabItem Header="Dashboard">
+                            <TextBlock Margin="12"
+                                       Foreground="#CFDDFC"
+                                       TextWrapping="Wrap"
+                                       Text="Live command summary: active contracts, fuel budget, and station inventory snapshots." />
+                        </TabItem>
+                        <TabItem Header="Trading">
+                            <ContentControl x:Name="TradingHost"
+                                            Margin="12" />
+                        </TabItem>
+                        <TabItem Header="Fleet">
+                            <ContentControl x:Name="FleetHost"
+                                            Margin="12" />
+                        </TabItem>
+                        <TabItem Header="Intel">
+                            <ContentControl x:Name="IntelHost"
+                                            Margin="12" />
+                        </TabItem>
+                    </TabControl>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Background="#0B1830"
+                    BorderBrush="#2F4B78"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="8">
+                <Grid>
+                    <TextBlock Margin="8"
+                               HorizontalAlignment="Left"
+                               VerticalAlignment="Top"
+                               Foreground="#E8F0FF"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Text="Starmap 3D View" />
+
+                    <TextBlock Margin="8"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Top"
                                Foreground="#A4B8DD"
-                               Margin="0,8,0,0" />
-                    <Slider x:Name="PitchSlider"
-                            Minimum="-80"
-                            Maximum="-5"
-                            Value="-24"
-                            TickFrequency="5"
-                            ValueChanged="OnCameraSliderChanged" />
+                               Text="Drag: orbit | Wheel: zoom | Select route: focus" />
 
-                    <TextBlock Text="Zoom"
-                               Foreground="#A4B8DD"
-                               Margin="0,8,0,0" />
-                    <Slider x:Name="ZoomSlider"
-                            Minimum="60"
-                            Maximum="420"
-                            Value="220"
-                            TickFrequency="20"
-                            ValueChanged="OnCameraSliderChanged" />
+                    <Viewport3D x:Name="StarViewport"
+                                Margin="0,34,0,0"
+                                ClipToBounds="True">
+                        <Viewport3D.Camera>
+                            <PerspectiveCamera x:Name="SceneCamera"
+                                               Position="180,110,180"
+                                               LookDirection="-180,-110,-180"
+                                               UpDirection="0,1,0"
+                                               FieldOfView="55" />
+                        </Viewport3D.Camera>
 
-                    <Button Margin="0,12,0,0"
-                            Padding="10,6"
-                            Background="#1F6FEB"
-                            BorderBrush="#4A89F6"
-                            Foreground="White"
-                            FontWeight="SemiBold"
-                            Content="Reset Camera"
-                            Click="OnResetCameraClick" />
-                </StackPanel>
+                        <ModelVisual3D>
+                            <ModelVisual3D.Content>
+                                <Model3DGroup>
+                                    <AmbientLight Color="#3C537A" />
+                                    <DirectionalLight Color="#B6CDFF"
+                                                      Direction="-1,-1,-2" />
+                                    <DirectionalLight Color="#7BA0FF"
+                                                      Direction="1,-0.5,-1" />
+                                </Model3DGroup>
+                            </ModelVisual3D.Content>
+                        </ModelVisual3D>
 
-                <TextBlock DockPanel.Dock="Top"
-                           Text="Key Trade Routes"
-                           Foreground="#D5E3FF"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,8" />
+                        <ModelVisual3D x:Name="SceneModels" />
+                    </Viewport3D>
+                </Grid>
+            </Border>
+        </Grid>
 
-                <ListBox x:Name="RouteList"
-                         DisplayMemberPath="Name"
-                         SelectionChanged="OnRouteSelectionChanged"
-                         Background="#0C152A"
-                         BorderBrush="#2F4B78"
-                         Foreground="#DCE7FF" />
-
-                <TabControl DockPanel.Dock="Bottom"
-                            Margin="0,16,0,0"
-                            Height="190"
-                            Background="#0D1A33"
-                            BorderBrush="#2F4B78">
-                    <TabItem Header="Dashboard">
-                        <TextBlock Margin="12"
-                                   Foreground="#CFDDFC"
-                                   TextWrapping="Wrap"
-                                   Text="Live command summary: active contracts, fuel budget, and station inventory snapshots." />
-                    </TabItem>
-                    <TabItem Header="Trading">
-                        <ContentControl x:Name="TradingHost"
-                                        Margin="12" />
-                    </TabItem>
-                    <TabItem Header="Fleet">
-                        <ContentControl x:Name="FleetHost"
-                                        Margin="12" />
-                    </TabItem>
-                    <TabItem Header="Intel">
-                        <ContentControl x:Name="IntelHost"
-                                        Margin="12" />
-                    </TabItem>
-                </TabControl>
-            </DockPanel>
-        </Border>
-
-        <Border Grid.Column="2"
-                Background="#0B1830"
+        <Border Grid.Row="2"
+                Margin="0,10,0,0"
+                Background="#111B33"
                 BorderBrush="#2F4B78"
                 BorderThickness="1"
                 CornerRadius="12"
-                Padding="8">
+                Padding="10">
             <Grid>
-                <TextBlock Margin="8"
-                           HorizontalAlignment="Left"
-                           VerticalAlignment="Top"
-                           Foreground="#E8F0FF"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Text="Starmap 3D View" />
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-                <TextBlock Margin="8"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Top"
-                           Foreground="#A4B8DD"
-                           Text="Drag: orbit | Wheel: zoom | Select route: focus" />
+                <DockPanel Grid.Row="0"
+                           Margin="0,0,0,8">
+                    <Button x:Name="RefreshEventFeedButton"
+                            DockPanel.Dock="Right"
+                            Width="150"
+                            Height="30"
+                            Background="#00A86B"
+                            BorderBrush="#20C284"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            Content="Refresh Events"
+                            Click="OnRefreshEventFeedClick" />
+                    <ComboBox x:Name="EventCategoryFilter"
+                              Width="180"
+                              Height="30"
+                              Background="#101F39"
+                              BorderBrush="#2E4A75"
+                              Foreground="#EAF2FF"
+                              SelectionChanged="OnEventFilterChanged">
+                        <ComboBoxItem IsSelected="True"
+                                      Content="All" />
+                        <ComboBoxItem Content="Trade" />
+                        <ComboBoxItem Content="Combat" />
+                        <ComboBoxItem Content="Intel" />
+                    </ComboBox>
+                </DockPanel>
 
-                <Viewport3D x:Name="StarViewport"
-                            Margin="0,34,0,0"
-                            ClipToBounds="True">
-                    <Viewport3D.Camera>
-                        <PerspectiveCamera x:Name="SceneCamera"
-                                           Position="180,110,180"
-                                           LookDirection="-180,-110,-180"
-                                           UpDirection="0,1,0"
-                                           FieldOfView="55" />
-                    </Viewport3D.Camera>
-
-                    <ModelVisual3D>
-                        <ModelVisual3D.Content>
-                            <Model3DGroup>
-                                <AmbientLight Color="#3C537A" />
-                                <DirectionalLight Color="#B6CDFF"
-                                                  Direction="-1,-1,-2" />
-                                <DirectionalLight Color="#7BA0FF"
-                                                  Direction="1,-0.5,-1" />
-                            </Model3DGroup>
-                        </ModelVisual3D.Content>
-                    </ModelVisual3D>
-
-                    <ModelVisual3D x:Name="SceneModels" />
-                </Viewport3D>
+                <DataGrid Grid.Row="1"
+                          x:Name="EventFeedGrid"
+                          Background="#0C152A"
+                          BorderBrush="#2F4B78"
+                          Foreground="#DCE7FF"
+                          HeadersVisibility="Column"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Time (UTC)"
+                                            Binding="{Binding OccurredAtUtc, StringFormat={}{0:u}}"
+                                            Width="180" />
+                        <DataGridTextColumn Header="Category"
+                                            Binding="{Binding Category}"
+                                            Width="80" />
+                        <DataGridTextColumn Header="Title"
+                                            Binding="{Binding Title}"
+                                            Width="220" />
+                        <DataGridTextColumn Header="Detail"
+                                            Binding="{Binding Detail}"
+                                            Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
             </Grid>
         </Border>
     </Grid>
