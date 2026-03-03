@@ -56,12 +56,10 @@
                           Background="#101F39"
                           BorderBrush="#2E4A75"
                           Foreground="#EAF2FF">
-                    <ComboBoxItem IsSelected="True" Content="Standard" />
-                    <ComboBoxItem Content="HighBurn" />
-                    <ComboBoxItem Content="StealthTransit" />
-                    <ComboBoxItem Content="Convoy" />
-                    <ComboBoxItem Content="GhostRoute" />
-                    <ComboBoxItem Content="ArmedEscort" />
+                    <ComboBoxItem Content="Safe Route" />
+                    <ComboBoxItem IsSelected="True" Content="Balanced Route" />
+                    <ComboBoxItem Content="High Profit Route" />
+                    <ComboBoxItem Content="Smuggler Route" />
                 </ComboBox>
             </StackPanel>
             <StackPanel Margin="0,0,8,0">

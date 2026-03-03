@@ -79,7 +79,8 @@ public partial class RoutePlanningPanel : UserControl
             return;
         }
 
-        var mode = ReadComboText(TravelModeCombo, fallback: "Standard");
+        var selectedModePreset = ReadComboText(TravelModeCombo, fallback: "Balanced Route");
+        var mode = RouteModePresetMapper.ToApiMode(selectedModePreset);
         var algorithm = ReadComboText(AlgorithmCombo, fallback: "dijkstra");
 
         SetBusy(true);
