@@ -10,6 +10,8 @@ using GalacticTrader.Desktop.Routes;
 using GalacticTrader.Desktop.Settings;
 using GalacticTrader.Desktop.Starmap;
 using GalacticTrader.Desktop.Trading;
+using Serilog;
+using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -297,15 +299,14 @@ public partial class MainWindow : Window
             var filename = $"event-feed-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
             var path = Path.Combine(root, filename);
             File.WriteAllText(path, csv);
-            MessageBox.Show($"Event feed exported to {path}", "Galactic Trader", MessageBoxButton.OK, MessageBoxImage.Information);
+            AlertsMetricText.Text = "Alerts: event feed exported";
+            Log.Information("Event feed exported to {Path}.", path);
         }
         catch (Exception exception)
         {
-            MessageBox.Show(
-                $"Event feed export failed: {exception.Message}",
-                "Galactic Trader",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            AlertsMetricText.Text = "Alerts: export failed";
+            Log.Error(exception, "Event feed export failed.");
+            BreakIfDebugging();
         }
     }
 
@@ -370,11 +371,8 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             AlertsMetricText.Text = $"Alerts: error";
-            MessageBox.Show(
-                $"Dashboard refresh failed: {exception.Message}",
-                "Galactic Trader",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            Log.Error(exception, "Dashboard refresh failed.");
+            BreakIfDebugging();
         }
         finally
         {
@@ -513,5 +511,13 @@ public partial class MainWindow : Window
         BreadcrumbText.Text = ModuleBreadcrumbBuilder.Build(selectedModule);
         QuickActionsText.Text = ModuleQuickActionsBuilder.Build(selectedModule);
         ContextSubmenuList.ItemsSource = ModuleContextSubmenuBuilder.Build(selectedModule);
+    }
+
+    private static void BreakIfDebugging()
+    {
+        if (Debugger.IsAttached)
+        {
+            Debugger.Break();
+        }
     }
 }

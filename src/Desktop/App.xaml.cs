@@ -3,6 +3,7 @@ using GalacticTrader.Desktop.Realtime;
 using GalacticTrader.Desktop.Starmap;
 using Serilog;
 using Serilog.Events;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
@@ -84,11 +85,7 @@ public partial class App : Application
                 StarmapSceneBuilder.Build);
             if (starmapLoad.UsedFallback)
             {
-                MessageBox.Show(
-                    starmapLoad.Warning,
-                    "Galactic Trader",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                Log.Warning("Starmap fallback activated: {Warning}", starmapLoad.Warning);
             }
 
             var scene = starmapLoad.Scene;
@@ -118,12 +115,7 @@ public partial class App : Application
         catch (Exception exception)
         {
             Log.Fatal(exception, "Desktop startup failed.");
-            MessageBox.Show(
-                $"Startup failed: {exception.Message}",
-                "Galactic Trader",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-
+            BreakIfDebugging();
             Shutdown();
         }
     }
@@ -172,6 +164,8 @@ public partial class App : Application
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         Log.Error(e.Exception, "Unhandled UI thread exception.");
+        BreakIfDebugging();
+        e.Handled = true;
     }
 
     private static void OnUnhandledException(object? sender, UnhandledExceptionEventArgs e)
@@ -179,15 +173,26 @@ public partial class App : Application
         if (e.ExceptionObject is Exception exception)
         {
             Log.Fatal(exception, "Unhandled AppDomain exception. IsTerminating: {IsTerminating}", e.IsTerminating);
+            BreakIfDebugging();
             return;
         }
 
         Log.Fatal("Unhandled AppDomain exception object of type {Type}. IsTerminating: {IsTerminating}", e.ExceptionObject?.GetType().FullName ?? "unknown", e.IsTerminating);
+        BreakIfDebugging();
     }
 
     private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
         Log.Error(e.Exception, "Unobserved task exception.");
+        BreakIfDebugging();
         e.SetObserved();
+    }
+
+    private static void BreakIfDebugging()
+    {
+        if (Debugger.IsAttached)
+        {
+            Debugger.Break();
+        }
     }
 }

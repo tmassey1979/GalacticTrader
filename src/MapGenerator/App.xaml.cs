@@ -1,5 +1,6 @@
 using Serilog;
 using Serilog.Events;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -59,6 +60,8 @@ public partial class App : Application
     private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         Log.Error(e.Exception, "Unhandled UI thread exception in Map Generator.");
+        BreakIfDebugging();
+        e.Handled = true;
     }
 
     private static void OnUnhandledException(object? sender, UnhandledExceptionEventArgs e)
@@ -66,15 +69,26 @@ public partial class App : Application
         if (e.ExceptionObject is Exception exception)
         {
             Log.Fatal(exception, "Unhandled AppDomain exception in Map Generator. IsTerminating: {IsTerminating}", e.IsTerminating);
+            BreakIfDebugging();
             return;
         }
 
         Log.Fatal("Unhandled AppDomain exception object in Map Generator of type {Type}. IsTerminating: {IsTerminating}", e.ExceptionObject?.GetType().FullName ?? "unknown", e.IsTerminating);
+        BreakIfDebugging();
     }
 
     private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
     {
         Log.Error(e.Exception, "Unobserved task exception in Map Generator.");
+        BreakIfDebugging();
         e.SetObserved();
+    }
+
+    private static void BreakIfDebugging()
+    {
+        if (Debugger.IsAttached)
+        {
+            Debugger.Break();
+        }
     }
 }
