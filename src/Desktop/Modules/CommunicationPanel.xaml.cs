@@ -65,6 +65,11 @@ public partial class CommunicationPanel : UserControl
         await RefreshVoiceQosAsync();
     }
 
+    private async void OnReportVoiceActivityClick(object sender, RoutedEventArgs e)
+    {
+        await ReportVoiceActivityAsync();
+    }
+
     private async void OnMessageTextKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter || Keyboard.Modifiers != ModifierKeys.None)
@@ -283,6 +288,76 @@ public partial class CommunicationPanel : UserControl
         }
     }
 
+    private async Task ReportVoiceActivityAsync()
+    {
+        if (!TryResolveVoiceChannelId(out var channelId))
+        {
+            SetStatus("Enter a valid voice channel id to report activity.", isError: true);
+            return;
+        }
+
+        if (!VoiceActivityInputParser.TryParseRms(VoiceRmsText.Text, out var rmsLevel))
+        {
+            SetStatus("RMS must be a number between 0 and 1.", isError: true);
+            return;
+        }
+
+        if (!VoiceActivityInputParser.TryParsePercent(VoiceLossText.Text, out var packetLossPercent))
+        {
+            SetStatus("Packet loss must be a numeric percent.", isError: true);
+            return;
+        }
+
+        if (!VoiceActivityInputParser.TryParseMs(VoiceLatencyText.Text, out var latencyMs))
+        {
+            SetStatus("Latency must be a numeric millisecond value.", isError: true);
+            return;
+        }
+
+        if (!VoiceActivityInputParser.TryParseMs(VoiceJitterText.Text, out var jitterMs))
+        {
+            SetStatus("Jitter must be a numeric millisecond value.", isError: true);
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var activity = await _communicationApiClient.UpdateVoiceActivityAsync(channelId, new VoiceActivityApiRequest
+            {
+                PlayerId = _session.PlayerId,
+                RmsLevel = rmsLevel,
+                PacketLossPercent = packetLossPercent,
+                LatencyMs = latencyMs,
+                JitterMs = jitterMs
+            });
+
+            if (activity is null)
+            {
+                SetStatus("Voice channel not found.", isError: true);
+                return;
+            }
+
+            var qos = await _communicationApiClient.GetVoiceQosSnapshotAsync(channelId);
+            if (qos is not null)
+            {
+                VoiceChannelText.Text = $"Channel: {channelId:D}";
+                VoiceParticipantsText.Text = $"Participants: {qos.ParticipantCount}";
+                VoiceQosText.Text = $"QoS: {VoiceQosSummaryFormatter.Build(qos)}";
+            }
+
+            SetStatus($"Voice activity reported. Score {activity.VoiceActivityScore:N2}.", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
     private string ResolveChannelType()
     {
         var selection = (ChannelTypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString();
@@ -358,6 +433,11 @@ public partial class CommunicationPanel : UserControl
         VoiceModeCombo.IsEnabled = !isBusy;
         VoiceScopeKeyText.IsEnabled = !isBusy;
         VoiceChannelIdText.IsEnabled = !isBusy;
+        VoiceRmsText.IsEnabled = !isBusy;
+        VoiceLossText.IsEnabled = !isBusy;
+        VoiceLatencyText.IsEnabled = !isBusy;
+        VoiceJitterText.IsEnabled = !isBusy;
+        ReportVoiceActivityButton.IsEnabled = !isBusy;
     }
 
     private void SetStatus(string message, bool isError)

@@ -137,4 +137,24 @@ public sealed class CommunicationApiClient
 
         return await response.Content.ReadFromJsonAsync<VoiceQosSnapshotApiDto>(cancellationToken);
     }
+
+    public async Task<VoiceActivityApiDto?> UpdateVoiceActivityAsync(
+        Guid channelId,
+        VoiceActivityApiRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"/api/communication/voice/channels/{channelId:D}/activity", request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Update voice activity failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<VoiceActivityApiDto>(cancellationToken);
+    }
 }
