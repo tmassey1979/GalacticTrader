@@ -81,13 +81,23 @@ public partial class DashboardPanel : UserControl
                 _scene);
 
             CreditsValue.Text = $"Credits {summary.LiquidCredits:N2}";
+            NetWorthValue.Text = $"Net worth {summary.NetWorth:N2}";
             TradeVolumeValue.Text = $"Recent volume {summary.RecentTradeVolume:N2}";
+            AssetMixValue.Text = $"Liquid ratio {summary.AssetLiquidityRatio:N1}%";
+            CashFlowBar.Value = (double)summary.CashFlowIndex;
             FleetValue.Text = $"Strength {summary.FleetStrength}";
             ShipCountValue.Text = $"Ships {summary.ShipCount}";
+            RiskExposureValue.Text = $"Risk exposure {summary.FleetRiskExposure:N1}%";
+            FleetRiskBar.Value = (double)summary.FleetRiskExposure;
             ReputationValue.Text = $"Peak rep {summary.HighestReputation}";
             FactionAccessValue.Text = $"Faction access {summary.AccessibleFactions}";
+            InfluenceIndexValue.Text = $"Influence index {summary.ReputationInfluenceIndex:N1}";
+            ReputationInfluenceBar.Value = (double)summary.ReputationInfluenceIndex;
             RoutesValue.Text = $"Routes {summary.TotalRoutes}";
             RiskRoutesValue.Text = $"High risk {summary.HighRiskRoutes}";
+            RevenuePerRouteValue.Text = $"Revenue/route {summary.RevenuePerRoute:N2}";
+            InterferenceValue.Text = $"Interference {summary.InterferenceProbability:N1}%";
+            RouteInterferenceBar.Value = (double)summary.InterferenceProbability;
             IntelReportsValue.Text = summary.IntelligenceReports.ToString();
             ThreatsValue.Text = summary.ThreatAlerts.ToString();
 

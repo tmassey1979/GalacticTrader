@@ -18,8 +18,8 @@ public sealed class DashboardSummaryBuilderTests
 
         var ships = new[]
         {
-            new ShipApiDto { Name = "A" },
-            new ShipApiDto { Name = "B" }
+            new ShipApiDto { Name = "A", CurrentValue = 1500m },
+            new ShipApiDto { Name = "B", CurrentValue = 500m }
         };
 
         var escort = new EscortSummaryApiDto { FleetStrength = 140 };
@@ -59,13 +59,20 @@ public sealed class DashboardSummaryBuilderTests
             scene);
 
         Assert.Equal(9500m, summary.LiquidCredits);
+        Assert.Equal(11500m, summary.NetWorth);
+        Assert.Equal(82.6m, summary.AssetLiquidityRatio);
+        Assert.Equal(5.3m, summary.CashFlowIndex);
         Assert.Equal(500m, summary.RecentTradeVolume);
         Assert.Equal(2, summary.ShipCount);
         Assert.Equal(140, summary.FleetStrength);
+        Assert.Equal(50m, summary.FleetRiskExposure);
         Assert.Equal(65, summary.HighestReputation);
         Assert.Equal(2, summary.AccessibleFactions);
+        Assert.Equal(75m, summary.ReputationInfluenceIndex);
         Assert.Equal(2, summary.TotalRoutes);
         Assert.Equal(1, summary.HighRiskRoutes);
+        Assert.Equal(250m, summary.RevenuePerRoute);
+        Assert.Equal(54m, summary.InterferenceProbability);
         Assert.Equal(2, summary.ThreatAlerts);
         Assert.Equal(1, summary.IntelligenceReports);
     }

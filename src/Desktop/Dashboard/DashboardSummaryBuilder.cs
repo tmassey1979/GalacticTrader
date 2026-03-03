@@ -18,6 +18,7 @@ public static class DashboardSummaryBuilder
         var credits = transactions.Count > 0
             ? transactions[0].RemainingPlayerCredits
             : 0m;
+        var netWorth = credits + ships.Sum(static ship => ship.CurrentValue);
         var recentTradeVolume = transactions.Take(10).Sum(static transaction => transaction.TotalPrice);
         var highestReputation = standings.Count > 0
             ? standings.Max(static standing => standing.ReputationScore)
@@ -26,17 +27,39 @@ public static class DashboardSummaryBuilder
         var highRiskRoutes = scene.Routes.Count(static route => route.IsHighRisk);
         var activeReports = reports.Count(static report => !report.IsExpired);
         var alerts = ThreatAlertRanker.Build(dangerousRoutes, reports).Count;
+        var totalRoutes = scene.Routes.Count;
+        var assetLiquidityRatio = netWorth <= 0m
+            ? 0m
+            : Math.Round((credits / netWorth) * 100m, 1);
+        var cashFlowIndex = credits <= 0m
+            ? 0m
+            : Math.Round(Math.Clamp((recentTradeVolume / credits) * 100m, 0m, 100m), 1);
+        var fleetRiskExposure = totalRoutes <= 0
+            ? 0m
+            : Math.Round((highRiskRoutes / (decimal)totalRoutes) * 100m, 1);
+        var reputationInfluence = Math.Round(Math.Clamp(highestReputation + (accessibleFactions * 5m), 0m, 100m), 1);
+        var revenuePerRoute = totalRoutes <= 0
+            ? 0m
+            : Math.Round(recentTradeVolume / totalRoutes, 2);
+        var interferenceProbability = Math.Round(Math.Clamp(fleetRiskExposure + (alerts * 2m), 0m, 100m), 1);
 
         return new DashboardSummarySnapshot
         {
             LiquidCredits = credits,
+            NetWorth = netWorth,
+            AssetLiquidityRatio = assetLiquidityRatio,
+            CashFlowIndex = cashFlowIndex,
             RecentTradeVolume = recentTradeVolume,
             ShipCount = ships.Count,
             FleetStrength = escortSummary?.FleetStrength ?? 0,
+            FleetRiskExposure = fleetRiskExposure,
             HighestReputation = highestReputation,
             AccessibleFactions = accessibleFactions,
-            TotalRoutes = scene.Routes.Count,
+            ReputationInfluenceIndex = reputationInfluence,
+            TotalRoutes = totalRoutes,
             HighRiskRoutes = highRiskRoutes,
+            RevenuePerRoute = revenuePerRoute,
+            InterferenceProbability = interferenceProbability,
             ThreatAlerts = alerts,
             IntelligenceReports = activeReports
         };
