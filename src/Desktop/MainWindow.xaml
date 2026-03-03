@@ -159,10 +159,8 @@
                                 Background="#0D1A33"
                                 BorderBrush="#2F4B78">
                         <TabItem Header="Dashboard">
-                            <TextBlock Margin="12"
-                                       Foreground="#CFDDFC"
-                                       TextWrapping="Wrap"
-                                       Text="Live command summary: active contracts, fuel budget, and station inventory snapshots." />
+                            <ContentControl x:Name="DashboardHost"
+                                            Margin="12" />
                         </TabItem>
                         <TabItem Header="Trading">
                             <ContentControl x:Name="TradingHost"

@@ -51,6 +51,14 @@ public partial class MainWindow : Window
 
         InitializeComponent();
         BuildStarmap(_scene);
+        DashboardHost.Content = new DashboardPanel(
+            _session,
+            _scene,
+            _navigationApiClient,
+            _marketApiClient,
+            _fleetApiClient,
+            _reputationApiClient,
+            _strategicApiClient);
         TradingHost.Content = new TradingPanel(_session, economyApiClient, _marketApiClient);
         FleetHost.Content = new FleetPanel(_session, fleetApiClient);
         IntelHost.Content = new IntelPanel(_session, navigationApiClient, reputationApiClient, strategicApiClient);
