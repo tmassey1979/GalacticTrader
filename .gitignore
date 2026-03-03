@@ -102,6 +102,20 @@ InitTestScene*.unity*
 **/bin/
 **/obj/
 
+# Local workspace artifacts
+.vs/
+backups/
+tmp/
+tmp_*.json
+*.userosscache
+*.rsuser
+*.sln.docstates
+**/Properties/launchSettings.json
+
+# Keep source assets tracked
+!src/Desktop/Assets/
+!src/Desktop/Assets/**
+
 # Test and benchmark artifacts
 **/coverage.cobertura.xml
 BenchmarkDotNet.Artifacts/

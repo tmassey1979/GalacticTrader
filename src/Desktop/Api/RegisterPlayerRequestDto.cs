@@ -1,6 +1,6 @@
-namespace GalacticTrader.Services.Auth;
+namespace GalacticTrader.Desktop.Api;
 
-public sealed record RegisterPlayerRequest(
+public sealed record RegisterPlayerRequestDto(
     string Username,
     string Email,
     string Password,

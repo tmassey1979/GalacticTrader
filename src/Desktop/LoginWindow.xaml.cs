@@ -1,6 +1,5 @@
 using GalacticTrader.Desktop.Api;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -9,10 +8,12 @@ namespace GalacticTrader.Desktop;
 public partial class LoginWindow : Window
 {
     private readonly AuthApiClient _authApiClient;
+    private readonly string _apiBaseUrl;
 
     public LoginWindow(AuthApiClient authApiClient, string apiBaseUrl)
     {
         _authApiClient = authApiClient;
+        _apiBaseUrl = apiBaseUrl;
         InitializeComponent();
         ApiBaseUrlText.Text = $"API endpoint: {apiBaseUrl}";
     }
@@ -47,35 +48,30 @@ public partial class LoginWindow : Window
         }
     }
 
-    private async void OnRegisterClick(object sender, RoutedEventArgs e)
+    private void OnOpenCreateUserClick(object sender, RoutedEventArgs e)
     {
-        var username = Normalize(RegisterUsernameText.Text);
-        var email = Normalize(RegisterEmailText.Text);
-        var password = RegisterPasswordBox.Password;
-
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        var createWindow = new CreateUserWindow(_authApiClient, _apiBaseUrl)
         {
-            SetStatus("Username, email, and password are required to create a user.", isError: true);
+            Owner = this
+        };
+
+        var created = createWindow.ShowDialog();
+        if (created != true)
+        {
             return;
         }
 
-        SetBusy(true);
-        try
+        if (!string.IsNullOrWhiteSpace(createWindow.CreatedUsername))
         {
-            await _authApiClient.RegisterAsync(username, email, password);
-            LoginUsernameText.Text = username;
-            LoginPasswordBox.Password = password;
-            AuthTabs.SelectedIndex = 0;
-            SetStatus("User created. Sign in with the new account.", isError: false);
+            LoginUsernameText.Text = createWindow.CreatedUsername;
         }
-        catch (Exception exception)
+
+        if (!string.IsNullOrWhiteSpace(createWindow.CreatedPassword))
         {
-            SetStatus(exception.Message, isError: true);
+            LoginPasswordBox.Password = createWindow.CreatedPassword;
         }
-        finally
-        {
-            SetBusy(false);
-        }
+
+        SetStatus("User created. Sign in with the new account.", isError: false);
     }
 
     private void OnCancelClick(object sender, RoutedEventArgs e)
@@ -87,17 +83,17 @@ public partial class LoginWindow : Window
     private void SetBusy(bool isBusy)
     {
         LoginButton.IsEnabled = !isBusy;
-        RegisterButton.IsEnabled = !isBusy;
+        OpenCreateUserButton.IsEnabled = !isBusy;
         CancelButton.IsEnabled = !isBusy;
-        Mouse.OverrideCursor = isBusy ? System.Windows.Input.Cursors.Wait : null;
+        Mouse.OverrideCursor = isBusy ? Cursors.Wait : null;
     }
 
     private void SetStatus(string message, bool isError)
     {
         StatusText.Text = message;
         StatusText.Foreground = isError
-            ? new SolidColorBrush(Color.FromRgb(255, 147, 147))
-            : new SolidColorBrush(Color.FromRgb(157, 183, 226));
+            ? new SolidColorBrush(Color.FromRgb(255, 145, 145))
+            : new SolidColorBrush(Color.FromRgb(156, 231, 186));
     }
 
     private static string Normalize(string value) => value.Trim();

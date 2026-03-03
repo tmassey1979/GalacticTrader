@@ -49,7 +49,15 @@ public sealed class SwaggerExampleSchemaFilter : ISchemaFilter
             {
                 ["username"] = new OpenApiString("captain_hera"),
                 ["email"] = new OpenApiString("hera@galactictrader.test"),
-                ["password"] = new OpenApiString("WarpDrive9000")
+                ["password"] = new OpenApiString("WarpDrive9000"),
+                ["firstName"] = new OpenApiString("Hera"),
+                ["lastName"] = new OpenApiString("Syndulla"),
+                ["birthdate"] = new OpenApiString("1990-04-18"),
+                ["gender"] = new OpenApiString("Woman"),
+                ["pronouns"] = new OpenApiString("she/her"),
+                ["locale"] = new OpenApiString("en-US"),
+                ["timeZone"] = new OpenApiString("America/Chicago"),
+                ["phoneNumber"] = new OpenApiString("+1-555-0100")
             },
             nameof(LoginPlayerApiRequest) => new OpenApiObject
             {

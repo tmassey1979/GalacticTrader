@@ -12,16 +12,11 @@ public sealed class AuthApiClient
         _httpClient = httpClient;
     }
 
-    public async Task RegisterAsync(string username, string email, string password, CancellationToken cancellationToken = default)
+    public async Task RegisterAsync(RegisterPlayerRequestDto request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync(
             "/api/auth/register",
-            new
-            {
-                username,
-                email,
-                password
-            },
+            request,
             cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -29,6 +24,11 @@ public sealed class AuthApiClient
             var detail = await response.Content.ReadAsStringAsync(cancellationToken);
             throw new InvalidOperationException($"Register failed ({(int)response.StatusCode}): {detail}");
         }
+    }
+
+    public Task RegisterAsync(string username, string email, string password, CancellationToken cancellationToken = default)
+    {
+        return RegisterAsync(new RegisterPlayerRequestDto(username, email, password), cancellationToken);
     }
 
     public async Task<DesktopSession> LoginAsync(string username, string password, CancellationToken cancellationToken = default)

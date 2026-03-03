@@ -7,6 +7,7 @@ namespace GalacticTrader.Desktop;
 
 public partial class SplashWindow : Window
 {
+    private static readonly TimeSpan MinimumSplashDuration = TimeSpan.FromSeconds(20);
     private readonly TaskCompletionSource _playCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly DispatcherTimer _terminalTimer;
     private int _bootLineIndex;
@@ -28,25 +29,28 @@ public partial class SplashWindow : Window
 
     public Task PlayAsync() => _playCompletion.Task;
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        _terminalTimer.Interval = CalculateTerminalInterval();
         _terminalTimer.Start();
 
-        if (FindResource("SplashStoryboard") is not Storyboard storyboardTemplate)
+        var storyboardCompletion = Task.CompletedTask;
+        if (FindResource("SplashStoryboard") is Storyboard storyboardTemplate)
         {
-            _playCompletion.TrySetResult();
-            return;
+            var storyboardTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var storyboard = storyboardTemplate.Clone();
+            storyboard.Completed += (_, _) => storyboardTaskSource.TrySetResult();
+            storyboard.Begin(this);
+            storyboardCompletion = storyboardTaskSource.Task;
         }
 
-        var storyboard = storyboardTemplate.Clone();
-        storyboard.Completed += (_, _) =>
-        {
-            LoadingProgress.Value = 100;
-            _terminalTimer.Stop();
-            _playCompletion.TrySetResult();
-        };
+        await Task.WhenAll(
+            storyboardCompletion,
+            Task.Delay(MinimumSplashDuration));
 
-        storyboard.Begin(this);
+        LoadingProgress.Value = 100;
+        _terminalTimer.Stop();
+        _playCompletion.TrySetResult();
     }
 
     private void OnClosed(object? sender, EventArgs e)
@@ -65,6 +69,13 @@ public partial class SplashWindow : Window
         var timestamp = DateTime.Now.ToString("HH:mm:ss");
         TerminalLog.Text += $"{timestamp}  {SplashBootScript.Lines[_bootLineIndex]}{Environment.NewLine}";
         _bootLineIndex++;
+    }
+
+    private static TimeSpan CalculateTerminalInterval()
+    {
+        var lineCount = Math.Max(1, SplashBootScript.Lines.Count);
+        var desiredIntervalMs = MinimumSplashDuration.TotalMilliseconds / lineCount;
+        return TimeSpan.FromMilliseconds(Math.Max(220, desiredIntervalMs));
     }
 
     private void BuildSplashScene()

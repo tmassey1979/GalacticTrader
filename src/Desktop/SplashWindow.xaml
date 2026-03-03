@@ -61,7 +61,7 @@
                              Storyboard.TargetProperty="Value"
                              From="0"
                              To="100"
-                             Duration="0:0:3.6" />
+                             Duration="0:0:20" />
         </Storyboard>
     </Window.Resources>
 

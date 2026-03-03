@@ -145,12 +145,22 @@ public partial class MainWindow : Window
 
     private void ApplyCamera(bool updateSliders)
     {
+        if (SceneCamera is null)
+        {
+            return;
+        }
+
         var pose = _cameraController.BuildPose();
         SceneCamera.Position = pose.Position;
         SceneCamera.LookDirection = pose.LookDirection;
         SceneCamera.UpDirection = pose.UpDirection;
 
         if (!updateSliders)
+        {
+            return;
+        }
+
+        if (YawSlider is null || PitchSlider is null || ZoomSlider is null)
         {
             return;
         }
@@ -199,6 +209,11 @@ public partial class MainWindow : Window
     private void OnCameraSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (_isUpdatingSliders)
+        {
+            return;
+        }
+
+        if (YawSlider is null || PitchSlider is null || ZoomSlider is null)
         {
             return;
         }
@@ -369,6 +384,14 @@ public partial class MainWindow : Window
 
     private void ApplyEventFilter()
     {
+        if (!IsInitialized ||
+            EventCategoryFilter is null ||
+            EventKeywordFilter is null ||
+            EventTimeWindowFilter is null)
+        {
+            return;
+        }
+
         var selectedCategory = (EventCategoryFilter.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "All";
         var keyword = EventKeywordFilter.Text ?? string.Empty;
         var window = (EventTimeWindowFilter.SelectedItem as ComboBoxItem)?.Content?.ToString();

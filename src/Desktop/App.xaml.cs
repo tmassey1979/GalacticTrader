@@ -14,14 +14,14 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        var splash = new SplashWindow();
-        splash.Show();
-
-        await splash.PlayAsync();
-        splash.Close();
-
         try
         {
+            var splash = new SplashWindow();
+            splash.Show();
+
+            await splash.PlayAsync();
+            splash.Close();
+
             var apiOptions = DesktopApiOptions.FromEnvironment();
             _httpClient = new HttpClient
             {
@@ -104,6 +104,7 @@ public partial class App : Application
                 strategicRealtimeClient,
                 communicationRealtimeClient);
             MainWindow = mainWindow;
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
             mainWindow.Show();
         }
         catch (Exception exception)

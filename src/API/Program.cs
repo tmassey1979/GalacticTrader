@@ -3,6 +3,7 @@ using GalacticTrader.API.Swagger;
 using GalacticTrader.API.Secrets;
 using GalacticTrader.API.Contracts;
 using GalacticTrader.Data;
+using GalacticTrader.Data.Models;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
 using GalacticTrader.Services.Admin;
@@ -175,6 +176,7 @@ var auth = app.MapGroup("/api/auth")
 auth.MapPost("/register", async (
     RegisterPlayerApiRequest request,
     IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Username) ||
@@ -193,11 +195,39 @@ auth.MapPost("/register", async (
         return Results.BadRequest(new { error = "Password must be at least 8 characters long." });
     }
 
+    if (request.Birthdate is DateOnly birthdate &&
+        birthdate > DateOnly.FromDateTime(DateTime.UtcNow))
+    {
+        return Results.BadRequest(new { error = "Birthdate cannot be in the future." });
+    }
+
+    if (!string.IsNullOrWhiteSpace(request.Website) &&
+        !Uri.TryCreate(request.Website, UriKind.Absolute, out _))
+    {
+        return Results.BadRequest(new { error = "Website must be a valid absolute URL." });
+    }
+
     try
     {
         var created = await authService.RegisterAsync(
-            new RegisterPlayerRequest(request.Username, request.Email, request.Password),
+            new RegisterPlayerRequest(
+                request.Username,
+                request.Email,
+                request.Password,
+                request.FirstName,
+                request.LastName,
+                request.MiddleName,
+                request.Nickname,
+                request.Birthdate,
+                request.Gender,
+                request.Pronouns,
+                request.PhoneNumber,
+                request.Locale,
+                request.TimeZone,
+                request.Website),
             cancellationToken);
+
+        await BootstrapNewPlayerAsync(dbContext, created, cancellationToken);
         return Results.Created($"/api/auth/players/{created.PlayerId}", created);
     }
     catch (InvalidOperationException exception)
@@ -208,7 +238,7 @@ auth.MapPost("/register", async (
     .WithOpenApi(operation =>
     {
         operation.Summary = "Register a player account";
-        operation.Description = "Creates a test/dev player identity and stores credentials in the in-memory auth provider.";
+        operation.Description = "Creates a player identity, stores credentials, and provisions starter gameplay assets.";
         return operation;
     });
 
@@ -1626,5 +1656,108 @@ communication.Map("/ws/{channelType}/{channelKey}", async (
 });
 
 app.Run();
+
+static async Task BootstrapNewPlayerAsync(
+    GalacticTraderDbContext dbContext,
+    PlayerIdentity identity,
+    CancellationToken cancellationToken)
+{
+    var exists = await dbContext.Players
+        .AsNoTracking()
+        .AnyAsync(player => player.Id == identity.PlayerId, cancellationToken);
+    if (exists)
+    {
+        return;
+    }
+
+    var starterSector = await EnsureStarterSectorAsync(dbContext, cancellationToken);
+    const decimal starterCredits = 250_000m;
+    const decimal starterShipValue = 95_000m;
+
+    var player = new Player
+    {
+        Id = identity.PlayerId,
+        Username = identity.Username,
+        Email = identity.Email,
+        KeycloakUserId = identity.PlayerId,
+        NetWorth = starterCredits + starterShipValue,
+        LiquidCredits = starterCredits,
+        ReputationScore = 0,
+        AlignmentLevel = 0,
+        FleetStrengthRating = 342,
+        ProtectionStatus = "Protected",
+        CreatedAt = DateTime.UtcNow,
+        LastActiveAt = DateTime.UtcNow,
+        IsActive = true
+    };
+
+    var ship = new Ship
+    {
+        Id = Guid.NewGuid(),
+        PlayerId = identity.PlayerId,
+        Name = "Pioneer-01",
+        ShipClass = "Scout",
+        HullIntegrity = 180,
+        MaxHullIntegrity = 180,
+        ShieldCapacity = 120,
+        MaxShieldCapacity = 120,
+        ReactorOutput = 90,
+        CargoCapacity = 160,
+        CargoUsed = 0,
+        SensorRange = 120,
+        SignatureProfile = 35,
+        CrewSlots = 6,
+        Hardpoints = 2,
+        HasInsurance = true,
+        InsuranceRate = 0.015m,
+        IsActive = true,
+        IsInCombat = false,
+        CurrentSectorId = starterSector.Id,
+        TargetSectorId = starterSector.Id,
+        StatusId = 0,
+        PurchasePrice = starterShipValue,
+        PurchasedAt = DateTime.UtcNow,
+        CurrentValue = starterShipValue
+    };
+
+    dbContext.Players.Add(player);
+    dbContext.Ships.Add(ship);
+    await dbContext.SaveChangesAsync(cancellationToken);
+}
+
+static async Task<Sector> EnsureStarterSectorAsync(
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken)
+{
+    var existing = await dbContext.Sectors
+        .OrderByDescending(sector => sector.SecurityLevel)
+        .ThenByDescending(sector => sector.EconomicIndex)
+        .FirstOrDefaultAsync(cancellationToken);
+    if (existing is not null)
+    {
+        return existing;
+    }
+
+    var sector = new Sector
+    {
+        Id = Guid.NewGuid(),
+        Name = "New Dawn",
+        X = 0,
+        Y = 0,
+        Z = 0,
+        SecurityLevel = 90,
+        HazardRating = 8,
+        ResourceModifier = 1.0f,
+        EconomicIndex = 85,
+        SensorInterferenceLevel = 5.0f,
+        ControlledByFactionId = null,
+        AverageTrafficLevel = 70,
+        PiratePresenceProbability = 5
+    };
+
+    dbContext.Sectors.Add(sector);
+    await dbContext.SaveChangesAsync(cancellationToken);
+    return sector;
+}
 
 public partial class Program;

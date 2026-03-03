@@ -18,6 +18,7 @@ public sealed class AuthService : IAuthService
 
         var normalizedUsername = Normalize(request.Username);
         var normalizedEmail = Normalize(request.Email);
+        var profile = AccountProfile.FromRequest(request);
         if (_usersByUsername.ContainsKey(normalizedUsername))
         {
             throw new InvalidOperationException("Username is already registered.");
@@ -37,7 +38,8 @@ public sealed class AuthService : IAuthService
         var account = new RegisteredAccount
         {
             Identity = identity,
-            PasswordHash = HashPassword(request.Password)
+            PasswordHash = HashPassword(request.Password),
+            Profile = profile
         };
 
         if (!_usersByUsername.TryAdd(normalizedUsername, account))
@@ -118,6 +120,16 @@ public sealed class AuthService : IAuthService
         return value.Trim();
     }
 
+    private static string? NormalizeOptional(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value.Trim();
+    }
+
     private static string HashPassword(string password)
     {
         var bytes = Encoding.UTF8.GetBytes(password);
@@ -144,6 +156,38 @@ public sealed class AuthService : IAuthService
         public required PlayerIdentity Identity { get; init; }
 
         public required string PasswordHash { get; init; }
+
+        public required AccountProfile Profile { get; init; }
+    }
+
+    private sealed record AccountProfile(
+        string? FirstName,
+        string? LastName,
+        string? MiddleName,
+        string? Nickname,
+        DateOnly? Birthdate,
+        string? Gender,
+        string? Pronouns,
+        string? PhoneNumber,
+        string? Locale,
+        string? TimeZone,
+        string? Website)
+    {
+        public static AccountProfile FromRequest(RegisterPlayerRequest request)
+        {
+            return new AccountProfile(
+                AuthService.NormalizeOptional(request.FirstName),
+                AuthService.NormalizeOptional(request.LastName),
+                AuthService.NormalizeOptional(request.MiddleName),
+                AuthService.NormalizeOptional(request.Nickname),
+                request.Birthdate,
+                AuthService.NormalizeOptional(request.Gender),
+                AuthService.NormalizeOptional(request.Pronouns),
+                AuthService.NormalizeOptional(request.PhoneNumber),
+                AuthService.NormalizeOptional(request.Locale),
+                AuthService.NormalizeOptional(request.TimeZone),
+                AuthService.NormalizeOptional(request.Website));
+        }
     }
 
     private sealed class SessionRecord

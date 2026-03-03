@@ -24,7 +24,15 @@ curl -X POST http://localhost:8080/api/auth/register \
   -d '{
     "username": "captain_hera",
     "email": "hera@galactictrader.test",
-    "password": "WarpDrive9000"
+    "password": "WarpDrive9000",
+    "firstName": "Hera",
+    "lastName": "Syndulla",
+    "birthdate": "1990-04-18",
+    "gender": "Woman",
+    "pronouns": "she/her",
+    "locale": "en-US",
+    "timeZone": "America/Chicago",
+    "phoneNumber": "+1-555-0100"
   }'
 ```
 
