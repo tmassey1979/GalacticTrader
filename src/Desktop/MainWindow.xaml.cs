@@ -4,6 +4,7 @@ using GalacticTrader.Desktop.Dashboard;
 using GalacticTrader.Desktop.Fleet;
 using GalacticTrader.Desktop.Intel;
 using GalacticTrader.Desktop.Modules;
+using GalacticTrader.Desktop.Realtime;
 using GalacticTrader.Desktop.Routes;
 using GalacticTrader.Desktop.Settings;
 using GalacticTrader.Desktop.Starmap;
@@ -28,6 +29,8 @@ public partial class MainWindow : Window
     private readonly StrategicApiClient _strategicApiClient;
     private readonly NpcApiClient _npcApiClient;
     private readonly CombatApiClient _combatApiClient;
+    private readonly StrategicRealtimeStreamClient _strategicRealtimeClient;
+    private readonly CommunicationRealtimeStreamClient _communicationRealtimeClient;
     private readonly DesktopHotkeyBindings _hotkeyBindings;
     private readonly ObservableCollection<EventFeedEntry> _filteredEventFeed = [];
     private List<EventFeedEntry> _eventFeedAll = [];
@@ -35,6 +38,7 @@ public partial class MainWindow : Window
     private Point _lastMousePoint;
     private bool _isUpdatingSliders;
     private bool _hasLoaded;
+    private bool _isRealtimeStarted;
 
     public MainWindow(
         StarmapScene scene,
@@ -46,7 +50,9 @@ public partial class MainWindow : Window
         ReputationApiClient reputationApiClient,
         StrategicApiClient strategicApiClient,
         NpcApiClient npcApiClient,
-        CombatApiClient combatApiClient)
+        CombatApiClient combatApiClient,
+        StrategicRealtimeStreamClient strategicRealtimeClient,
+        CommunicationRealtimeStreamClient communicationRealtimeClient)
     {
         _scene = scene;
         _session = session;
@@ -57,6 +63,8 @@ public partial class MainWindow : Window
         _strategicApiClient = strategicApiClient;
         _npcApiClient = npcApiClient;
         _combatApiClient = combatApiClient;
+        _strategicRealtimeClient = strategicRealtimeClient;
+        _communicationRealtimeClient = communicationRealtimeClient;
         _hotkeyBindings = DesktopHotkeyBindings.FromPreferences(new DesktopPreferencesStore().Load());
 
         InitializeComponent();
@@ -94,6 +102,7 @@ public partial class MainWindow : Window
         StarViewport.MouseWheel += OnViewportMouseWheel;
         PreviewKeyDown += OnMainWindowPreviewKeyDown;
         Loaded += OnMainWindowLoaded;
+        Closed += OnMainWindowClosed;
     }
 
     private void BuildStarmap(StarmapScene scene)
@@ -195,6 +204,7 @@ public partial class MainWindow : Window
 
         _hasLoaded = true;
         await RefreshDashboardAndEventsAsync();
+        StartRealtimeFeeds();
     }
 
     private async void OnRefreshDashboardClick(object sender, RoutedEventArgs e)
@@ -280,11 +290,7 @@ public partial class MainWindow : Window
 
             var threats = ThreatAlertRanker.Build(routes, reports);
             var metrics = StatusMetricAggregator.Build(transactions, standings, escort, threats, _scene);
-            CreditsMetricText.Text = $"Credits: {metrics.LiquidCredits:N2}";
-            ReputationMetricText.Text = $"Reputation: {metrics.ReputationScore}";
-            FleetMetricText.Text = $"Fleet: {metrics.FleetStrength}";
-            RoutesMetricText.Text = $"Routes: {metrics.ActiveRoutes}";
-            AlertsMetricText.Text = $"Alerts: {metrics.AlertCount}";
+            ApplyMetrics(metrics);
 
             _eventFeedAll = EventFeedBuilder.Build(transactions, combatLogs, reports, DateTime.UtcNow).ToList();
             ApplyEventFilter();
@@ -329,6 +335,58 @@ public partial class MainWindow : Window
         {
             _filteredEventFeed.Add(entry);
         }
+    }
+
+    private void StartRealtimeFeeds()
+    {
+        if (_isRealtimeStarted)
+        {
+            return;
+        }
+
+        _isRealtimeStarted = true;
+        _strategicRealtimeClient.SnapshotReceived += OnStrategicSnapshotReceived;
+        _communicationRealtimeClient.MessageReceived += OnCommunicationMessageReceived;
+        _strategicRealtimeClient.Start(_session.PlayerId);
+        _communicationRealtimeClient.Start(_session.PlayerId);
+    }
+
+    private async void OnMainWindowClosed(object? sender, EventArgs e)
+    {
+        _strategicRealtimeClient.SnapshotReceived -= OnStrategicSnapshotReceived;
+        _communicationRealtimeClient.MessageReceived -= OnCommunicationMessageReceived;
+        await _strategicRealtimeClient.StopAsync();
+        await _communicationRealtimeClient.StopAsync();
+    }
+
+    private void OnStrategicSnapshotReceived(DashboardRealtimeSnapshotApiDto snapshot)
+    {
+        _ = Dispatcher.InvokeAsync(() =>
+        {
+            var projection = DashboardRealtimeMessageProjector.ApplySnapshot(_eventFeedAll, snapshot);
+            ApplyMetrics(projection.Metrics);
+            _eventFeedAll = projection.Events.ToList();
+            ApplyEventFilter();
+        });
+    }
+
+    private void OnCommunicationMessageReceived(CommunicationRealtimeMessageApiDto message)
+    {
+        _ = Dispatcher.InvokeAsync(() =>
+        {
+            var communicationEvent = CommunicationEventProjector.Project(message);
+            _eventFeedAll = DashboardRealtimeMessageProjector.AppendEvent(_eventFeedAll, communicationEvent).ToList();
+            ApplyEventFilter();
+        });
+    }
+
+    private void ApplyMetrics(StatusMetricSnapshot metrics)
+    {
+        CreditsMetricText.Text = $"Credits: {metrics.LiquidCredits:N2}";
+        ReputationMetricText.Text = $"Reputation: {metrics.ReputationScore}";
+        FleetMetricText.Text = $"Fleet: {metrics.FleetStrength}";
+        RoutesMetricText.Text = $"Routes: {metrics.ActiveRoutes}";
+        AlertsMetricText.Text = $"Alerts: {metrics.AlertCount}";
     }
 
     private void SetDashboardBusy(bool isBusy)

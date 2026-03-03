@@ -17,6 +17,7 @@ using GalacticTrader.Services.Navigation;
 using GalacticTrader.Services.Npc;
 using GalacticTrader.Services.Reputation;
 using GalacticTrader.Services.Strategic;
+using GalacticTrader.Services.Realtime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Prometheus;
@@ -97,6 +98,7 @@ builder.Services.AddScoped<IReputationService, ReputationService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IStrategicSystemsService, StrategicSystemsService>();
+builder.Services.AddScoped<IDashboardRealtimeSnapshotService, DashboardRealtimeSnapshotService>();
 builder.Services.AddSingleton<IBalanceControlService, BalanceControlService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IVoiceService, VoiceService>();
@@ -1185,6 +1187,47 @@ strategic.MapPost("/intelligence/reports/expire", async (
 {
     var expired = await strategicService.ExpireIntelligenceReportsAsync(cancellationToken);
     return Results.Ok(new { expired });
+});
+
+strategic.Map("/ws/dashboard/{playerId:guid}", async (
+    HttpContext context,
+    Guid playerId,
+    int? intervalSeconds,
+    IDashboardRealtimeSnapshotService dashboardRealtimeSnapshotService,
+    CancellationToken cancellationToken) =>
+{
+    if (!context.WebSockets.IsWebSocketRequest)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(new { error = "WebSocket upgrade required." }, cancellationToken);
+        return;
+    }
+
+    var interval = TimeSpan.FromSeconds(Math.Clamp(intervalSeconds ?? 5, 2, 30));
+    using var socket = await context.WebSockets.AcceptWebSocketAsync();
+    try
+    {
+        while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+        {
+            var snapshot = await dashboardRealtimeSnapshotService.BuildSnapshotAsync(playerId, cancellationToken: cancellationToken);
+            var payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(snapshot));
+            await socket.SendAsync(payload, WebSocketMessageType.Text, true, cancellationToken);
+            await Task.Delay(interval, cancellationToken);
+        }
+    }
+    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+    {
+    }
+    catch (WebSocketException)
+    {
+    }
+    finally
+    {
+        if (socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
+        {
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None);
+        }
+    }
 });
 
 static bool IsAdminAuthorized(HttpContext context, IConfiguration configuration)
