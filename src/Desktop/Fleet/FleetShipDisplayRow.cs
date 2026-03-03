@@ -12,6 +12,8 @@ public sealed class FleetShipDisplayRow
     public decimal EconomicEfficiencyScore { get; init; }
     public decimal CrewSkillWeightScore { get; init; }
     public required string CrewSkillBand { get; init; }
+    public required string UpgradePriority { get; init; }
+    public required string UpgradeRecommendation { get; init; }
     public required string CrewAssignment { get; init; }
     public required string CrewStatus { get; init; }
     public required string InsuranceStatus { get; init; }

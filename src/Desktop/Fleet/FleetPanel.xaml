@@ -75,6 +75,9 @@
                     <DataGridTextColumn Header="Status"
                                         Binding="{Binding CrewStatus}"
                                         Width="88" />
+                    <DataGridTextColumn Header="Upgrade"
+                                        Binding="{Binding UpgradePriority}"
+                                        Width="70" />
                     <DataGridTextColumn Header="Insurance"
                                         Binding="{Binding InsuranceStatus}"
                                         Width="110" />
