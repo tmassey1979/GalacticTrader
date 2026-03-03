@@ -1,4 +1,5 @@
 using GalacticTrader.Desktop.Api;
+using GalacticTrader.Desktop.Battles;
 using GalacticTrader.Desktop.Dashboard;
 using GalacticTrader.Desktop.Fleet;
 using GalacticTrader.Desktop.Intel;
@@ -62,6 +63,7 @@ public partial class MainWindow : Window
             _strategicApiClient);
         TradingHost.Content = new TradingPanel(_session, economyApiClient, _marketApiClient);
         RoutesHost.Content = new RoutePlanningPanel(_navigationApiClient);
+        BattlesHost.Content = new BattlePanel(_combatApiClient);
         FleetHost.Content = new FleetPanel(_session, fleetApiClient);
         IntelHost.Content = new IntelPanel(_session, navigationApiClient, reputationApiClient, strategicApiClient);
         EventFeedGrid.ItemsSource = _filteredEventFeed;
