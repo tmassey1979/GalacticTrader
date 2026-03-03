@@ -142,6 +142,7 @@
                 <Button x:Name="LoginButton"
                         Width="120"
                         Height="34"
+                        IsDefault="True"
                         Background="#1A5C34"
                         BorderBrush="#44A46A"
                         Foreground="#E6FFEF"
