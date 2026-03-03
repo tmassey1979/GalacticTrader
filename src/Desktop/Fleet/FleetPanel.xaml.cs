@@ -10,14 +10,20 @@ public partial class FleetPanel : UserControl
 {
     private readonly DesktopSession _session;
     private readonly FleetApiClient _fleetApiClient;
+    private readonly MarketApiClient _marketApiClient;
     private readonly ObservableCollection<FleetShipDisplayRow> _shipRows = [];
     private readonly Dictionary<Guid, ShipApiDto> _shipsById = [];
+    private IReadOnlyList<TradeExecutionResultApiDto> _recentTransactions = [];
     private bool _hasLoaded;
 
-    public FleetPanel(DesktopSession session, FleetApiClient fleetApiClient)
+    public FleetPanel(
+        DesktopSession session,
+        FleetApiClient fleetApiClient,
+        MarketApiClient marketApiClient)
     {
         _session = session;
         _fleetApiClient = fleetApiClient;
+        _marketApiClient = marketApiClient;
 
         InitializeComponent();
         ShipsGrid.ItemsSource = _shipRows;
@@ -42,11 +48,17 @@ public partial class FleetPanel : UserControl
 
     private void OnShipSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        UpdateSelectedShipDetails();
+    }
+
+    private void UpdateSelectedShipDetails()
+    {
         if (ShipsGrid.SelectedItem is not FleetShipDisplayRow row ||
             !_shipsById.TryGetValue(row.ShipId, out var ship))
         {
             SelectedShipText.Text = "Select a ship to inspect modules.";
             ModulesList.ItemsSource = null;
+            RouteHistoryList.ItemsSource = null;
             return;
         }
 
@@ -62,6 +74,13 @@ public partial class FleetPanel : UserControl
                 .Select(module => $"{module.Name} [{module.ModuleType}] Tier {module.Tier}")
                 .ToArray();
         ModulesList.ItemsSource = moduleLines;
+
+        var routeHistory = FleetRoutePerformanceHistoryBuilder.Build(row.ShipId, _recentTransactions, maxEntries: 8);
+        RouteHistoryList.ItemsSource = routeHistory.Count == 0
+            ? new[] { "No route performance history available." }
+            : routeHistory.Select(static entry =>
+                $"{entry.RunLabel} | {entry.Action} x{entry.Quantity} | Net {entry.NetValue:N2} | Status {entry.Status}")
+                .ToArray();
     }
 
     private async Task RefreshFleetAsync()
@@ -69,8 +88,13 @@ public partial class FleetPanel : UserControl
         SetBusy(true);
         try
         {
-            var ships = await _fleetApiClient.GetPlayerShipsAsync(_session.PlayerId);
-            var escort = await _fleetApiClient.GetEscortSummaryAsync(_session.PlayerId);
+            var shipsTask = _fleetApiClient.GetPlayerShipsAsync(_session.PlayerId);
+            var escortTask = _fleetApiClient.GetEscortSummaryAsync(_session.PlayerId);
+            var transactionsTask = _marketApiClient.GetTransactionsAsync(_session.PlayerId, limit: 60);
+            await Task.WhenAll(shipsTask, escortTask, transactionsTask);
+            var ships = shipsTask.Result;
+            var escort = escortTask.Result;
+            _recentTransactions = transactionsTask.Result;
 
             _shipsById.Clear();
             _shipRows.Clear();
@@ -105,6 +129,8 @@ public partial class FleetPanel : UserControl
                 : $"FleetStrength: {escort.FleetStrength} | EscortStrength: {escort.EscortStrength}\n" +
                   $"Coordination: {escort.CoordinationBonus:P1} | Convoy Bonus: {escort.ConvoyBonus:P1}\n" +
                   $"Protective Range: {escort.ProtectiveRange:N1} | Combat Mod: {escort.CombatModifier:P1}";
+
+            UpdateSelectedShipDetails();
 
             SetStatus($"Loaded {_shipRows.Count} ships for {_session.Username}.", isError: false);
         }

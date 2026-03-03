@@ -92,7 +92,7 @@ public partial class MainWindow : Window
             _npcApiClient);
         RoutesHost.Content = new RoutePlanningPanel(_navigationApiClient);
         BattlesHost.Content = new BattlePanel(_combatApiClient);
-        FleetHost.Content = new FleetPanel(_session, fleetApiClient);
+        FleetHost.Content = new FleetPanel(_session, fleetApiClient, _marketApiClient);
         IntelHost.Content = new IntelPanel(_session, navigationApiClient, reputationApiClient, strategicApiClient);
         MarketIntelHost.Content = new MarketIntelligencePanel(marketIntelligenceApiClient);
         ServicesHost.Content = new ServicesPanel(_npcApiClient);

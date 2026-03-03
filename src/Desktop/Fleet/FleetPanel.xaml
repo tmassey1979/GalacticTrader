@@ -104,6 +104,23 @@
                              BorderBrush="#2E4A75"
                              Foreground="#EAF2FF" />
 
+                    <TextBlock Text="Route Performance History"
+                               Foreground="#B9CBE8"
+                               FontWeight="SemiBold" />
+                    <ListBox x:Name="RouteHistoryList"
+                             Height="120"
+                             Margin="0,6,0,10"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock FontFamily="Consolas"
+                                           Text="{Binding}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
                     <TextBlock Text="Escort Summary"
                                Foreground="#B9CBE8"
                                FontWeight="SemiBold" />
