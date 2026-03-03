@@ -104,6 +104,17 @@
                                 Click="OnPublishClick" />
                     </WrapPanel>
 
+                    <Button x:Name="LoadCurrentButton"
+                            Width="320"
+                            Height="34"
+                            Margin="0,0,0,10"
+                            Background="#2D3D57"
+                            BorderBrush="#4C607F"
+                            Foreground="#EAF2FF"
+                            FontWeight="SemiBold"
+                            Content="Load Current Map"
+                            Click="OnLoadCurrentClick" />
+
                     <TextBlock x:Name="SummaryText"
                                Foreground="#93B9FF"
                                FontFamily="Consolas"

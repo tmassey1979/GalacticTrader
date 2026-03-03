@@ -87,6 +87,38 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void OnLoadCurrentClick(object sender, RoutedEventArgs e)
+    {
+        SetBusy(true);
+        try
+        {
+            using var httpClient = new HttpClient
+            {
+                BaseAddress = new Uri(ApiBaseUrlText.Text.Trim())
+            };
+            var apiClient = new MapNavigationApiClient(httpClient);
+
+            var sectorsTask = apiClient.GetSectorsAsync();
+            var routesTask = apiClient.GetRoutesAsync();
+            await Task.WhenAll(sectorsTask, routesTask);
+
+            var sectors = sectorsTask.Result;
+            var routes = routesTask.Result;
+            SectorList.ItemsSource = MapSnapshotProjector.BuildSectorRows(sectors);
+            RouteList.ItemsSource = MapSnapshotProjector.BuildRouteRows(routes);
+            SummaryText.Text = $"Loaded {sectors.Count} sectors and {routes.Count} routes from API.";
+            SetStatus("Current map loaded from database snapshot.", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus($"Load current map failed: {exception.Message}", isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
     private static async Task<Dictionary<int, Guid>> CreateSectorsAsync(MapNavigationApiClient apiClient, GeneratedMapLayout layout)
     {
         var sectorIdByIndex = new Dictionary<int, Guid>();
@@ -152,6 +184,7 @@ public partial class MainWindow : Window
     {
         GenerateButton.IsEnabled = !isBusy;
         PublishButton.IsEnabled = !isBusy;
+        LoadCurrentButton.IsEnabled = !isBusy;
         Mouse.OverrideCursor = isBusy ? System.Windows.Input.Cursors.Wait : null;
     }
 
