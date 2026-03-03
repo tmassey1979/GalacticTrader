@@ -10,6 +10,7 @@ public partial class ServicesPanel : UserControl
 {
     private readonly NpcApiClient _npcApiClient;
     private readonly ObservableCollection<ServicesAgentDisplayRow> _rows = [];
+    private readonly ObservableCollection<ServicesStrategyBiasDistributionEntry> _biasDistribution = [];
     private readonly ObservableCollection<string> _contractLog = [];
     private readonly HashSet<Guid> _blacklistedAgentIds = [];
     private readonly Dictionary<Guid, NpcAgentApiDto> _agentsById = [];
@@ -20,6 +21,7 @@ public partial class ServicesPanel : UserControl
         _npcApiClient = npcApiClient;
         InitializeComponent();
         AgentsGrid.ItemsSource = _rows;
+        BiasDistributionItems.ItemsSource = _biasDistribution;
         ContractLogList.ItemsSource = _contractLog;
         Loaded += OnLoaded;
     }
@@ -172,9 +174,21 @@ public partial class ServicesPanel : UserControl
             _rows.Add(row);
         }
 
+        RebuildBiasDistribution();
+
         if (_rows.Count > 0)
         {
             AgentsGrid.SelectedIndex = 0;
+        }
+    }
+
+    private void RebuildBiasDistribution()
+    {
+        var distribution = ServicesStrategyBiasDistributionBuilder.Build(_rows.ToArray());
+        _biasDistribution.Clear();
+        foreach (var entry in distribution)
+        {
+            _biasDistribution.Add(entry);
         }
     }
 
