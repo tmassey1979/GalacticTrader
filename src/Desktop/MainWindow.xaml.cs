@@ -277,6 +277,13 @@ public partial class MainWindow : Window
     {
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         var modifiers = Keyboard.Modifiers;
+        if (ModuleHotkeyNavigator.TryResolveTabIndex(key, modifiers, ModuleTabs.Items.Count, out var tabIndex))
+        {
+            ModuleTabs.SelectedIndex = tabIndex;
+            e.Handled = true;
+            return;
+        }
+
         if (_hotkeyBindings.DashboardRefresh.Matches(key, modifiers))
         {
             e.Handled = true;
