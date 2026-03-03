@@ -31,12 +31,12 @@ public static class RouteModelFactory
             rotationAxis.Normalize();
         }
 
-        var width = route.IsHighRisk ? 0.9 : 0.55;
+        var style = RouteVisualStyleResolver.Build(route);
+        var width = style.Width;
         var mesh = MeshFactory.CreateUnitCubeMesh();
-        var color = route.IsHighRisk ? Color.FromRgb(255, 124, 88) : Color.FromRgb(92, 168, 255);
-        var material = new DiffuseMaterial(new SolidColorBrush(color)
+        var material = new DiffuseMaterial(new SolidColorBrush(style.Color)
         {
-            Opacity = route.IsHighRisk ? 0.92 : 0.75
+            Opacity = style.Opacity
         });
 
         var midpoint = new Point3D(
