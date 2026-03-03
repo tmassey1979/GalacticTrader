@@ -110,10 +110,8 @@
                                    Text="Live command summary: active contracts, fuel budget, and station inventory snapshots." />
                     </TabItem>
                     <TabItem Header="Trading">
-                        <TextBlock Margin="12"
-                                   Foreground="#CFDDFC"
-                                   TextWrapping="Wrap"
-                                   Text="Trade execution panel placeholder for buy/sell orders with spread and fee previews." />
+                        <ContentControl x:Name="TradingHost"
+                                        Margin="12" />
                     </TabItem>
                     <TabItem Header="Fleet">
                         <TextBlock Margin="12"

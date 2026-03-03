@@ -1,4 +1,6 @@
+using GalacticTrader.Desktop.Api;
 using GalacticTrader.Desktop.Starmap;
+using GalacticTrader.Desktop.Trading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,20 +11,27 @@ public partial class MainWindow : Window
 {
     private readonly OrbitCameraController _cameraController = new();
     private readonly StarmapScene _scene;
+    private readonly DesktopSession _session;
     private bool _isOrbiting;
     private Point _lastMousePoint;
     private bool _isUpdatingSliders;
 
-    public MainWindow(StarmapScene scene, string? username = null)
+    public MainWindow(
+        StarmapScene scene,
+        DesktopSession session,
+        EconomyApiClient economyApiClient,
+        MarketApiClient marketApiClient)
     {
         _scene = scene;
+        _session = session;
         InitializeComponent();
         BuildStarmap(_scene);
+        TradingHost.Content = new TradingPanel(_session, economyApiClient, marketApiClient);
         ApplyCamera(updateSliders: true);
 
-        if (!string.IsNullOrWhiteSpace(username))
+        if (!string.IsNullOrWhiteSpace(session.Username))
         {
-            Title = $"Galactic Trader Command - {username}";
+            Title = $"Galactic Trader Command - {session.Username}";
         }
 
         StarViewport.MouseLeftButtonDown += OnViewportMouseLeftButtonDown;

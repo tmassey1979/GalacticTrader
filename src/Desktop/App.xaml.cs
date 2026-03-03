@@ -36,11 +36,19 @@ public partial class App : Application
 
             var navigationApiClient = new NavigationApiClient(httpClient);
             navigationApiClient.SetBearerToken(loginWindow.Session.AccessToken);
+            var economyApiClient = new EconomyApiClient(httpClient);
+            economyApiClient.SetBearerToken(loginWindow.Session.AccessToken);
+            var marketApiClient = new MarketApiClient(httpClient);
+            marketApiClient.SetBearerToken(loginWindow.Session.AccessToken);
 
             var starmapLoader = new DatabaseStarmapSceneLoader(navigationApiClient);
             var scene = await starmapLoader.LoadAsync();
 
-            var mainWindow = new MainWindow(scene, loginWindow.Session.Username);
+            var mainWindow = new MainWindow(
+                scene,
+                loginWindow.Session,
+                economyApiClient,
+                marketApiClient);
             MainWindow = mainWindow;
             mainWindow.Show();
         }
