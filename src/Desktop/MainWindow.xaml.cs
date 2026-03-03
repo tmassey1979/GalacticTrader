@@ -5,6 +5,7 @@ using GalacticTrader.Desktop.Fleet;
 using GalacticTrader.Desktop.Intel;
 using GalacticTrader.Desktop.Modules;
 using GalacticTrader.Desktop.Routes;
+using GalacticTrader.Desktop.Settings;
 using GalacticTrader.Desktop.Starmap;
 using GalacticTrader.Desktop.Trading;
 using System.Collections.ObjectModel;
@@ -26,6 +27,7 @@ public partial class MainWindow : Window
     private readonly StrategicApiClient _strategicApiClient;
     private readonly NpcApiClient _npcApiClient;
     private readonly CombatApiClient _combatApiClient;
+    private readonly DesktopHotkeyBindings _hotkeyBindings;
     private readonly ObservableCollection<EventFeedEntry> _filteredEventFeed = [];
     private List<EventFeedEntry> _eventFeedAll = [];
     private bool _isOrbiting;
@@ -54,6 +56,7 @@ public partial class MainWindow : Window
         _strategicApiClient = strategicApiClient;
         _npcApiClient = npcApiClient;
         _combatApiClient = combatApiClient;
+        _hotkeyBindings = DesktopHotkeyBindings.FromPreferences(new DesktopPreferencesStore().Load());
 
         InitializeComponent();
         BuildStarmap(_scene);
@@ -88,6 +91,7 @@ public partial class MainWindow : Window
         StarViewport.MouseLeftButtonUp += OnViewportMouseLeftButtonUp;
         StarViewport.MouseMove += OnViewportMouseMove;
         StarViewport.MouseWheel += OnViewportMouseWheel;
+        PreviewKeyDown += OnMainWindowPreviewKeyDown;
         Loaded += OnMainWindowLoaded;
     }
 
@@ -205,6 +209,24 @@ public partial class MainWindow : Window
     private void OnEventFilterChanged(object sender, SelectionChangedEventArgs e)
     {
         ApplyEventFilter();
+    }
+
+    private void OnMainWindowPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        var modifiers = Keyboard.Modifiers;
+        if (_hotkeyBindings.DashboardRefresh.Matches(key, modifiers))
+        {
+            e.Handled = true;
+            _ = RefreshDashboardAndEventsAsync();
+            return;
+        }
+
+        if (_hotkeyBindings.EventRefresh.Matches(key, modifiers))
+        {
+            e.Handled = true;
+            _ = RefreshDashboardAndEventsAsync();
+        }
     }
 
     private async Task RefreshDashboardAndEventsAsync()
