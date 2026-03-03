@@ -17,6 +17,7 @@ public partial class TradingPanel : UserControl
     private readonly ObservableCollection<TradeTransactionDisplayRow> _tradeRows = [];
     private readonly List<TradeTransactionDisplayRow> _allTradeRows = [];
     private readonly ObservableCollection<TradeHeatmapDisplayRow> _heatmapRows = [];
+    private readonly ObservableCollection<TradingListingSummaryDisplayRow> _listingSummaryRows = [];
     private readonly ObservableCollection<TradingListingMomentumDisplayRow> _listingMomentumRows = [];
     private readonly ObservableCollection<NpcCompetitorDisplayRow> _competitorRows = [];
     private readonly List<TradeExecutionResultApiDto> _recentTransactions = [];
@@ -39,6 +40,7 @@ public partial class TradingPanel : UserControl
         InitializeComponent();
         TransactionsGrid.ItemsSource = _tradeRows;
         HeatmapGrid.ItemsSource = _heatmapRows;
+        ListingSummaryGrid.ItemsSource = _listingSummaryRows;
         ListingMomentumGrid.ItemsSource = _listingMomentumRows;
         CompetitorsGrid.ItemsSource = _competitorRows;
         Loaded += OnLoaded;
@@ -126,6 +128,8 @@ public partial class TradingPanel : UserControl
                 });
             }
             ApplyTradeFilters();
+            var listingSummaries = TradingListingSummaryProjector.Build(transactions, maxRows: 6);
+            ReplaceRows(_listingSummaryRows, listingSummaries);
 
             var marketSummary = marketSummaryTask.Result;
             var heatmapRows = TradeHeatmapProjector.Build(marketSummary, maxRows: 6);

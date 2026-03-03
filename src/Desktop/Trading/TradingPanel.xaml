@@ -149,9 +149,8 @@
                 BorderThickness="1"
                 CornerRadius="6"
                 Background="#0E203D">
-            <DockPanel>
+            <StackPanel>
                 <TextBlock x:Name="StatusText"
-                           DockPanel.Dock="Top"
                            Foreground="#9DB7E2"
                            Margin="0,0,0,8"
                            Text="Load recent trades to establish fee baseline." />
@@ -201,7 +200,35 @@
                            Foreground="#EAF2FF"
                            FontFamily="Consolas"
                            Text="Smuggling Risk: --" />
-            </DockPanel>
+                <TextBlock Foreground="#B9CBE8"
+                           Margin="0,8,0,4"
+                           Text="Commodity Listing Summary" />
+                <DataGrid x:Name="ListingSummaryGrid"
+                          Height="88"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          IsReadOnly="True"
+                          Background="#08182F"
+                          BorderBrush="#2E4A75"
+                          Foreground="#EAF2FF"
+                          HeadersVisibility="Column">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Listing"
+                                            Binding="{Binding ListingId}"
+                                            Width="90" />
+                        <DataGridTextColumn Header="Qty"
+                                            Binding="{Binding TotalQuantity}"
+                                            Width="80" />
+                        <DataGridTextColumn Header="Value"
+                                            Binding="{Binding TotalValue, StringFormat={}{0:N2}}"
+                                            Width="100" />
+                        <DataGridTextColumn Header="Avg Unit"
+                                            Binding="{Binding AverageUnitPrice, StringFormat={}{0:N2}}"
+                                            Width="90" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </StackPanel>
         </Border>
 
         <Grid Grid.Row="2">
