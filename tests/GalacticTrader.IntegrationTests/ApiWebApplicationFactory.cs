@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly string _databaseName = $"gt-integration-{Guid.NewGuid():N}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -17,7 +19,7 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll(typeof(DbContextOptions<GalacticTraderDbContext>));
             services.AddDbContext<GalacticTraderDbContext>(options =>
-                options.UseInMemoryDatabase($"gt-integration-{Guid.NewGuid():N}"));
+                options.UseInMemoryDatabase(_databaseName));
         });
     }
 }
