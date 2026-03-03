@@ -297,6 +297,11 @@ public partial class TradingPanel : UserControl
 
     private void ApplyTradeFilters()
     {
+        if (ActionFilterCombo is null || ListingFilterText is null)
+        {
+            return;
+        }
+
         var options = new TradingTransactionFilterOptions
         {
             Action = (ActionFilterCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "All",

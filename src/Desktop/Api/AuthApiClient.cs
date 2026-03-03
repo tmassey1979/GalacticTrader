@@ -45,6 +45,7 @@ public sealed class AuthApiClient
         if (!response.IsSuccessStatusCode)
         {
             var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            
             throw new InvalidOperationException($"Login failed ({(int)response.StatusCode}): {detail}");
         }
 
