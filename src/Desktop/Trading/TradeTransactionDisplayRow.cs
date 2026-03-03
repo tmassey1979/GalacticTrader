@@ -2,6 +2,7 @@ namespace GalacticTrader.Desktop.Trading;
 
 public sealed class TradeTransactionDisplayRow
 {
+    public required string ListingId { get; init; }
     public required string Action { get; init; }
     public long Quantity { get; init; }
     public decimal UnitPrice { get; init; }

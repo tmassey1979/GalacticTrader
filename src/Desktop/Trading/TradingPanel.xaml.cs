@@ -15,7 +15,9 @@ public partial class TradingPanel : UserControl
     private readonly MarketIntelligenceApiClient _marketIntelligenceApiClient;
     private readonly NpcApiClient _npcApiClient;
     private readonly ObservableCollection<TradeTransactionDisplayRow> _tradeRows = [];
+    private readonly List<TradeTransactionDisplayRow> _allTradeRows = [];
     private readonly ObservableCollection<TradeHeatmapDisplayRow> _heatmapRows = [];
+    private readonly ObservableCollection<TradingListingMomentumDisplayRow> _listingMomentumRows = [];
     private readonly ObservableCollection<NpcCompetitorDisplayRow> _competitorRows = [];
     private readonly List<TradeExecutionResultApiDto> _recentTransactions = [];
     private bool _isSyncingQuantity;
@@ -37,6 +39,7 @@ public partial class TradingPanel : UserControl
         InitializeComponent();
         TransactionsGrid.ItemsSource = _tradeRows;
         HeatmapGrid.ItemsSource = _heatmapRows;
+        ListingMomentumGrid.ItemsSource = _listingMomentumRows;
         CompetitorsGrid.ItemsSource = _competitorRows;
         Loaded += OnLoaded;
     }
@@ -103,11 +106,12 @@ public partial class TradingPanel : UserControl
             _recentTransactions.Clear();
             _recentTransactions.AddRange(transactions);
 
-            _tradeRows.Clear();
+            _allTradeRows.Clear();
             foreach (var transaction in transactions)
             {
-                _tradeRows.Add(new TradeTransactionDisplayRow
+                _allTradeRows.Add(new TradeTransactionDisplayRow
                 {
+                    ListingId = transaction.MarketListingId.ToString()[..8],
                     Action = transaction.ActionType switch
                     {
                         0 => "Buy",
@@ -121,6 +125,7 @@ public partial class TradingPanel : UserControl
                     Status = transaction.Status
                 });
             }
+            ApplyTradeFilters();
 
             var marketSummary = marketSummaryTask.Result;
             var heatmapRows = TradeHeatmapProjector.Build(marketSummary, maxRows: 6);
@@ -131,6 +136,9 @@ public partial class TradingPanel : UserControl
                 $"Demand {curveSnapshot.DemandUnits:N0} ({curveSnapshot.DemandRatio:P0}) | " +
                 $"Supply {curveSnapshot.SupplyUnits:N0} ({curveSnapshot.SupplyRatio:P0})";
             SupplyDemandBars.ItemsSource = curveSnapshot.Points;
+
+            var momentumRows = TradingListingMomentumProjector.Build(transactions, maxRows: 6);
+            ReplaceRows(_listingMomentumRows, momentumRows);
 
             var competitorRows = NpcCompetitorPresenceProjector.Build(npcAgentsTask.Result, maxRows: 6);
             ReplaceRows(_competitorRows, competitorRows);
@@ -203,6 +211,16 @@ public partial class TradingPanel : UserControl
         return true;
     }
 
+    private void OnActionFilterChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ApplyTradeFilters();
+    }
+
+    private void OnListingFilterTextChanged(object sender, TextChangedEventArgs e)
+    {
+        ApplyTradeFilters();
+    }
+
     private void OnQuantityTextChanged(object sender, TextChangedEventArgs e)
     {
         if (_isSyncingQuantity)
@@ -240,6 +258,8 @@ public partial class TradingPanel : UserControl
         RefreshButton.IsEnabled = !isBusy;
         QuantityText.IsEnabled = !isBusy;
         QuantitySlider.IsEnabled = !isBusy;
+        ActionFilterCombo.IsEnabled = !isBusy;
+        ListingFilterText.IsEnabled = !isBusy;
     }
 
     private void SetStatus(string message, bool isError)
@@ -257,5 +277,17 @@ public partial class TradingPanel : UserControl
         {
             target.Add(row);
         }
+    }
+
+    private void ApplyTradeFilters()
+    {
+        var options = new TradingTransactionFilterOptions
+        {
+            Action = (ActionFilterCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "All",
+            ListingKeyword = ListingFilterText.Text
+        };
+
+        var filtered = TradingTransactionFilter.Apply(_allTradeRows, options);
+        ReplaceRows(_tradeRows, filtered);
     }
 }
