@@ -56,6 +56,12 @@ namespace GalacticTrader.Data
         public DbSet<InfrastructureOwnership> InfrastructureOwnerships { get; set; }
         public DbSet<TerritoryDominance> TerritoryDominances { get; set; }
 
+        // Strategic Systems (Phase 2)
+        public DbSet<InsurancePolicy> InsurancePolicies { get; set; }
+        public DbSet<InsuranceClaim> InsuranceClaims { get; set; }
+        public DbSet<IntelligenceNetwork> IntelligenceNetworks { get; set; }
+        public DbSet<IntelligenceReport> IntelligenceReports { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -272,6 +278,72 @@ namespace GalacticTrader.Data
             modelBuilder.Entity<TerritoryDominance>()
                 .HasIndex(dominance => dominance.FactionId)
                 .IsUnique();
+
+            // Configure InsurancePolicy
+            modelBuilder.Entity<InsurancePolicy>()
+                .HasKey(policy => policy.Id);
+            modelBuilder.Entity<InsurancePolicy>()
+                .HasOne(policy => policy.Player)
+                .WithMany()
+                .HasForeignKey(policy => policy.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<InsurancePolicy>()
+                .HasOne(policy => policy.Ship)
+                .WithMany()
+                .HasForeignKey(policy => policy.ShipId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<InsurancePolicy>()
+                .HasIndex(policy => policy.ShipId)
+                .IsUnique();
+            modelBuilder.Entity<InsurancePolicy>()
+                .HasIndex(policy => new { policy.PlayerId, policy.IsActive })
+                .IsUnique(false);
+
+            // Configure InsuranceClaim
+            modelBuilder.Entity<InsuranceClaim>()
+                .HasKey(claim => claim.Id);
+            modelBuilder.Entity<InsuranceClaim>()
+                .HasOne(claim => claim.Policy)
+                .WithMany()
+                .HasForeignKey(claim => claim.PolicyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<InsuranceClaim>()
+                .HasOne(claim => claim.CombatLog)
+                .WithMany()
+                .HasForeignKey(claim => claim.CombatLogId)
+                .OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<InsuranceClaim>()
+                .HasIndex(claim => new { claim.PolicyId, claim.FiledAt })
+                .IsUnique(false);
+
+            // Configure IntelligenceNetwork
+            modelBuilder.Entity<IntelligenceNetwork>()
+                .HasKey(network => network.Id);
+            modelBuilder.Entity<IntelligenceNetwork>()
+                .HasOne(network => network.OwnerPlayer)
+                .WithMany()
+                .HasForeignKey(network => network.OwnerPlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<IntelligenceNetwork>()
+                .HasIndex(network => new { network.OwnerPlayerId, network.Name })
+                .IsUnique();
+
+            // Configure IntelligenceReport
+            modelBuilder.Entity<IntelligenceReport>()
+                .HasKey(report => report.Id);
+            modelBuilder.Entity<IntelligenceReport>()
+                .HasOne(report => report.Network)
+                .WithMany(network => network.Reports)
+                .HasForeignKey(report => report.NetworkId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<IntelligenceReport>()
+                .HasOne(report => report.Sector)
+                .WithMany()
+                .HasForeignKey(report => report.SectorId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<IntelligenceReport>()
+                .HasIndex(report => new { report.NetworkId, report.SectorId, report.DetectedAt })
+                .IsUnique(false);
 
             // Configure NPCAgent
             modelBuilder.Entity<NPCAgent>()

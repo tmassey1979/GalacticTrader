@@ -1083,6 +1083,109 @@ strategic.MapPost("/territory-dominance/recalculate/{factionId:guid}", async (
     return result is null ? Results.NotFound() : Results.Ok(result);
 });
 
+strategic.MapGet("/insurance/policies/{playerId:guid}", async (
+    Guid playerId,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var policies = await strategicService.GetInsurancePoliciesAsync(playerId, cancellationToken);
+    return Results.Ok(policies);
+});
+
+strategic.MapPost("/insurance/policies", async (
+    UpsertInsurancePolicyApiRequest request,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.UpsertInsurancePolicyAsync(new UpsertInsurancePolicyRequest
+    {
+        PlayerId = request.PlayerId,
+        ShipId = request.ShipId,
+        CoverageRate = request.CoverageRate,
+        PremiumPerCycle = request.PremiumPerCycle,
+        RiskTier = request.RiskTier,
+        IsActive = request.IsActive
+    }, cancellationToken);
+
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+strategic.MapGet("/insurance/claims/{playerId:guid}", async (
+    Guid playerId,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var claims = await strategicService.GetInsuranceClaimsAsync(playerId, cancellationToken);
+    return Results.Ok(claims);
+});
+
+strategic.MapPost("/insurance/claims", async (
+    FileInsuranceClaimApiRequest request,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.FileInsuranceClaimAsync(new FileInsuranceClaimRequest
+    {
+        PolicyId = request.PolicyId,
+        CombatLogId = request.CombatLogId,
+        ClaimAmount = request.ClaimAmount
+    }, cancellationToken);
+
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+strategic.MapPost("/intelligence/networks", async (
+    CreateIntelligenceNetworkApiRequest request,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.CreateIntelligenceNetworkAsync(new CreateIntelligenceNetworkRequest
+    {
+        OwnerPlayerId = request.OwnerPlayerId,
+        Name = request.Name,
+        AssetCount = request.AssetCount,
+        CoverageScore = request.CoverageScore
+    }, cancellationToken);
+
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+strategic.MapPost("/intelligence/reports", async (
+    PublishIntelligenceReportApiRequest request,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var result = await strategicService.PublishIntelligenceReportAsync(new PublishIntelligenceReportRequest
+    {
+        NetworkId = request.NetworkId,
+        SectorId = request.SectorId,
+        SignalType = request.SignalType,
+        ConfidenceScore = request.ConfidenceScore,
+        Payload = request.Payload,
+        TtlMinutes = request.TtlMinutes
+    }, cancellationToken);
+
+    return result is null ? Results.NotFound() : Results.Ok(result);
+});
+
+strategic.MapGet("/intelligence/reports/{playerId:guid}", async (
+    Guid playerId,
+    Guid? sectorId,
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var reports = await strategicService.GetIntelligenceReportsAsync(playerId, sectorId, cancellationToken);
+    return Results.Ok(reports);
+});
+
+strategic.MapPost("/intelligence/reports/expire", async (
+    IStrategicSystemsService strategicService,
+    CancellationToken cancellationToken) =>
+{
+    var expired = await strategicService.ExpireIntelligenceReportsAsync(cancellationToken);
+    return Results.Ok(new { expired });
+});
+
 static bool IsAdminAuthorized(HttpContext context, IConfiguration configuration)
 {
     var expectedKey = configuration["Admin:Key"]
@@ -1442,6 +1545,10 @@ public sealed record LoginPlayerApiRequest(string Username, string Password);
 public sealed record UpsertSectorVolatilityApiRequest(Guid SectorId, string CurrentPhase, float VolatilityIndex, DateTime? NextTransitionAt);
 public sealed record DeclareCorporateWarApiRequest(Guid AttackerFactionId, Guid DefenderFactionId, string CasusBelli, int Intensity);
 public sealed record UpsertInfrastructureOwnershipApiRequest(Guid SectorId, Guid FactionId, string InfrastructureType, float ControlScore);
+public sealed record UpsertInsurancePolicyApiRequest(Guid PlayerId, Guid ShipId, float CoverageRate, decimal PremiumPerCycle, string RiskTier, bool IsActive);
+public sealed record FileInsuranceClaimApiRequest(Guid PolicyId, Guid? CombatLogId, decimal ClaimAmount);
+public sealed record CreateIntelligenceNetworkApiRequest(Guid OwnerPlayerId, string Name, int AssetCount, float CoverageScore);
+public sealed record PublishIntelligenceReportApiRequest(Guid NetworkId, Guid SectorId, string SignalType, float ConfidenceScore, string Payload, int TtlMinutes);
 public sealed record UpdateTaxRateRequest(decimal TaxRatePercent);
 public sealed record UpdatePirateIntensityRequest(int IntensityPercent);
 public sealed record LiquidityAdjustmentRequest(decimal DeltaPercent, string? Reason);

@@ -52,4 +52,64 @@ public sealed class StrategicSystemsIntegrationTests : IClassFixture<ApiWebAppli
         var listDominance = await _client.GetAsync("/api/strategic/territory-dominance");
         Assert.Equal(HttpStatusCode.OK, listDominance.StatusCode);
     }
+
+    [Fact]
+    public async Task StrategicPhaseTwo_EndpointsAreWired()
+    {
+        var playerId = Guid.NewGuid();
+        var shipId = Guid.NewGuid();
+        var sectorId = Guid.NewGuid();
+        var networkId = Guid.NewGuid();
+
+        var listPolicies = await _client.GetAsync($"/api/strategic/insurance/policies/{playerId}");
+        Assert.Equal(HttpStatusCode.OK, listPolicies.StatusCode);
+
+        var upsertPolicy = await _client.PostAsJsonAsync("/api/strategic/insurance/policies", new
+        {
+            playerId,
+            shipId,
+            coverageRate = 0.75f,
+            premiumPerCycle = 300m,
+            riskTier = "standard",
+            isActive = true
+        });
+        Assert.Equal(HttpStatusCode.NotFound, upsertPolicy.StatusCode);
+
+        var listClaims = await _client.GetAsync($"/api/strategic/insurance/claims/{playerId}");
+        Assert.Equal(HttpStatusCode.OK, listClaims.StatusCode);
+
+        var fileClaim = await _client.PostAsJsonAsync("/api/strategic/insurance/claims", new
+        {
+            policyId = Guid.NewGuid(),
+            combatLogId = Guid.NewGuid(),
+            claimAmount = 1500m
+        });
+        Assert.Equal(HttpStatusCode.NotFound, fileClaim.StatusCode);
+
+        var createNetwork = await _client.PostAsJsonAsync("/api/strategic/intelligence/networks", new
+        {
+            ownerPlayerId = playerId,
+            name = "test-network",
+            assetCount = 8,
+            coverageScore = 52f
+        });
+        Assert.Equal(HttpStatusCode.NotFound, createNetwork.StatusCode);
+
+        var publishReport = await _client.PostAsJsonAsync("/api/strategic/intelligence/reports", new
+        {
+            networkId,
+            sectorId,
+            signalType = "pirate-sighting",
+            confidenceScore = 80f,
+            payload = "Detected heavy traffic",
+            ttlMinutes = 30
+        });
+        Assert.Equal(HttpStatusCode.NotFound, publishReport.StatusCode);
+
+        var listReports = await _client.GetAsync($"/api/strategic/intelligence/reports/{playerId}");
+        Assert.Equal(HttpStatusCode.OK, listReports.StatusCode);
+
+        var expireReports = await _client.PostAsync("/api/strategic/intelligence/reports/expire", null);
+        Assert.Equal(HttpStatusCode.OK, expireReports.StatusCode);
+    }
 }

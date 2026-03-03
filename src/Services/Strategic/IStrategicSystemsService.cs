@@ -32,4 +32,36 @@ public interface IStrategicSystemsService
 
     Task<IReadOnlyList<TerritoryDominanceDto>> GetTerritoryDominanceAsync(
         CancellationToken cancellationToken = default);
+
+    Task<InsurancePolicyDto?> UpsertInsurancePolicyAsync(
+        UpsertInsurancePolicyRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InsurancePolicyDto>> GetInsurancePoliciesAsync(
+        Guid playerId,
+        CancellationToken cancellationToken = default);
+
+    Task<InsuranceClaimDto?> FileInsuranceClaimAsync(
+        FileInsuranceClaimRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InsuranceClaimDto>> GetInsuranceClaimsAsync(
+        Guid playerId,
+        CancellationToken cancellationToken = default);
+
+    Task<IntelligenceNetworkDto?> CreateIntelligenceNetworkAsync(
+        CreateIntelligenceNetworkRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IntelligenceReportDto?> PublishIntelligenceReportAsync(
+        PublishIntelligenceReportRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<IntelligenceReportDto>> GetIntelligenceReportsAsync(
+        Guid playerId,
+        Guid? sectorId,
+        CancellationToken cancellationToken = default);
+
+    Task<int> ExpireIntelligenceReportsAsync(
+        CancellationToken cancellationToken = default);
 }

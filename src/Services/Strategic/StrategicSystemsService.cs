@@ -314,6 +314,302 @@ public sealed class StrategicSystemsService : IStrategicSystemsService
             .ToList();
     }
 
+    public async Task<InsurancePolicyDto?> UpsertInsurancePolicyAsync(
+        UpsertInsurancePolicyRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var ship = await _dbContext.Ships
+            .AsNoTracking()
+            .FirstOrDefaultAsync(existing =>
+                existing.Id == request.ShipId &&
+                existing.PlayerId == request.PlayerId,
+                cancellationToken);
+        if (ship is null)
+        {
+            return null;
+        }
+
+        var now = DateTime.UtcNow;
+        var policy = await _dbContext.InsurancePolicies
+            .FirstOrDefaultAsync(existing => existing.ShipId == request.ShipId, cancellationToken);
+
+        if (policy is null)
+        {
+            policy = new InsurancePolicy
+            {
+                Id = Guid.NewGuid(),
+                PlayerId = request.PlayerId,
+                ShipId = request.ShipId,
+                CreatedAt = now
+            };
+            _dbContext.InsurancePolicies.Add(policy);
+        }
+
+        policy.CoverageRate = Math.Clamp(request.CoverageRate, 0.1f, 0.95f);
+        policy.PremiumPerCycle = Math.Max(0m, request.PremiumPerCycle);
+        policy.RiskTier = string.IsNullOrWhiteSpace(request.RiskTier)
+            ? "standard"
+            : request.RiskTier.Trim().ToLowerInvariant();
+        policy.IsActive = request.IsActive;
+        policy.UpdatedAt = now;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapInsurancePolicy(policy, ship.Name);
+    }
+
+    public async Task<IReadOnlyList<InsurancePolicyDto>> GetInsurancePoliciesAsync(
+        Guid playerId,
+        CancellationToken cancellationToken = default)
+    {
+        var policies = await _dbContext.InsurancePolicies
+            .AsNoTracking()
+            .Include(policy => policy.Ship)
+            .Where(policy => policy.PlayerId == playerId)
+            .OrderByDescending(policy => policy.UpdatedAt)
+            .ToListAsync(cancellationToken);
+
+        return policies
+            .Select(policy => MapInsurancePolicy(policy, policy.Ship?.Name ?? "Unknown"))
+            .ToList();
+    }
+
+    public async Task<InsuranceClaimDto?> FileInsuranceClaimAsync(
+        FileInsuranceClaimRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var policy = await _dbContext.InsurancePolicies
+            .Include(existing => existing.Ship)
+            .FirstOrDefaultAsync(existing => existing.Id == request.PolicyId, cancellationToken);
+        if (policy is null || !policy.IsActive || policy.Ship is null)
+        {
+            return null;
+        }
+
+        if (request.ClaimAmount <= 0)
+        {
+            return null;
+        }
+
+        var combatLogExists = request.CombatLogId is null || await _dbContext.CombatLogs
+            .AsNoTracking()
+            .AnyAsync(log => log.Id == request.CombatLogId.Value, cancellationToken);
+        if (!combatLogExists)
+        {
+            return null;
+        }
+
+        var maxCoveredAmount = policy.Ship.CurrentValue * (decimal)policy.CoverageRate;
+        var tierRisk = policy.RiskTier switch
+        {
+            "high" => 60f,
+            "medium" => 40f,
+            "low" => 20f,
+            _ => 30f
+        };
+
+        var fraudRisk = tierRisk;
+        if (request.CombatLogId is null)
+        {
+            fraudRisk += 20f;
+        }
+
+        if (request.ClaimAmount > (maxCoveredAmount * 1.10m))
+        {
+            fraudRisk += 15f;
+        }
+
+        fraudRisk = Math.Clamp(fraudRisk, 0f, 100f);
+        var status = fraudRisk >= 75f ? "rejected" : "approved";
+        var now = DateTime.UtcNow;
+        var claim = new InsuranceClaim
+        {
+            Id = Guid.NewGuid(),
+            PolicyId = policy.Id,
+            CombatLogId = request.CombatLogId,
+            ClaimAmount = Math.Min(request.ClaimAmount, maxCoveredAmount),
+            FraudRiskScore = fraudRisk,
+            Status = status,
+            FiledAt = now,
+            ResolvedAt = now
+        };
+
+        _dbContext.InsuranceClaims.Add(claim);
+
+        if (status == "approved")
+        {
+            var player = await _dbContext.Players
+                .FirstOrDefaultAsync(existing => existing.Id == policy.PlayerId, cancellationToken);
+            if (player is not null)
+            {
+                player.LiquidCredits += claim.ClaimAmount;
+            }
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapInsuranceClaim(claim, policy.PlayerId, policy.ShipId);
+    }
+
+    public async Task<IReadOnlyList<InsuranceClaimDto>> GetInsuranceClaimsAsync(
+        Guid playerId,
+        CancellationToken cancellationToken = default)
+    {
+        var claims = await _dbContext.InsuranceClaims
+            .AsNoTracking()
+            .Include(claim => claim.Policy)
+            .Where(claim => claim.Policy != null && claim.Policy.PlayerId == playerId)
+            .OrderByDescending(claim => claim.FiledAt)
+            .ToListAsync(cancellationToken);
+
+        return claims
+            .Select(claim => MapInsuranceClaim(
+                claim,
+                claim.Policy?.PlayerId ?? Guid.Empty,
+                claim.Policy?.ShipId ?? Guid.Empty))
+            .ToList();
+    }
+
+    public async Task<IntelligenceNetworkDto?> CreateIntelligenceNetworkAsync(
+        CreateIntelligenceNetworkRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return null;
+        }
+
+        var playerExists = await _dbContext.Players
+            .AsNoTracking()
+            .AnyAsync(player => player.Id == request.OwnerPlayerId, cancellationToken);
+        if (!playerExists)
+        {
+            return null;
+        }
+
+        var normalizedName = request.Name.Trim().ToLowerInvariant();
+        var now = DateTime.UtcNow;
+        var existing = await _dbContext.IntelligenceNetworks
+            .FirstOrDefaultAsync(network =>
+                network.OwnerPlayerId == request.OwnerPlayerId &&
+                network.Name == normalizedName,
+                cancellationToken);
+
+        if (existing is null)
+        {
+            existing = new IntelligenceNetwork
+            {
+                Id = Guid.NewGuid(),
+                OwnerPlayerId = request.OwnerPlayerId,
+                Name = normalizedName,
+                CreatedAt = now
+            };
+            _dbContext.IntelligenceNetworks.Add(existing);
+        }
+
+        existing.AssetCount = Math.Clamp(request.AssetCount, 1, 500);
+        existing.CoverageScore = Math.Clamp(request.CoverageScore, 0f, 100f);
+        existing.IsActive = true;
+        existing.UpdatedAt = now;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return MapIntelligenceNetwork(existing);
+    }
+
+    public async Task<IntelligenceReportDto?> PublishIntelligenceReportAsync(
+        PublishIntelligenceReportRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.SignalType) || string.IsNullOrWhiteSpace(request.Payload))
+        {
+            return null;
+        }
+
+        var network = await _dbContext.IntelligenceNetworks
+            .AsNoTracking()
+            .FirstOrDefaultAsync(existing => existing.Id == request.NetworkId && existing.IsActive, cancellationToken);
+        var sector = await _dbContext.Sectors
+            .AsNoTracking()
+            .FirstOrDefaultAsync(existing => existing.Id == request.SectorId, cancellationToken);
+
+        if (network is null || sector is null)
+        {
+            return null;
+        }
+
+        var now = DateTime.UtcNow;
+        var ttlMinutes = Math.Clamp(request.TtlMinutes, 5, 1440);
+        var report = new IntelligenceReport
+        {
+            Id = Guid.NewGuid(),
+            NetworkId = request.NetworkId,
+            SectorId = request.SectorId,
+            SignalType = request.SignalType.Trim().ToLowerInvariant(),
+            ConfidenceScore = Math.Clamp(request.ConfidenceScore, 0f, 100f),
+            Payload = request.Payload.Trim(),
+            DetectedAt = now,
+            ExpiresAt = now.AddMinutes(ttlMinutes),
+            IsExpired = false
+        };
+
+        _dbContext.IntelligenceReports.Add(report);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapIntelligenceReport(report, network.Name, sector.Name);
+    }
+
+    public async Task<IReadOnlyList<IntelligenceReportDto>> GetIntelligenceReportsAsync(
+        Guid playerId,
+        Guid? sectorId,
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var query = _dbContext.IntelligenceReports
+            .AsNoTracking()
+            .Include(report => report.Network)
+            .Include(report => report.Sector)
+            .Where(report =>
+                report.Network != null &&
+                report.Network.OwnerPlayerId == playerId &&
+                !report.IsExpired &&
+                report.ExpiresAt > now)
+            .AsQueryable();
+
+        if (sectorId.HasValue && sectorId.Value != Guid.Empty)
+        {
+            query = query.Where(report => report.SectorId == sectorId.Value);
+        }
+
+        var reports = await query
+            .OrderByDescending(report => report.ConfidenceScore)
+            .ThenByDescending(report => report.DetectedAt)
+            .ToListAsync(cancellationToken);
+
+        return reports
+            .Select(report => MapIntelligenceReport(
+                report,
+                report.Network?.Name ?? "unknown",
+                report.Sector?.Name ?? "unknown"))
+            .ToList();
+    }
+
+    public async Task<int> ExpireIntelligenceReportsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var stale = await _dbContext.IntelligenceReports
+            .Where(report => !report.IsExpired && report.ExpiresAt <= now)
+            .ToListAsync(cancellationToken);
+
+        foreach (var report in stale)
+        {
+            report.IsExpired = true;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return stale.Count;
+    }
+
     private static SectorVolatilityCycleDto MapCycle(SectorVolatilityCycle cycle, string sectorName)
     {
         return new SectorVolatilityCycleDto
@@ -377,6 +673,74 @@ public sealed class StrategicSystemsService : IStrategicSystemsService
             WarMomentumScore = record.WarMomentumScore,
             DominanceScore = record.DominanceScore,
             UpdatedAt = record.UpdatedAt
+        };
+    }
+
+    private static InsurancePolicyDto MapInsurancePolicy(InsurancePolicy policy, string shipName)
+    {
+        return new InsurancePolicyDto
+        {
+            Id = policy.Id,
+            PlayerId = policy.PlayerId,
+            ShipId = policy.ShipId,
+            ShipName = shipName,
+            CoverageRate = policy.CoverageRate,
+            PremiumPerCycle = policy.PremiumPerCycle,
+            RiskTier = policy.RiskTier,
+            IsActive = policy.IsActive,
+            LastPremiumChargedAt = policy.LastPremiumChargedAt,
+            UpdatedAt = policy.UpdatedAt
+        };
+    }
+
+    private static InsuranceClaimDto MapInsuranceClaim(InsuranceClaim claim, Guid playerId, Guid shipId)
+    {
+        return new InsuranceClaimDto
+        {
+            Id = claim.Id,
+            PolicyId = claim.PolicyId,
+            PlayerId = playerId,
+            ShipId = shipId,
+            ClaimAmount = claim.ClaimAmount,
+            FraudRiskScore = claim.FraudRiskScore,
+            Status = claim.Status,
+            FiledAt = claim.FiledAt,
+            ResolvedAt = claim.ResolvedAt
+        };
+    }
+
+    private static IntelligenceNetworkDto MapIntelligenceNetwork(IntelligenceNetwork network)
+    {
+        return new IntelligenceNetworkDto
+        {
+            Id = network.Id,
+            OwnerPlayerId = network.OwnerPlayerId,
+            Name = network.Name,
+            AssetCount = network.AssetCount,
+            CoverageScore = network.CoverageScore,
+            IsActive = network.IsActive,
+            UpdatedAt = network.UpdatedAt
+        };
+    }
+
+    private static IntelligenceReportDto MapIntelligenceReport(
+        IntelligenceReport report,
+        string networkName,
+        string sectorName)
+    {
+        return new IntelligenceReportDto
+        {
+            Id = report.Id,
+            NetworkId = report.NetworkId,
+            NetworkName = networkName,
+            SectorId = report.SectorId,
+            SectorName = sectorName,
+            SignalType = report.SignalType,
+            ConfidenceScore = report.ConfidenceScore,
+            Payload = report.Payload,
+            DetectedAt = report.DetectedAt,
+            ExpiresAt = report.ExpiresAt,
+            IsExpired = report.IsExpired
         };
     }
 }

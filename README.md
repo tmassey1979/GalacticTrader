@@ -231,16 +231,19 @@ For development and test automation, use the built-in auth endpoints:
 - `POST /api/auth/login`
 - `GET /api/auth/validate`
 
-## Strategic Systems Phase 1
+## Strategic Systems (Phase 1 and 2)
 
 Strategic APIs are available under `/api/strategic` for:
 - sector volatility cycles
 - corporate wars
 - infrastructure ownership
 - territory dominance recalculation and ranking
+- insurance policies and claims
+- intelligence networks and reports
 
 Migration and rollout guidance:
 - [docs/strategic-systems-migration-plan.md](docs/strategic-systems-migration-plan.md)
+- [docs/strategic-systems-phase2-migration-plan.md](docs/strategic-systems-phase2-migration-plan.md)
 
 ## Contributing
 
