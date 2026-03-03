@@ -298,6 +298,94 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+                <DockPanel Margin="0,8,0,0">
+                    <Button x:Name="PreviewSpatialMixButton"
+                            DockPanel.Dock="Right"
+                            Width="130"
+                            Height="28"
+                            Margin="8,0,0,0"
+                            Background="#1F6FEB"
+                            BorderBrush="#4A89F6"
+                            Foreground="White"
+                            Content="Preview Spatial"
+                            Click="OnPreviewSpatialMixClick" />
+                    <TextBox x:Name="SpatialGainText"
+                             DockPanel.Dock="Right"
+                             Width="70"
+                             Height="28"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             Text="1.0"
+                             ToolTip="Speaker base gain" />
+                    <TextBox x:Name="SpatialZText"
+                             DockPanel.Dock="Right"
+                             Width="70"
+                             Height="28"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             Text="0.0"
+                             ToolTip="Speaker Z" />
+                    <TextBox x:Name="SpatialYText"
+                             DockPanel.Dock="Right"
+                             Width="70"
+                             Height="28"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             Text="0.0"
+                             ToolTip="Speaker Y" />
+                    <TextBox x:Name="SpatialXText"
+                             DockPanel.Dock="Right"
+                             Width="70"
+                             Height="28"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             Text="25.0"
+                             ToolTip="Speaker X" />
+                    <TextBox x:Name="SpatialSpeakerIdText"
+                             DockPanel.Dock="Right"
+                             Width="220"
+                             Height="28"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             ToolTip="Speaker player id" />
+                    <TextBox x:Name="SpatialFalloffText"
+                             Width="90"
+                             Height="28"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             Text="100.0"
+                             ToolTip="Falloff distance" />
+                </DockPanel>
+                <ListBox x:Name="SpatialMixLogList"
+                         Height="84"
+                         Margin="0,6,0,0"
+                         Background="#101F39"
+                         BorderBrush="#2E4A75"
+                         Foreground="#EAF2FF">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock FontFamily="Consolas"
+                                       Text="{Binding}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </StackPanel>
         </Border>
 

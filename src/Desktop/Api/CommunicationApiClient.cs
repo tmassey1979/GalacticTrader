@@ -202,4 +202,24 @@ public sealed class CommunicationApiClient
         var payload = await response.Content.ReadFromJsonAsync<List<VoiceSignalApiDto>>(cancellationToken);
         return payload ?? [];
     }
+
+    public async Task<SpatialAudioResultApiDto?> CalculateSpatialAudioAsync(
+        Guid channelId,
+        SpatialAudioApiRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"/api/communication/voice/channels/{channelId:D}/spatial-audio", request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Calculate spatial audio failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<SpatialAudioResultApiDto>(cancellationToken);
+    }
 }

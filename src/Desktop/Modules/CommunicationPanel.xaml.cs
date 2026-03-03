@@ -13,6 +13,7 @@ public partial class CommunicationPanel : UserControl
     private readonly CommunicationApiClient _communicationApiClient;
     private readonly ObservableCollection<CommunicationMessageDisplayRow> _rows = [];
     private readonly ObservableCollection<string> _voiceSignalLog = [];
+    private readonly ObservableCollection<string> _spatialMixLog = [];
     private Guid? _activeVoiceChannelId;
     private bool _hasLoaded;
 
@@ -23,6 +24,7 @@ public partial class CommunicationPanel : UserControl
         InitializeComponent();
         MessagesGrid.ItemsSource = _rows;
         VoiceSignalLogList.ItemsSource = _voiceSignalLog;
+        SpatialMixLogList.ItemsSource = _spatialMixLog;
         Loaded += OnLoaded;
     }
 
@@ -80,6 +82,11 @@ public partial class CommunicationPanel : UserControl
     private async void OnPollVoiceSignalsClick(object sender, RoutedEventArgs e)
     {
         await PollVoiceSignalsAsync();
+    }
+
+    private async void OnPreviewSpatialMixClick(object sender, RoutedEventArgs e)
+    {
+        await PreviewSpatialMixAsync();
     }
 
     private async void OnMessageTextKeyDown(object sender, KeyEventArgs e)
@@ -457,6 +464,92 @@ public partial class CommunicationPanel : UserControl
         }
     }
 
+    private async Task PreviewSpatialMixAsync()
+    {
+        if (!TryResolveVoiceChannelId(out var channelId))
+        {
+            SetStatus("Enter a valid voice channel id to preview spatial audio.", isError: true);
+            return;
+        }
+
+        if (!Guid.TryParse(SpatialSpeakerIdText.Text.Trim(), out var speakerId))
+        {
+            SetStatus("Speaker player id must be a valid GUID.", isError: true);
+            return;
+        }
+
+        if (!TryParseFloat(SpatialXText.Text, out var speakerX) ||
+            !TryParseFloat(SpatialYText.Text, out var speakerY) ||
+            !TryParseFloat(SpatialZText.Text, out var speakerZ))
+        {
+            SetStatus("Speaker coordinates must be numeric values.", isError: true);
+            return;
+        }
+
+        if (!VoiceActivityInputParser.TryParseRms(SpatialGainText.Text, out var baseGain))
+        {
+            SetStatus("Speaker gain must be numeric (0..1).", isError: true);
+            return;
+        }
+
+        if (!VoiceActivityInputParser.TryParseMs(SpatialFalloffText.Text, out var falloffDistance))
+        {
+            SetStatus("Falloff distance must be a numeric value.", isError: true);
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var result = await _communicationApiClient.CalculateSpatialAudioAsync(channelId, new SpatialAudioApiRequest
+            {
+                ListenerId = _session.PlayerId,
+                ListenerX = 0f,
+                ListenerY = 0f,
+                ListenerZ = 0f,
+                FalloffDistance = Math.Max(falloffDistance, 1f),
+                Speakers =
+                [
+                    new SpeakerSampleApiRequest
+                    {
+                        PlayerId = speakerId,
+                        X = speakerX,
+                        Y = speakerY,
+                        Z = speakerZ,
+                        BaseGain = baseGain
+                    }
+                ]
+            });
+
+            if (result is null)
+            {
+                SetStatus("Spatial mix unavailable. Ensure you are joined to the voice channel.", isError: true);
+                return;
+            }
+
+            _spatialMixLog.Clear();
+            foreach (var mix in result.Mix.OrderBy(static entry => entry.Distance))
+            {
+                _spatialMixLog.Add(SpatialAudioMixFormatter.Build(mix));
+            }
+
+            if (_spatialMixLog.Count == 0)
+            {
+                _spatialMixLog.Add("No mix entries.");
+            }
+
+            SetStatus($"Spatial mix calculated with {_spatialMixLog.Count} entry(ies).", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
     private string ResolveChannelType()
     {
         var selection = (ChannelTypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString();
@@ -546,6 +639,11 @@ public partial class CommunicationPanel : UserControl
         }
     }
 
+    private static bool TryParseFloat(string input, out float value)
+    {
+        return float.TryParse(input.Trim(), out value);
+    }
+
     private void SetBusy(bool isBusy)
     {
         RefreshButton.IsEnabled = !isBusy;
@@ -570,6 +668,13 @@ public partial class CommunicationPanel : UserControl
         VoiceSignalPayloadText.IsEnabled = !isBusy;
         SendVoiceSignalButton.IsEnabled = !isBusy;
         PollVoiceSignalsButton.IsEnabled = !isBusy;
+        SpatialFalloffText.IsEnabled = !isBusy;
+        SpatialSpeakerIdText.IsEnabled = !isBusy;
+        SpatialXText.IsEnabled = !isBusy;
+        SpatialYText.IsEnabled = !isBusy;
+        SpatialZText.IsEnabled = !isBusy;
+        SpatialGainText.IsEnabled = !isBusy;
+        PreviewSpatialMixButton.IsEnabled = !isBusy;
     }
 
     private void SetStatus(string message, bool isError)
