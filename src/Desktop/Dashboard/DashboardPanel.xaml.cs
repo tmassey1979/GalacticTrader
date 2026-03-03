@@ -112,6 +112,9 @@ public partial class DashboardPanel : UserControl
             GlobalEconomicStabilityValue.Text = globalMetrics.EconomicStabilityIndex.ToString("N1");
             GlobalTopReputationValue.Text = globalMetrics.TopReputationPlayerDisplay;
             GlobalTopFinancialValue.Text = globalMetrics.TopFinancialPlayerDisplay;
+            GlobalTradeVolumeIndexValue.Text = globalMetrics.TradeVolumeIndex.ToString("N1");
+            GlobalFactionStabilityIndexValue.Text = globalMetrics.FactionStabilityIndex.ToString("N1");
+            GlobalCombatIntensityIndexValue.Text = globalMetrics.CombatIntensityIndex.ToString("N1");
             SetStatus("Strategic dashboard refreshed.", isError: false);
         }
         catch (Exception exception)

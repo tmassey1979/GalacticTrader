@@ -226,7 +226,7 @@
                            FontWeight="SemiBold"
                            Text="Global Strategic Metrics" />
                 <UniformGrid Margin="0,8,0,0"
-                             Rows="2"
+                             Rows="3"
                              Columns="3">
                     <StackPanel Margin="0,0,8,6">
                         <TextBlock Foreground="#9DB7E2"
@@ -272,6 +272,30 @@
                         <TextBlock Foreground="#9DB7E2"
                                    Text="Top Financial Player" />
                         <TextBlock x:Name="GlobalTopFinancialValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                    <StackPanel Margin="0,6,8,0">
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Trade Volume Index" />
+                        <TextBlock x:Name="GlobalTradeVolumeIndexValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                    <StackPanel Margin="0,6,8,0">
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Faction Stability Index" />
+                        <TextBlock x:Name="GlobalFactionStabilityIndexValue"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="-" />
+                    </StackPanel>
+                    <StackPanel Margin="0,6,0,0">
+                        <TextBlock Foreground="#9DB7E2"
+                                   Text="Combat Intensity Index" />
+                        <TextBlock x:Name="GlobalCombatIntensityIndexValue"
                                    Foreground="#EAF2FF"
                                    FontFamily="Consolas"
                                    Text="-" />
