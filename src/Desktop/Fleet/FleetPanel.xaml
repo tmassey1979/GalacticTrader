@@ -68,10 +68,13 @@
                                         Width="72" />
                     <DataGridTextColumn Header="Crew"
                                         Binding="{Binding CrewAssignment}"
-                                        Width="100" />
+                                        Width="86" />
+                    <DataGridTextColumn Header="Crew Weight"
+                                        Binding="{Binding CrewSkillWeightScore, StringFormat={}{0:N1}}"
+                                        Width="88" />
                     <DataGridTextColumn Header="Status"
                                         Binding="{Binding CrewStatus}"
-                                        Width="100" />
+                                        Width="88" />
                     <DataGridTextColumn Header="Insurance"
                                         Binding="{Binding InsuranceStatus}"
                                         Width="110" />
