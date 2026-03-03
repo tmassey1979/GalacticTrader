@@ -58,6 +58,14 @@
                     Value="Consolas" />
         </Style>
 
+        <Style x:Key="ComboBoxItemStyle"
+               TargetType="ComboBoxItem">
+            <Setter Property="Foreground"
+                    Value="#000000" />
+            <Setter Property="Background"
+                    Value="#FFFFFF" />
+        </Style>
+
         <Style x:Key="ComboBoxStyle"
                TargetType="ComboBox">
             <Setter Property="Height"
@@ -75,15 +83,7 @@
             <Setter Property="FontFamily"
                     Value="Consolas" />
             <Setter Property="ItemContainerStyle"
-                    Value="{StaticResource ComboBoxItemStyle}" />
-        </Style>
-
-        <Style x:Key="ComboBoxItemStyle"
-               TargetType="ComboBoxItem">
-            <Setter Property="Foreground"
-                    Value="#000000" />
-            <Setter Property="Background"
-                    Value="#FFFFFF" />
+                    Value="{DynamicResource ComboBoxItemStyle}" />
         </Style>
     </Window.Resources>
 
