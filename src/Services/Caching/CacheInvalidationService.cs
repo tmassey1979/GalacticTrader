@@ -1,109 +1,92 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+namespace GalacticTrader.Services.Caching;
 
-namespace GalacticTrader.Services.Caching
+/// <summary>
+/// Cache invalidation strategy to manage cache coherence.
+/// </summary>
+public class CacheInvalidationService : ICacheInvalidationService
 {
-    /// <summary>
-    /// Cache invalidation strategy to manage cache coherence
-    /// </summary>
-    public interface ICacheInvalidationService
+    private readonly ICacheService _cache;
+
+    public CacheInvalidationService(ICacheService cache)
     {
-        Task InvalidatePlayerCacheAsync(Guid playerId);
-        Task InvalidateSectorCacheAsync(Guid sectorId);
-        Task InvalidateMarketCacheAsync(Guid sectorId);
-        Task InvalidateLeaderboardCacheAsync(string leaderboardType);
-        Task InvalidateRouteCacheAsync(Guid fromSectorId, Guid toSectorId);
-        Task InvalidateCombatCacheAsync(Guid combatId);
+        _cache = cache;
     }
 
-    public class CacheInvalidationService : ICacheInvalidationService
+    /// <summary>
+    /// Invalidate all cache entries related to a player.
+    /// </summary>
+    public async Task InvalidatePlayerCacheAsync(Guid playerId)
     {
-        private readonly ICacheService _cache;
+        var playerSessionKey = string.Format(CacheKeys.PLAYER_SESSION, playerId);
+        await _cache.RemoveAsync(playerSessionKey);
+    }
 
-        public CacheInvalidationService(ICacheService cache)
+    /// <summary>
+    /// Invalidate all cache entries for a sector.
+    /// </summary>
+    public async Task InvalidateSectorCacheAsync(Guid sectorId)
+    {
+        var sectorKey = string.Format(CacheKeys.SECTOR_DATA, sectorId);
+        var routesKey = string.Format(CacheKeys.SECTOR_ROUTES, sectorId);
+
+        await Task.WhenAll(
+            _cache.RemoveAsync(sectorKey),
+            _cache.RemoveAsync(routesKey),
+            _cache.RemoveAsync(CacheKeys.SECTOR_GRAPH)); // Entire graph affected.
+    }
+
+    /// <summary>
+    /// Invalidate market cache for a sector.
+    /// </summary>
+    public async Task InvalidateMarketCacheAsync(Guid sectorId)
+    {
+        var marketKey = string.Format(CacheKeys.SECTOR_MARKET, sectorId);
+        await _cache.RemoveAsync(marketKey);
+
+        // Also invalidate market heatmap.
+        await _cache.RemoveAsync(CacheKeys.MARKET_HEATMAP);
+    }
+
+    /// <summary>
+    /// Invalidate specific leaderboard.
+    /// </summary>
+    public async Task InvalidateLeaderboardCacheAsync(string leaderboardType)
+    {
+        var key = leaderboardType switch
         {
-            _cache = cache;
-        }
+            "wealth" => CacheKeys.LEADERBOARD_WEALTH,
+            "reputation" => CacheKeys.LEADERBOARD_REPUTATION,
+            "combat" => CacheKeys.LEADERBOARD_COMBAT,
+            "trade" => CacheKeys.LEADERBOARD_TRADE,
+            _ => null
+        };
 
-        /// <summary>
-        /// Invalidate all cache entries related to a player
-        /// </summary>
-        public async Task InvalidatePlayerCacheAsync(Guid playerId)
+        if (key is not null)
         {
-            var playerSessionKey = string.Format(CacheKeys.PLAYER_SESSION, playerId);
-            await _cache.RemoveAsync(playerSessionKey);
+            await _cache.RemoveAsync(key);
         }
+    }
 
-        /// <summary>
-        /// Invalidate all cache entries for a sector
-        /// </summary>
-        public async Task InvalidateSectorCacheAsync(Guid sectorId)
-        {
-            var sectorKey = string.Format(CacheKeys.SECTOR_DATA, sectorId);
-            var routesKey = string.Format(CacheKeys.SECTOR_ROUTES, sectorId);
-            
-            await Task.WhenAll(
-                _cache.RemoveAsync(sectorKey),
-                _cache.RemoveAsync(routesKey),
-                _cache.RemoveAsync(CacheKeys.SECTOR_GRAPH) // Entire graph affected
-            );
-        }
+    /// <summary>
+    /// Invalidate route cache.
+    /// </summary>
+    public async Task InvalidateRouteCacheAsync(Guid fromSectorId, Guid toSectorId)
+    {
+        var routeKey = string.Format(CacheKeys.ROUTE_DETAILS, fromSectorId, toSectorId);
+        var reverseRouteKey = string.Format(CacheKeys.ROUTE_DETAILS, toSectorId, fromSectorId);
 
-        /// <summary>
-        /// Invalidate market cache for a sector
-        /// </summary>
-        public async Task InvalidateMarketCacheAsync(Guid sectorId)
-        {
-            var marketKey = string.Format(CacheKeys.SECTOR_MARKET, sectorId);
-            await _cache.RemoveAsync(marketKey);
-            
-            // Also invalidate market heatmap
-            await _cache.RemoveAsync(CacheKeys.MARKET_HEATMAP);
-        }
+        await Task.WhenAll(
+            _cache.RemoveAsync(routeKey),
+            _cache.RemoveAsync(reverseRouteKey),
+            _cache.RemoveAsync(CacheKeys.SECTOR_GRAPH)); // Entire graph affected.
+    }
 
-        /// <summary>
-        /// Invalidate specific leaderboard
-        /// </summary>
-        public async Task InvalidateLeaderboardCacheAsync(string leaderboardType)
-        {
-            var key = leaderboardType switch
-            {
-                "wealth" => CacheKeys.LEADERBOARD_WEALTH,
-                "reputation" => CacheKeys.LEADERBOARD_REPUTATION,
-                "combat" => CacheKeys.LEADERBOARD_COMBAT,
-                "trade" => CacheKeys.LEADERBOARD_TRADE,
-                _ => null
-            };
-
-            if (key != null)
-            {
-                await _cache.RemoveAsync(key);
-            }
-        }
-
-        /// <summary>
-        /// Invalidate route cache
-        /// </summary>
-        public async Task InvalidateRouteCacheAsync(Guid fromSectorId, Guid toSectorId)
-        {
-            var routeKey = string.Format(CacheKeys.ROUTE_DETAILS, fromSectorId, toSectorId);
-            var reverseRouteKey = string.Format(CacheKeys.ROUTE_DETAILS, toSectorId, fromSectorId);
-            
-            await Task.WhenAll(
-                _cache.RemoveAsync(routeKey),
-                _cache.RemoveAsync(reverseRouteKey),
-                _cache.RemoveAsync(CacheKeys.SECTOR_GRAPH) // Entire graph affected
-            );
-        }
-
-        /// <summary>
-        /// Invalidate combat cache
-        /// </summary>
-        public async Task InvalidateCombatCacheAsync(Guid combatId)
-        {
-            var combatKey = string.Format(CacheKeys.COMBAT_STATE, combatId);
-            await _cache.RemoveAsync(combatKey);
-        }
+    /// <summary>
+    /// Invalidate combat cache.
+    /// </summary>
+    public async Task InvalidateCombatCacheAsync(Guid combatId)
+    {
+        var combatKey = string.Format(CacheKeys.COMBAT_STATE, combatId);
+        await _cache.RemoveAsync(combatKey);
     }
 }
