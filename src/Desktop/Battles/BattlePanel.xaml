@@ -41,7 +41,16 @@
                                     Width="170" />
                 <DataGridTextColumn Header="Outcome"
                                     Binding="{Binding Outcome}"
-                                    Width="100" />
+                                    Width="95" />
+                <DataGridTextColumn Header="Rep Δ"
+                                    Binding="{Binding ReputationDelta, StringFormat={}{0:+0;-0;0}}"
+                                    Width="70" />
+                <DataGridTextColumn Header="Eco Impact"
+                                    Binding="{Binding EconomicImpactProjection, StringFormat={}{0:N2}}"
+                                    Width="92" />
+                <DataGridTextColumn Header="Damage"
+                                    Binding="{Binding DamageReport}"
+                                    Width="110" />
                 <DataGridTextColumn Header="Duration"
                                     Binding="{Binding DurationSeconds}"
                                     Width="80" />

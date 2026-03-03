@@ -39,5 +39,8 @@ public sealed class BattleFeedBuilderTests
         Assert.Equal("Retreat", rows[0].Outcome);
         Assert.Equal("cccccccc", rows[0].Attacker);
         Assert.Equal("-", rows[0].Defender);
+        Assert.Equal(-1, rows[0].ReputationDelta);
+        Assert.True(rows[0].EconomicImpactProjection < 0m);
+        Assert.Equal("Minor damage", rows[0].DamageReport);
     }
 }

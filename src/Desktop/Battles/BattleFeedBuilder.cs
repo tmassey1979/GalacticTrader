@@ -8,15 +8,22 @@ public static class BattleFeedBuilder
     {
         return logs
             .OrderByDescending(static log => log.BattleEndedAt)
-            .Select(log => new BattleLogDisplayRow
+            .Select(log =>
             {
-                EndedAtUtc = log.BattleEndedAt.ToUniversalTime(),
-                Outcome = log.BattleOutcome,
-                DurationSeconds = log.DurationSeconds,
-                TotalTicks = log.TotalTicks,
-                Attacker = log.AttackerId.ToString()[..8],
-                Defender = log.DefenderId?.ToString()[..8] ?? "-",
-                InsurancePayout = log.InsurancePayout
+                var projection = BattleOutcomeProjector.Project(log);
+                return new BattleLogDisplayRow
+                {
+                    EndedAtUtc = log.BattleEndedAt.ToUniversalTime(),
+                    Outcome = log.BattleOutcome,
+                    ReputationDelta = projection.ReputationDelta,
+                    EconomicImpactProjection = projection.EconomicImpactProjection,
+                    DamageReport = projection.DamageReport,
+                    DurationSeconds = log.DurationSeconds,
+                    TotalTicks = log.TotalTicks,
+                    Attacker = log.AttackerId.ToString()[..8],
+                    Defender = log.DefenderId?.ToString()[..8] ?? "-",
+                    InsurancePayout = log.InsurancePayout
+                };
             })
             .ToArray();
     }
