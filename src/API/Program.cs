@@ -101,6 +101,7 @@ builder.Services.AddScoped<ICommunicationService, CommunicationService>();
 builder.Services.AddScoped<IStrategicSystemsService, StrategicSystemsService>();
 builder.Services.AddScoped<IDashboardRealtimeSnapshotService, DashboardRealtimeSnapshotService>();
 builder.Services.AddScoped<IGlobalMetricsService, GlobalMetricsService>();
+builder.Services.AddScoped<IMarketIntelligenceService, MarketIntelligenceService>();
 builder.Services.AddSingleton<IBalanceControlService, BalanceControlService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IVoiceService, VoiceService>();
@@ -156,6 +157,15 @@ telemetry.MapGet("/global-summary", async (
     CancellationToken cancellationToken) =>
 {
     var summary = await globalMetricsService.GetGlobalSummaryAsync(cancellationToken);
+    return Results.Ok(summary);
+});
+
+telemetry.MapGet("/market-intelligence", async (
+    int? limit,
+    IMarketIntelligenceService marketIntelligenceService,
+    CancellationToken cancellationToken) =>
+{
+    var summary = await marketIntelligenceService.GetSummaryAsync(limit ?? 8, cancellationToken);
     return Results.Ok(summary);
 });
 

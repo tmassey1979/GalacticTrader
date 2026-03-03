@@ -194,6 +194,10 @@
                             <ContentControl x:Name="IntelHost"
                                             Margin="12" />
                         </TabItem>
+                        <TabItem Header="Market Intel">
+                            <ContentControl x:Name="MarketIntelHost"
+                                            Margin="12" />
+                        </TabItem>
                         <TabItem Header="Services">
                             <ContentControl x:Name="ServicesHost"
                                             Margin="12" />

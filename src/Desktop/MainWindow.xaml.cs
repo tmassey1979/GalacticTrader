@@ -52,6 +52,7 @@ public partial class MainWindow : Window
         ReputationApiClient reputationApiClient,
         StrategicApiClient strategicApiClient,
         TelemetryApiClient telemetryApiClient,
+        MarketIntelligenceApiClient marketIntelligenceApiClient,
         NpcApiClient npcApiClient,
         CombatApiClient combatApiClient,
         StrategicRealtimeStreamClient strategicRealtimeClient,
@@ -86,6 +87,7 @@ public partial class MainWindow : Window
         BattlesHost.Content = new BattlePanel(_combatApiClient);
         FleetHost.Content = new FleetPanel(_session, fleetApiClient);
         IntelHost.Content = new IntelPanel(_session, navigationApiClient, reputationApiClient, strategicApiClient);
+        MarketIntelHost.Content = new MarketIntelligencePanel(marketIntelligenceApiClient);
         ServicesHost.Content = new ServicesPanel(_npcApiClient);
         ReputationHost.Content = new ReputationPanel(_session, _reputationApiClient);
         TerritoryHost.Content = new TerritoryPanel(_strategicApiClient);
