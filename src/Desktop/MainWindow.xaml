@@ -118,10 +118,8 @@
                                         Margin="12" />
                     </TabItem>
                     <TabItem Header="Intel">
-                        <TextBlock Margin="12"
-                                   Foreground="#CFDDFC"
-                                   TextWrapping="Wrap"
-                                   Text="Intelligence and reputation placeholder for faction alerts and threat movement." />
+                        <ContentControl x:Name="IntelHost"
+                                        Margin="12" />
                     </TabItem>
                 </TabControl>
             </DockPanel>

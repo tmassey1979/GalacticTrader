@@ -43,6 +43,21 @@ public sealed class NavigationApiClient
         return routes ?? [];
     }
 
+    public async Task<IReadOnlyList<RouteApiDto>> GetDangerousRoutesAsync(
+        int riskThreshold = 70,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync($"/api/navigation/routes/dangerous?riskThreshold={riskThreshold}", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Failed to load dangerous routes ({(int)response.StatusCode}): {detail}");
+        }
+
+        var routes = await response.Content.ReadFromJsonAsync<List<RouteApiDto>>(cancellationToken);
+        return routes ?? [];
+    }
+
     public async Task<SectorApiDto> CreateSectorAsync(CreateSectorApiRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("/api/navigation/sectors", request, cancellationToken);
