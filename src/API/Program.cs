@@ -725,18 +725,46 @@ economy.MapGet("/commodities/hierarchy", async (
 });
 
 economy.MapPost("/tick", async (
+    HttpContext context,
     IEconomyService economyService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var tick = await economyService.ProcessMarketTickAsync(cancellationToken);
     return Results.Ok(tick);
 });
 
 economy.MapPost("/market-shock", async (
+    HttpContext context,
     MarketShockRequest request,
     IEconomyService economyService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var triggered = await economyService.TriggerMarketShockAsync(request, cancellationToken);
     return triggered ? Results.Accepted() : Results.BadRequest();
 });
@@ -1748,6 +1776,21 @@ static async Task<IResult?> RequireMapAdminAsync(
     GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken)
 {
+    return await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole, AuthorizationPolicies.MapAdminRole],
+        cancellationToken);
+}
+
+static async Task<IResult?> RequireAnyRoleAsync(
+    HttpContext context,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    IReadOnlyCollection<string> allowedRoles,
+    CancellationToken cancellationToken)
+{
     if (!TryReadBearerToken(context, out var token))
     {
         return Results.Unauthorized();
@@ -1772,11 +1815,10 @@ static async Task<IResult?> RequireMapAdminAsync(
         return Results.Forbid();
     }
 
-    var hasMapAccess = userAccount.Roles.Any(role =>
-        role.Equals(AuthorizationPolicies.AdminRole, StringComparison.OrdinalIgnoreCase) ||
-        role.Equals(AuthorizationPolicies.MapAdminRole, StringComparison.OrdinalIgnoreCase));
+    var hasAllowedRole = userAccount.Roles.Any(role =>
+        allowedRoles.Any(allowed => role.Equals(allowed, StringComparison.OrdinalIgnoreCase)));
 
-    return hasMapAccess ? null : Results.Forbid();
+    return hasAllowedRole ? null : Results.Forbid();
 }
 
 static bool TryReadBearerToken(HttpContext context, out string token)

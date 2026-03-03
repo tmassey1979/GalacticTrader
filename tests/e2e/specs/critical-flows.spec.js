@@ -47,7 +47,8 @@ test.describe('critical gameplay flows', () => {
   });
 
   test('trading workflow smoke', async ({ request }) => {
-    const economyTick = await request.post('/api/economy/tick');
+    const authHeaders = await getAdminAuthHeaders(request);
+    const economyTick = await request.post('/api/economy/tick', { headers: authHeaders });
     expect(economyTick.status()).toBe(200);
 
     const hierarchy = await request.get('/api/economy/commodities/hierarchy');

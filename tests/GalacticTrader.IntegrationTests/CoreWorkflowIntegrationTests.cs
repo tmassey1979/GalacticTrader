@@ -65,6 +65,8 @@ public sealed class CoreWorkflowIntegrationTests : IClassFixture<ApiWebApplicati
     [Fact]
     public async Task EconomyEndpoints_HandleConcurrentLoadSmoke()
     {
+        await AuthenticateAsBootstrapAdminAsync();
+
         var requests = Enumerable.Range(0, 24)
             .Select(_ => _client.PostAsync("/api/economy/tick", content: null))
             .ToArray();
