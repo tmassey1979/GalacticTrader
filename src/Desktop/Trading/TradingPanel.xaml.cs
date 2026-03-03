@@ -227,7 +227,7 @@ public partial class TradingPanel : UserControl
 
     private void OnQuantityTextChanged(object sender, TextChangedEventArgs e)
     {
-        if (_isSyncingQuantity)
+        if (_isSyncingQuantity || QuantitySlider is null || QuantityText is null)
         {
             return;
         }
@@ -240,20 +240,32 @@ public partial class TradingPanel : UserControl
 
         var clamped = Math.Clamp((double)quantity, QuantitySlider.Minimum, QuantitySlider.Maximum);
         _isSyncingQuantity = true;
-        QuantitySlider.Value = clamped;
-        _isSyncingQuantity = false;
+        try
+        {
+            QuantitySlider.Value = clamped;
+        }
+        finally
+        {
+            _isSyncingQuantity = false;
+        }
     }
 
     private void OnQuantitySliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (_isSyncingQuantity)
+        if (_isSyncingQuantity || QuantitySlider is null || QuantityText is null)
         {
             return;
         }
 
         _isSyncingQuantity = true;
-        QuantityText.Text = Math.Round(QuantitySlider.Value).ToString(CultureInfo.InvariantCulture);
-        _isSyncingQuantity = false;
+        try
+        {
+            QuantityText.Text = Math.Round(QuantitySlider.Value).ToString(CultureInfo.InvariantCulture);
+        }
+        finally
+        {
+            _isSyncingQuantity = false;
+        }
     }
 
     private void SetBusy(bool isBusy)
