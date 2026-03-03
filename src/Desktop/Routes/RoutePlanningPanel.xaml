@@ -152,6 +152,12 @@
                     <DataGridTextColumn Header="Risk"
                                         Binding="{Binding RiskScore, StringFormat={}{0:N1}}"
                                         Width="70" />
+                    <DataGridTextColumn Header="Density"
+                                        Binding="{Binding EconomicDensity, StringFormat={}{0:N1}}"
+                                        Width="78" />
+                    <DataGridTextColumn Header="Pirate %"
+                                        Binding="{Binding PiratePresenceProbability, StringFormat={}{0:N1}}"
+                                        Width="82" />
                 </DataGrid.Columns>
             </DataGrid>
 

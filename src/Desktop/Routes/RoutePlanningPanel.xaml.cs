@@ -216,12 +216,15 @@ public partial class RoutePlanningPanel : UserControl
         _hops.Clear();
         foreach (var hop in plan.Hops)
         {
+            var overlay = RouteOverlayProjector.Build(hop);
             _hops.Add(new RouteHopDisplayRow
             {
                 Segment = $"{hop.FromSectorName} -> {hop.ToSectorName}",
                 TravelTimeSeconds = hop.BaseTravelTimeSeconds,
                 FuelCost = hop.BaseFuelCost,
-                RiskScore = hop.BaseRiskScore
+                RiskScore = hop.BaseRiskScore,
+                EconomicDensity = overlay.EconomicDensity,
+                PiratePresenceProbability = overlay.PiratePresenceProbability
             });
         }
 
