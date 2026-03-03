@@ -88,7 +88,7 @@ public sealed class EventFeedBuilderTests
             }
         };
 
-        var events = EventFeedBuilder.Build(transactions, combatLogs, reports, territory, serviceAgents, capturedAt);
+        var events = EventFeedBuilder.Build(transactions, combatLogs, reports, [], territory, serviceAgents, capturedAt);
 
         Assert.Equal(5, events.Count);
         Assert.Equal("Trade", events[0].Category);
@@ -112,6 +112,7 @@ public sealed class EventFeedBuilderTests
 
         var events = EventFeedBuilder.Build(
             transactions,
+            [],
             [],
             [],
             [],
@@ -143,8 +144,47 @@ public sealed class EventFeedBuilderTests
             [],
             [],
             [],
+            [],
             capturedAt);
 
         Assert.Contains(events, static entry => entry.Category == "Interception");
+    }
+
+    [Fact]
+    public void Build_IncludesReputationEvents_ForNotableStandings()
+    {
+        var capturedAt = new DateTime(2026, 3, 2, 22, 0, 0, DateTimeKind.Utc);
+        var standings = new[]
+        {
+            new PlayerFactionStandingApiDto
+            {
+                FactionId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                ReputationScore = 72,
+                Tier = "Exalted",
+                HasAccess = true,
+                TradingDiscount = 0.12m
+            },
+            new PlayerFactionStandingApiDto
+            {
+                FactionId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                ReputationScore = -50,
+                Tier = "Hostile",
+                HasAccess = false,
+                TradingDiscount = 0m
+            }
+        };
+
+        var events = EventFeedBuilder.Build(
+            [],
+            [],
+            [],
+            standings,
+            [],
+            [],
+            capturedAt);
+
+        Assert.Contains(events, static entry => entry.Category == "Reputation");
+        Assert.Contains(events, static entry => entry.Title.Contains("alliance access expanded", StringComparison.Ordinal));
+        Assert.Contains(events, static entry => entry.Title.Contains("sanctions pressure", StringComparison.Ordinal));
     }
 }

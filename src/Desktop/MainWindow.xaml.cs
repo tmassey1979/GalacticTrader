@@ -349,7 +349,7 @@ public partial class MainWindow : Window
             var metrics = StatusMetricAggregator.Build(transactions, standings, escort, threats, ships, _scene);
             ApplyMetrics(metrics);
 
-            _eventFeedAll = EventFeedBuilder.Build(transactions, combatLogs, reports, territory, serviceAgents, DateTime.UtcNow).ToList();
+            _eventFeedAll = EventFeedBuilder.Build(transactions, combatLogs, reports, standings, territory, serviceAgents, DateTime.UtcNow).ToList();
             ApplyEventFilter();
         }
         catch (Exception exception)

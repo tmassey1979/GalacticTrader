@@ -375,6 +375,7 @@
                                       Content="All" />
                         <ComboBoxItem Content="Trade" />
                         <ComboBoxItem Content="Market" />
+                        <ComboBoxItem Content="Reputation" />
                         <ComboBoxItem Content="Interception" />
                         <ComboBoxItem Content="Combat" />
                         <ComboBoxItem Content="Intel" />

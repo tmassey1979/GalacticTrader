@@ -8,6 +8,7 @@ public static class EventFeedBuilder
         IReadOnlyList<TradeExecutionResultApiDto> transactions,
         IReadOnlyList<CombatLogApiDto> combatLogs,
         IReadOnlyList<IntelligenceReportApiDto> intelligenceReports,
+        IReadOnlyList<PlayerFactionStandingApiDto> standings,
         IReadOnlyList<TerritoryDominanceApiDto> territoryDominance,
         IReadOnlyList<NpcAgentApiDto> serviceAgents,
         DateTime capturedAtUtc)
@@ -42,9 +43,11 @@ public static class EventFeedBuilder
         var serviceEvents = ServicesEventProjector.Build(serviceAgents, capturedAtUtc);
         var marketShockEvents = MarketShockEventProjector.Build(transactions, capturedAtUtc);
         var interceptionEvents = InterceptionEventProjector.Build(combatLogs);
+        var reputationEvents = ReputationChangeEventProjector.Build(standings, capturedAtUtc);
 
         return tradeEvents
             .Concat(marketShockEvents)
+            .Concat(reputationEvents)
             .Concat(interceptionEvents)
             .Concat(combatEvents)
             .Concat(intelEvents)
