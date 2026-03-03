@@ -183,23 +183,15 @@
                             <ComboBoxItem Content="Genderfluid" />
                             <ComboBoxItem Content="Agender" />
                             <ComboBoxItem Content="Intersex" />
-                            <ComboBoxItem Content="Other / self-describe" />
+                            <ComboBoxItem Content="Other" />
                         </ComboBox>
                     </StackPanel>
 
                     <StackPanel Grid.Row="3"
-                                Grid.Column="0"
-                                Margin="0,12,0,0">
-                        <TextBlock Text="Gender (custom)"
-                                   Style="{StaticResource LabelStyle}" />
-                        <TextBox x:Name="GenderCustomText"
-                                 Style="{StaticResource TextBoxStyle}" />
-                    </StackPanel>
-                    <StackPanel Grid.Row="3"
                                 Grid.Column="2"
                                 Margin="0,12,0,0">
                         <TextBlock Text="Pronouns"
-                                   Style="{StaticResource LabelStyle}" />
+                                  Style="{StaticResource LabelStyle}" />
                         <ComboBox x:Name="PronounsCombo"
                                   Style="{StaticResource ComboBoxStyle}"
                                   SelectedIndex="0">
@@ -213,20 +205,12 @@
                             <ComboBoxItem Content="ze/zir" />
                             <ComboBoxItem Content="any pronouns" />
                             <ComboBoxItem Content="use my name only" />
-                            <ComboBoxItem Content="Other / self-describe" />
+                            <ComboBoxItem Content="other" />
                         </ComboBox>
                     </StackPanel>
 
                     <StackPanel Grid.Row="4"
                                 Grid.Column="0"
-                                Margin="0,12,0,0">
-                        <TextBlock Text="Pronouns (custom)"
-                                   Style="{StaticResource LabelStyle}" />
-                        <TextBox x:Name="PronounsCustomText"
-                                 Style="{StaticResource TextBoxStyle}" />
-                    </StackPanel>
-                    <StackPanel Grid.Row="4"
-                                Grid.Column="2"
                                 Margin="0,12,0,0">
                         <TextBlock Text="Phone Number"
                                    Style="{StaticResource LabelStyle}" />

@@ -37,8 +37,8 @@ public partial class CreateUserWindow : Window
         var website = NormalizeOptional(WebsiteText.Text);
         var birthdateInput = NormalizeOptional(BirthdateText.Text);
         var birthdate = TryParseBirthdate(birthdateInput);
-        var gender = ResolveDropdownValue(GenderCombo, GenderCustomText);
-        var pronouns = ResolveDropdownValue(PronounsCombo, PronounsCustomText);
+        var gender = ResolveDropdownValue(GenderCombo);
+        var pronouns = ResolveDropdownValue(PronounsCombo);
 
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
@@ -58,15 +58,15 @@ public partial class CreateUserWindow : Window
             return;
         }
 
-        if (gender is null)
+        if (string.IsNullOrWhiteSpace(gender))
         {
-            SetStatus("Enter a custom gender value when 'Other / self-describe' is selected.", isError: true);
+            SetStatus("Select a gender value.", isError: true);
             return;
         }
 
-        if (pronouns is null)
+        if (string.IsNullOrWhiteSpace(pronouns))
         {
-            SetStatus("Enter custom pronouns when 'Other / self-describe' is selected.", isError: true);
+            SetStatus("Select a pronouns value.", isError: true);
             return;
         }
 
@@ -137,7 +137,7 @@ public partial class CreateUserWindow : Window
         return value.Trim();
     }
 
-    private static string? ResolveDropdownValue(ComboBox comboBox, TextBox customText)
+    private static string? ResolveDropdownValue(ComboBox comboBox)
     {
         var selected = (comboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
         if (string.IsNullOrWhiteSpace(selected))
@@ -145,12 +145,7 @@ public partial class CreateUserWindow : Window
             return null;
         }
 
-        if (!selected.Equals("Other / self-describe", StringComparison.Ordinal))
-        {
-            return selected;
-        }
-
-        return NormalizeOptional(customText.Text);
+        return selected;
     }
 
     private static DateOnly? TryParseBirthdate(string? value)
