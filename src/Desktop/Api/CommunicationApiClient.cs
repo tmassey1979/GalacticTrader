@@ -63,4 +63,78 @@ public sealed class CommunicationApiClient
 
         return await response.Content.ReadFromJsonAsync<CommunicationChannelMessageApiDto>(cancellationToken);
     }
+
+    public async Task<VoiceChannelApiDto> CreateVoiceChannelAsync(
+        CreateVoiceChannelApiRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync("/api/communication/voice/channels", request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Create voice channel failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<VoiceChannelApiDto>(cancellationToken);
+        return payload ?? throw new InvalidOperationException("Voice channel create response was empty.");
+    }
+
+    public async Task<VoiceChannelApiDto?> JoinVoiceChannelAsync(
+        Guid channelId,
+        JoinVoiceChannelApiRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"/api/communication/voice/channels/{channelId:D}/join", request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Join voice channel failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<VoiceChannelApiDto>(cancellationToken);
+    }
+
+    public async Task<bool> LeaveVoiceChannelAsync(
+        Guid channelId,
+        Guid playerId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsync($"/api/communication/voice/channels/{channelId:D}/leave/{playerId:D}", content: null, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Leave voice channel failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return true;
+    }
+
+    public async Task<VoiceQosSnapshotApiDto?> GetVoiceQosSnapshotAsync(
+        Guid channelId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync($"/api/communication/voice/channels/{channelId:D}/qos", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Load voice QoS failed ({(int)response.StatusCode}): {detail}");
+        }
+
+        return await response.Content.ReadFromJsonAsync<VoiceQosSnapshotApiDto>(cancellationToken);
+    }
 }

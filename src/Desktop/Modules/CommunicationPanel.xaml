@@ -7,6 +7,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0"
@@ -79,7 +80,108 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <DockPanel Grid.Row="2"
+        <Border Grid.Row="2"
+                Margin="0,8,0,0"
+                Padding="8"
+                Background="#0E203D"
+                BorderBrush="#2E4A75"
+                BorderThickness="1"
+                CornerRadius="6">
+            <StackPanel>
+                <TextBlock Foreground="#B9CBE8"
+                           FontWeight="SemiBold"
+                           Text="Voice Channel" />
+                <DockPanel Margin="0,6,0,0">
+                    <Button x:Name="RefreshVoiceQosButton"
+                            DockPanel.Dock="Right"
+                            Width="120"
+                            Height="28"
+                            Margin="8,0,0,0"
+                            Background="#2D3D57"
+                            BorderBrush="#4C607F"
+                            Foreground="#EAF2FF"
+                            Content="Refresh QoS"
+                            Click="OnRefreshVoiceQosClick" />
+                    <Button x:Name="LeaveVoiceButton"
+                            DockPanel.Dock="Right"
+                            Width="90"
+                            Height="28"
+                            Margin="8,0,0,0"
+                            Background="#B14545"
+                            BorderBrush="#D16D6D"
+                            Foreground="White"
+                            Content="Leave"
+                            Click="OnLeaveVoiceClick" />
+                    <Button x:Name="JoinVoiceButton"
+                            DockPanel.Dock="Right"
+                            Width="90"
+                            Height="28"
+                            Margin="8,0,0,0"
+                            Background="#1F6FEB"
+                            BorderBrush="#4A89F6"
+                            Foreground="White"
+                            Content="Join"
+                            Click="OnJoinVoiceClick" />
+                    <Button x:Name="CreateVoiceButton"
+                            DockPanel.Dock="Right"
+                            Width="90"
+                            Height="28"
+                            Margin="8,0,0,0"
+                            Background="#00A86B"
+                            BorderBrush="#20C284"
+                            Foreground="White"
+                            Content="Create"
+                            Click="OnCreateVoiceClick" />
+                    <TextBox x:Name="VoiceScopeKeyText"
+                             DockPanel.Dock="Right"
+                             Width="140"
+                             Height="28"
+                             Margin="8,0,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF"
+                             VerticalContentAlignment="Center"
+                             Text="desktop-feed" />
+                    <ComboBox x:Name="VoiceModeCombo"
+                              DockPanel.Dock="Right"
+                              Width="140"
+                              Height="28"
+                              Background="#101F39"
+                              BorderBrush="#2E4A75"
+                              Foreground="#EAF2FF">
+                        <ComboBoxItem IsSelected="True"
+                                      Content="Proximity" />
+                        <ComboBoxItem Content="Fleet" />
+                        <ComboBoxItem Content="EncryptedPrivate" />
+                    </ComboBox>
+                </DockPanel>
+                <TextBox x:Name="VoiceChannelIdText"
+                         Margin="0,6,0,0"
+                         Height="28"
+                         Background="#101F39"
+                         BorderBrush="#2E4A75"
+                         Foreground="#EAF2FF"
+                         VerticalContentAlignment="Center"
+                         ToolTip="Voice channel id for join/leave/qos" />
+                <TextBlock x:Name="VoiceChannelText"
+                           Margin="0,6,0,0"
+                           Foreground="#EAF2FF"
+                           FontFamily="Consolas"
+                           Text="Channel: -" />
+                <TextBlock x:Name="VoiceParticipantsText"
+                           Margin="0,2,0,0"
+                           Foreground="#C9D8F0"
+                           FontFamily="Consolas"
+                           Text="Participants: -" />
+                <TextBlock x:Name="VoiceQosText"
+                           Margin="0,2,0,0"
+                           Foreground="#B9CBE8"
+                           FontFamily="Consolas"
+                           Text="QoS: No QoS sample." />
+            </StackPanel>
+        </Border>
+
+        <DockPanel Grid.Row="3"
                    Margin="0,8,0,0">
             <Button x:Name="SendButton"
                     DockPanel.Dock="Right"

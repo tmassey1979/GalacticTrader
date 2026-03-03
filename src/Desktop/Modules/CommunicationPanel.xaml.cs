@@ -12,6 +12,7 @@ public partial class CommunicationPanel : UserControl
     private readonly DesktopSession _session;
     private readonly CommunicationApiClient _communicationApiClient;
     private readonly ObservableCollection<CommunicationMessageDisplayRow> _rows = [];
+    private Guid? _activeVoiceChannelId;
     private bool _hasLoaded;
 
     public CommunicationPanel(DesktopSession session, CommunicationApiClient communicationApiClient)
@@ -42,6 +43,26 @@ public partial class CommunicationPanel : UserControl
     private async void OnSendClick(object sender, RoutedEventArgs e)
     {
         await SendAsync();
+    }
+
+    private async void OnCreateVoiceClick(object sender, RoutedEventArgs e)
+    {
+        await CreateVoiceChannelAsync();
+    }
+
+    private async void OnJoinVoiceClick(object sender, RoutedEventArgs e)
+    {
+        await JoinVoiceChannelAsync();
+    }
+
+    private async void OnLeaveVoiceClick(object sender, RoutedEventArgs e)
+    {
+        await LeaveVoiceChannelAsync();
+    }
+
+    private async void OnRefreshVoiceQosClick(object sender, RoutedEventArgs e)
+    {
+        await RefreshVoiceQosAsync();
     }
 
     private async void OnMessageTextKeyDown(object sender, KeyEventArgs e)
@@ -130,6 +151,138 @@ public partial class CommunicationPanel : UserControl
         }
     }
 
+    private async Task CreateVoiceChannelAsync()
+    {
+        SetBusy(true);
+        try
+        {
+            var created = await _communicationApiClient.CreateVoiceChannelAsync(new CreateVoiceChannelApiRequest
+            {
+                CreatorPlayerId = _session.PlayerId,
+                Mode = ResolveVoiceModeCode(),
+                ScopeKey = ResolveVoiceScopeKey()
+            });
+
+            _activeVoiceChannelId = created.ChannelId;
+            VoiceChannelIdText.Text = created.ChannelId.ToString("D");
+            UpdateVoiceChannelFields(created, qos: null);
+            SetStatus($"Voice channel created: {created.ChannelId:D}", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private async Task JoinVoiceChannelAsync()
+    {
+        if (!TryResolveVoiceChannelId(out var channelId))
+        {
+            SetStatus("Enter a valid voice channel id to join.", isError: true);
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var joined = await _communicationApiClient.JoinVoiceChannelAsync(channelId, new JoinVoiceChannelApiRequest
+            {
+                PlayerId = _session.PlayerId
+            });
+
+            if (joined is null)
+            {
+                SetStatus("Voice channel not found.", isError: true);
+                return;
+            }
+
+            _activeVoiceChannelId = joined.ChannelId;
+            VoiceChannelIdText.Text = joined.ChannelId.ToString("D");
+            UpdateVoiceChannelFields(joined, qos: null);
+            SetStatus($"Joined voice channel {joined.ChannelId:D}.", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private async Task LeaveVoiceChannelAsync()
+    {
+        if (!TryResolveVoiceChannelId(out var channelId))
+        {
+            SetStatus("Enter a valid voice channel id to leave.", isError: true);
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var left = await _communicationApiClient.LeaveVoiceChannelAsync(channelId, _session.PlayerId);
+            if (!left)
+            {
+                SetStatus("Voice channel not found.", isError: true);
+                return;
+            }
+
+            _activeVoiceChannelId = null;
+            VoiceChannelText.Text = "Channel: -";
+            VoiceParticipantsText.Text = "Participants: -";
+            VoiceQosText.Text = "QoS: No QoS sample.";
+            SetStatus($"Left voice channel {channelId:D}.", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private async Task RefreshVoiceQosAsync()
+    {
+        if (!TryResolveVoiceChannelId(out var channelId))
+        {
+            SetStatus("Enter a valid voice channel id to fetch QoS.", isError: true);
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            var qos = await _communicationApiClient.GetVoiceQosSnapshotAsync(channelId);
+            if (qos is null)
+            {
+                SetStatus("Voice channel not found.", isError: true);
+                return;
+            }
+
+            _activeVoiceChannelId = channelId;
+            VoiceChannelText.Text = $"Channel: {channelId:D}";
+            VoiceParticipantsText.Text = $"Participants: {qos.ParticipantCount}";
+            VoiceQosText.Text = $"QoS: {VoiceQosSummaryFormatter.Build(qos)}";
+            SetStatus($"Voice QoS updated for {channelId:D}.", isError: false);
+        }
+        catch (Exception exception)
+        {
+            SetStatus(exception.Message, isError: true);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
     private string ResolveChannelType()
     {
         var selection = (ChannelTypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString();
@@ -149,6 +302,48 @@ public partial class CommunicationPanel : UserControl
         };
     }
 
+    private int ResolveVoiceModeCode()
+    {
+        var selection = (VoiceModeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        return selection switch
+        {
+            "Fleet" => 1,
+            "EncryptedPrivate" => 2,
+            _ => 0
+        };
+    }
+
+    private string ResolveVoiceScopeKey()
+    {
+        return string.IsNullOrWhiteSpace(VoiceScopeKeyText.Text)
+            ? "default"
+            : VoiceScopeKeyText.Text.Trim().ToLowerInvariant();
+    }
+
+    private bool TryResolveVoiceChannelId(out Guid channelId)
+    {
+        if (Guid.TryParse(VoiceChannelIdText.Text.Trim(), out channelId))
+        {
+            return true;
+        }
+
+        if (_activeVoiceChannelId.HasValue)
+        {
+            channelId = _activeVoiceChannelId.Value;
+            return true;
+        }
+
+        channelId = Guid.Empty;
+        return false;
+    }
+
+    private void UpdateVoiceChannelFields(VoiceChannelApiDto channel, VoiceQosSnapshotApiDto? qos)
+    {
+        VoiceChannelText.Text = $"Channel: {channel.ChannelId:D} | Mode {channel.Mode} | Scope {channel.ScopeKey}";
+        VoiceParticipantsText.Text = $"Participants: {channel.ParticipantCount}";
+        VoiceQosText.Text = $"QoS: {VoiceQosSummaryFormatter.Build(qos)}";
+    }
+
     private void SetBusy(bool isBusy)
     {
         RefreshButton.IsEnabled = !isBusy;
@@ -156,6 +351,13 @@ public partial class CommunicationPanel : UserControl
         ChannelTypeCombo.IsEnabled = !isBusy;
         ChannelKeyText.IsEnabled = !isBusy;
         MessageText.IsEnabled = !isBusy;
+        CreateVoiceButton.IsEnabled = !isBusy;
+        JoinVoiceButton.IsEnabled = !isBusy;
+        LeaveVoiceButton.IsEnabled = !isBusy;
+        RefreshVoiceQosButton.IsEnabled = !isBusy;
+        VoiceModeCombo.IsEnabled = !isBusy;
+        VoiceScopeKeyText.IsEnabled = !isBusy;
+        VoiceChannelIdText.IsEnabled = !isBusy;
     }
 
     private void SetStatus(string message, bool isError)
