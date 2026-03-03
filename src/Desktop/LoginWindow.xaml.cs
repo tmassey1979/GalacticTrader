@@ -19,6 +19,7 @@ public partial class LoginWindow : Window
         _apiBaseUrl = apiBaseUrl;
         InitializeComponent();
         ApiBaseUrlText.Text = $"API endpoint: {apiBaseUrl}";
+        SetStatus("Awaiting credentials.", isError: false);
     }
 
     public DesktopSession? Session { get; private set; }
@@ -60,8 +61,10 @@ public partial class LoginWindow : Window
         using var loginTimeoutCts = new CancellationTokenSource(LoginTimeout);
         try
         {
-            SetStatus("Authenticating with command services...", isError: false);
+            SetStatus("Signing in to command services...", isError: false);
             Session = await _authApiClient.LoginAsync(username, password, loginTimeoutCts.Token);
+            SetStatus("Login successful. Opening command interface...", isError: false);
+            await Task.Delay(250);
             DialogResult = true;
             Close();
         }
@@ -71,7 +74,7 @@ public partial class LoginWindow : Window
         }
         catch (Exception exception)
         {
-            SetStatus(exception.Message, isError: true);
+            SetStatus(BuildErrorMessage(exception), isError: true);
         }
         finally
         {
@@ -117,6 +120,8 @@ public partial class LoginWindow : Window
         LoginButton.IsEnabled = !isBusy;
         OpenCreateUserButton.IsEnabled = !isBusy;
         CancelButton.IsEnabled = !isBusy;
+        LoginProgressBar.Visibility = isBusy ? Visibility.Visible : Visibility.Collapsed;
+        LoginButton.Content = isBusy ? "Signing In..." : "Sign In";
         Mouse.OverrideCursor = isBusy ? Cursors.Wait : null;
     }
 
@@ -126,6 +131,17 @@ public partial class LoginWindow : Window
         StatusText.Foreground = isError
             ? new SolidColorBrush(Color.FromRgb(255, 145, 145))
             : new SolidColorBrush(Color.FromRgb(156, 231, 186));
+    }
+
+    private static string BuildErrorMessage(Exception exception)
+    {
+        var message = exception.Message?.Trim();
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            return $"Login failed: {message}";
+        }
+
+        return "Login failed due to an unexpected error. Check API and identity services, then try again.";
     }
 
     private static string Normalize(string value) => value.Trim();

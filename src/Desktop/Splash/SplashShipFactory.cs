@@ -169,7 +169,7 @@ public static class SplashShipFactory
     private static Transform3D CreateCommandShipTransform()
     {
         var transform = new Transform3DGroup();
-        transform.Children.Add(new ScaleTransform3D(0.125, 0.125, 0.125));
+        transform.Children.Add(new ScaleTransform3D(0.18, 0.18, 0.18));
         transform.Children.Add(new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(0, 1, 0), -88)));
         transform.Children.Add(new RotateTransform3D(new AxisAngleRotation3D(new Vector3D(1, 0, 0), -12)));
         return transform;
