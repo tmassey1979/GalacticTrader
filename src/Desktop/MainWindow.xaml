@@ -110,6 +110,13 @@
                                Foreground="#7FA3D8"
                                FontSize="12"
                                Text="Command / Dashboard" />
+                    <TextBlock x:Name="QuickActionsText"
+                               DockPanel.Dock="Top"
+                               Margin="0,0,0,12"
+                               Foreground="#9DB7E2"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Text="Quick Actions: Use module controls to inspect strategic data" />
 
                     <StackPanel DockPanel.Dock="Top"
                                 Orientation="Vertical"
