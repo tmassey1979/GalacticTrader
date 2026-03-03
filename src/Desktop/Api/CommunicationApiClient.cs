@@ -27,6 +27,16 @@ public sealed class CommunicationApiClient
         }
     }
 
+    public async Task UnsubscribeAsync(SubscribeChannelApiRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.PostAsJsonAsync("/api/communication/unsubscribe", request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"Unsubscribe failed ({(int)response.StatusCode}): {detail}");
+        }
+    }
+
     public async Task<IReadOnlyList<CommunicationChannelMessageApiDto>> GetRecentMessagesAsync(
         string channelType,
         string channelKey,

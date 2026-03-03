@@ -14,6 +14,8 @@ public partial class CommunicationPanel : UserControl
     private readonly ObservableCollection<CommunicationMessageDisplayRow> _rows = [];
     private readonly ObservableCollection<string> _voiceSignalLog = [];
     private readonly ObservableCollection<string> _spatialMixLog = [];
+    private int? _currentChannelTypeCode;
+    private string? _currentChannelKey;
     private Guid? _activeVoiceChannelId;
     private bool _hasLoaded;
 
@@ -26,6 +28,7 @@ public partial class CommunicationPanel : UserControl
         VoiceSignalLogList.ItemsSource = _voiceSignalLog;
         SpatialMixLogList.ItemsSource = _spatialMixLog;
         Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -37,6 +40,12 @@ public partial class CommunicationPanel : UserControl
 
         _hasLoaded = true;
         await RefreshAsync();
+    }
+
+    private async void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        await CleanupChannelSubscriptionAsync();
+        _hasLoaded = false;
     }
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
@@ -103,17 +112,44 @@ public partial class CommunicationPanel : UserControl
     private async Task RefreshAsync()
     {
         var channelType = ResolveChannelType();
+        var channelTypeCode = ResolveChannelTypeCode(channelType);
         var channelKey = CommunicationChannelKeyNormalizer.Normalize(ChannelKeyText.Text);
+        var transition = CommunicationSubscriptionPlanner.Plan(
+            _currentChannelTypeCode,
+            _currentChannelKey,
+            channelTypeCode,
+            channelKey);
 
         SetBusy(true);
         try
         {
-            await _communicationApiClient.SubscribeAsync(new SubscribeChannelApiRequest
+            if (transition.ShouldUnsubscribeCurrent &&
+                _currentChannelTypeCode.HasValue &&
+                !string.IsNullOrWhiteSpace(_currentChannelKey))
             {
-                PlayerId = _session.PlayerId,
-                ChannelType = ResolveChannelTypeCode(channelType),
-                ChannelKey = channelKey
-            });
+                await _communicationApiClient.UnsubscribeAsync(new SubscribeChannelApiRequest
+                {
+                    PlayerId = _session.PlayerId,
+                    ChannelType = _currentChannelTypeCode.Value,
+                    ChannelKey = _currentChannelKey
+                });
+
+                _currentChannelTypeCode = null;
+                _currentChannelKey = null;
+            }
+
+            if (transition.ShouldSubscribeNext)
+            {
+                await _communicationApiClient.SubscribeAsync(new SubscribeChannelApiRequest
+                {
+                    PlayerId = _session.PlayerId,
+                    ChannelType = channelTypeCode,
+                    ChannelKey = channelKey
+                });
+
+                _currentChannelTypeCode = channelTypeCode;
+                _currentChannelKey = channelKey;
+            }
 
             var messages = await _communicationApiClient.GetRecentMessagesAsync(
                 channelType: channelType,
@@ -136,6 +172,33 @@ public partial class CommunicationPanel : UserControl
         finally
         {
             SetBusy(false);
+        }
+    }
+
+    private async Task CleanupChannelSubscriptionAsync()
+    {
+        if (!_currentChannelTypeCode.HasValue || string.IsNullOrWhiteSpace(_currentChannelKey))
+        {
+            return;
+        }
+
+        try
+        {
+            await _communicationApiClient.UnsubscribeAsync(new SubscribeChannelApiRequest
+            {
+                PlayerId = _session.PlayerId,
+                ChannelType = _currentChannelTypeCode.Value,
+                ChannelKey = _currentChannelKey
+            });
+        }
+        catch
+        {
+            // Best-effort cleanup during panel teardown.
+        }
+        finally
+        {
+            _currentChannelTypeCode = null;
+            _currentChannelKey = null;
         }
     }
 
