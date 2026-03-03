@@ -1,5 +1,6 @@
 using GalacticTrader.Desktop.Api;
 using GalacticTrader.Desktop.Starmap;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -16,6 +17,7 @@ public partial class DashboardPanel : UserControl
     private readonly ReputationApiClient _reputationApiClient;
     private readonly StrategicApiClient _strategicApiClient;
     private readonly TelemetryApiClient _telemetryApiClient;
+    private readonly ObservableCollection<DashboardAssetAllocationSlice> _assetAllocationSlices = [];
     private bool _hasLoaded;
 
     public DashboardPanel(
@@ -38,6 +40,7 @@ public partial class DashboardPanel : UserControl
         _telemetryApiClient = telemetryApiClient;
 
         InitializeComponent();
+        AssetAllocationSlicesItems.ItemsSource = _assetAllocationSlices;
         Loaded += OnLoaded;
     }
 
@@ -89,6 +92,11 @@ public partial class DashboardPanel : UserControl
             CashFlowSparkline.Points = CashFlowSparklineBuilder.Build(summary.CashFlowTrend, width: 230, height: 34);
             AssetAllocationBar.Value = (double)summary.AssetLiquidityRatio;
             CashFlowBar.Value = (double)summary.CashFlowIndex;
+            _assetAllocationSlices.Clear();
+            foreach (var slice in DashboardAssetAllocationProjector.Build(summary.LiquidCredits, shipsTask.Result, maxSlices: 4))
+            {
+                _assetAllocationSlices.Add(slice);
+            }
             FleetValue.Text = $"Strength {summary.FleetStrength}";
             ShipCountValue.Text = $"Ships {summary.ShipCount}";
             RiskExposureValue.Text = $"Risk exposure {summary.FleetRiskExposure:N1}%";

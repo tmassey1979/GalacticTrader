@@ -85,6 +85,36 @@
                                  Value="0"
                                  Foreground="#1FD6B4"
                                  Background="#0A1630" />
+                    <TextBlock Margin="0,6,0,2"
+                               Foreground="#9DB7E2"
+                               Text="Asset Allocation" />
+                    <ItemsControl x:Name="AssetAllocationSlicesItems">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="20" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="62" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Foreground="#F2D06B"
+                                               FontFamily="Consolas"
+                                               Text="{Binding PieGlyph}" />
+                                    <TextBlock Grid.Column="1"
+                                               Foreground="#CFDDFC"
+                                               FontSize="11"
+                                               Text="{Binding Label}" />
+                                    <TextBlock Grid.Column="2"
+                                               HorizontalAlignment="Right"
+                                               Foreground="#9DB7E2"
+                                               FontFamily="Consolas"
+                                               FontSize="11"
+                                               Text="{Binding Percent, StringFormat={}{0:N1}%}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
 
