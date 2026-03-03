@@ -14,10 +14,14 @@ public static class BattleOutcomeProjector
         var reputationDelta = ResolveReputationDelta(normalized);
         var impactMultiplier = ResolveImpactMultiplier(normalized);
         var economicImpact = Math.Round(baseImpact * impactMultiplier, 2, MidpointRounding.AwayFromZero);
+        var environmentalModifier = ResolveEnvironmentalModifier(log);
+        var protectionModifier = ResolveProtectionModifier(log);
 
         return new BattleOutcomeProjection
         {
             ReputationDelta = reputationDelta,
+            EnvironmentalModifier = environmentalModifier,
+            ProtectionModifier = protectionModifier,
             EconomicImpactProjection = economicImpact,
             DamageReport = ResolveDamageReport(log)
         };
@@ -87,5 +91,20 @@ public static class BattleOutcomeProjector
         }
 
         return "Minor damage";
+    }
+
+    private static decimal ResolveEnvironmentalModifier(CombatLogApiDto log)
+    {
+        var volatility = ((log.TotalTicks * 1.2m) + (log.DurationSeconds / 10m)) / 100m;
+        var shifted = volatility - 0.10m;
+        return Math.Round(Math.Clamp(shifted, -0.15m, 0.35m), 3, MidpointRounding.AwayFromZero);
+    }
+
+    private static decimal ResolveProtectionModifier(CombatLogApiDto log)
+    {
+        var durabilitySignal = ((log.TotalTicks * 8m) + (log.DurationSeconds / 4m)) / 300m;
+        var insurancePenalty = log.InsurancePayout / 20_000m;
+        var modifier = (durabilitySignal * 0.25m) - insurancePenalty;
+        return Math.Round(Math.Clamp(modifier, -0.25m, 0.25m), 3, MidpointRounding.AwayFromZero);
     }
 }

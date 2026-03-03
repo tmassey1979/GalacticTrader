@@ -16,6 +16,8 @@ public static class BattleFeedBuilder
                     EndedAtUtc = log.BattleEndedAt.ToUniversalTime(),
                     Outcome = log.BattleOutcome,
                     ReputationDelta = projection.ReputationDelta,
+                    EnvironmentalModifier = projection.EnvironmentalModifier,
+                    ProtectionModifier = projection.ProtectionModifier,
                     EconomicImpactProjection = projection.EconomicImpactProjection,
                     DamageReport = projection.DamageReport,
                     DurationSeconds = log.DurationSeconds,

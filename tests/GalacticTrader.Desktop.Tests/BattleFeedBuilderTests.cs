@@ -40,6 +40,8 @@ public sealed class BattleFeedBuilderTests
         Assert.Equal("cccccccc", rows[0].Attacker);
         Assert.Equal("-", rows[0].Defender);
         Assert.Equal(-1, rows[0].ReputationDelta);
+        Assert.InRange(rows[0].EnvironmentalModifier, -0.15m, 0.35m);
+        Assert.InRange(rows[0].ProtectionModifier, -0.25m, 0.25m);
         Assert.True(rows[0].EconomicImpactProjection < 0m);
         Assert.Equal("Minor damage", rows[0].DamageReport);
     }

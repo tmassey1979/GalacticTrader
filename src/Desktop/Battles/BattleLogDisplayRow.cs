@@ -5,6 +5,8 @@ public sealed class BattleLogDisplayRow
     public DateTime EndedAtUtc { get; init; }
     public required string Outcome { get; init; }
     public int ReputationDelta { get; init; }
+    public decimal EnvironmentalModifier { get; init; }
+    public decimal ProtectionModifier { get; init; }
     public decimal EconomicImpactProjection { get; init; }
     public required string DamageReport { get; init; }
     public int DurationSeconds { get; init; }

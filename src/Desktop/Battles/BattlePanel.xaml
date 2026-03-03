@@ -45,6 +45,12 @@
                 <DataGridTextColumn Header="Rep Δ"
                                     Binding="{Binding ReputationDelta, StringFormat={}{0:+0;-0;0}}"
                                     Width="70" />
+                <DataGridTextColumn Header="Env Mod"
+                                    Binding="{Binding EnvironmentalModifier, StringFormat={}{0:+0.0%;-0.0%;0.0%}}"
+                                    Width="80" />
+                <DataGridTextColumn Header="Prot Mod"
+                                    Binding="{Binding ProtectionModifier, StringFormat={}{0:+0.0%;-0.0%;0.0%}}"
+                                    Width="80" />
                 <DataGridTextColumn Header="Eco Impact"
                                     Binding="{Binding EconomicImpactProjection, StringFormat={}{0:N2}}"
                                     Width="92" />
