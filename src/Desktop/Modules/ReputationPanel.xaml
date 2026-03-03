@@ -74,7 +74,7 @@
                                FontWeight="SemiBold"
                                Text="Benefits" />
                     <ListBox x:Name="BenefitsList"
-                             Height="64"
+                             Height="54"
                              Margin="0,4,0,8"
                              Background="#101F39"
                              BorderBrush="#2E4A75"
@@ -82,9 +82,35 @@
 
                     <TextBlock Foreground="#B9CBE8"
                                FontWeight="SemiBold"
+                               Text="Sanctions / Bonuses" />
+                    <DataGrid x:Name="SanctionsBonusesGrid"
+                              Height="84"
+                              Margin="0,4,0,8"
+                              Background="#101F39"
+                              BorderBrush="#2E4A75"
+                              Foreground="#EAF2FF"
+                              AutoGenerateColumns="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Faction"
+                                                Binding="{Binding FactionId}"
+                                                Width="70" />
+                            <DataGridTextColumn Header="Bonus"
+                                                Binding="{Binding Bonus}"
+                                                Width="*" />
+                            <DataGridTextColumn Header="Sanction"
+                                                Binding="{Binding Sanction}"
+                                                Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
                                Text="Top Reputation Leaderboard" />
                     <ListBox x:Name="TopReputationList"
-                             Height="84"
+                             Height="70"
                              Margin="0,4,0,8"
                              Background="#101F39"
                              BorderBrush="#2E4A75"
@@ -94,7 +120,7 @@
                                FontWeight="SemiBold"
                                Text="Influence Zones" />
                     <ListBox x:Name="InfluenceZonesList"
-                             Height="72"
+                             Height="62"
                              Margin="0,4,0,8"
                              Background="#101F39"
                              BorderBrush="#2E4A75"

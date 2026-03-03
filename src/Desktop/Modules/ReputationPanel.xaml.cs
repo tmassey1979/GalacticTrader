@@ -12,6 +12,7 @@ public partial class ReputationPanel : UserControl
     private readonly ReputationApiClient _reputationApiClient;
     private readonly LeaderboardApiClient _leaderboardApiClient;
     private readonly ObservableCollection<ReputationStandingDisplayRow> _rows = [];
+    private readonly ObservableCollection<ReputationSanctionBonusDisplayRow> _sanctionBonusRows = [];
     private readonly ObservableCollection<string> _benefits = [];
     private readonly ObservableCollection<string> _topReputation = [];
     private readonly ObservableCollection<string> _influenceZones = [];
@@ -27,6 +28,7 @@ public partial class ReputationPanel : UserControl
         _leaderboardApiClient = leaderboardApiClient;
         InitializeComponent();
         ReputationGrid.ItemsSource = _rows;
+        SanctionsBonusesGrid.ItemsSource = _sanctionBonusRows;
         BenefitsList.ItemsSource = _benefits;
         TopReputationList.ItemsSource = _topReputation;
         InfluenceZonesList.ItemsSource = _influenceZones;
@@ -127,6 +129,12 @@ public partial class ReputationPanel : UserControl
                     ? $"{benefit.FactionName} [{benefit.Tier}]"
                     : $"{benefit.FactionName} [{benefit.Tier}] - {string.Join(", ", benefit.Benefits)}";
                 _benefits.Add(summary);
+            }
+
+            _sanctionBonusRows.Clear();
+            foreach (var row in ReputationSanctionBonusProjector.Build(standings))
+            {
+                _sanctionBonusRows.Add(row);
             }
 
             _topReputation.Clear();
