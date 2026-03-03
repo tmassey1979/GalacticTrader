@@ -1,6 +1,7 @@
 using GalacticTrader.API.Telemetry;
 using GalacticTrader.API.Swagger;
 using GalacticTrader.API.Secrets;
+using GalacticTrader.API.Contracts;
 using GalacticTrader.Data;
 using GalacticTrader.Data.Repositories.Navigation;
 using GalacticTrader.Services.Caching;
@@ -1535,24 +1536,5 @@ communication.Map("/ws/{channelType}/{channelKey}", async (
 });
 
 app.Run();
-
-public sealed record CreateSectorRequest(string Name, float X, float Y, float Z);
-public sealed record UpdateSectorRequest(int? SecurityLevel, int? HazardRating, Guid? FactionId);
-public sealed record CreateRouteRequest(Guid FromSectorId, Guid ToSectorId, string LegalStatus, string WarpGateType);
-public sealed record UpdateRouteRequest(string? LegalStatus, float? BaseRiskScore);
-public sealed record RegisterPlayerApiRequest(string Username, string Email, string Password);
-public sealed record LoginPlayerApiRequest(string Username, string Password);
-public sealed record UpsertSectorVolatilityApiRequest(Guid SectorId, string CurrentPhase, float VolatilityIndex, DateTime? NextTransitionAt);
-public sealed record DeclareCorporateWarApiRequest(Guid AttackerFactionId, Guid DefenderFactionId, string CasusBelli, int Intensity);
-public sealed record UpsertInfrastructureOwnershipApiRequest(Guid SectorId, Guid FactionId, string InfrastructureType, float ControlScore);
-public sealed record UpsertInsurancePolicyApiRequest(Guid PlayerId, Guid ShipId, float CoverageRate, decimal PremiumPerCycle, string RiskTier, bool IsActive);
-public sealed record FileInsuranceClaimApiRequest(Guid PolicyId, Guid? CombatLogId, decimal ClaimAmount);
-public sealed record CreateIntelligenceNetworkApiRequest(Guid OwnerPlayerId, string Name, int AssetCount, float CoverageScore);
-public sealed record PublishIntelligenceReportApiRequest(Guid NetworkId, Guid SectorId, string SignalType, float ConfidenceScore, string Payload, int TtlMinutes);
-public sealed record UpdateTaxRateRequest(decimal TaxRatePercent);
-public sealed record UpdatePirateIntensityRequest(int IntensityPercent);
-public sealed record LiquidityAdjustmentRequest(decimal DeltaPercent, string? Reason);
-public sealed record SectorInstabilityRequest(Guid SectorId, string? Reason);
-public sealed record EconomicCorrectionRequest(decimal AdjustmentPercent, string? Reason);
 
 public partial class Program;
