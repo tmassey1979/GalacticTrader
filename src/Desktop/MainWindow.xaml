@@ -104,6 +104,12 @@
                                Text="Desktop command interface with tactical 3D starmap"
                                Foreground="#A4B8DD"
                                TextWrapping="Wrap" />
+                    <TextBlock x:Name="BreadcrumbText"
+                               DockPanel.Dock="Top"
+                               Margin="0,0,0,12"
+                               Foreground="#7FA3D8"
+                               FontSize="12"
+                               Text="Command / Dashboard" />
 
                     <StackPanel DockPanel.Dock="Top"
                                 Orientation="Vertical"
@@ -165,11 +171,13 @@
                              BorderBrush="#2F4B78"
                              Foreground="#DCE7FF" />
 
-                    <TabControl DockPanel.Dock="Bottom"
+                    <TabControl x:Name="ModuleTabs"
+                                DockPanel.Dock="Bottom"
                                 Margin="0,16,0,0"
                                 Height="190"
                                 Background="#0D1A33"
-                                BorderBrush="#2F4B78">
+                                BorderBrush="#2F4B78"
+                                SelectionChanged="OnModuleTabSelectionChanged">
                         <TabItem Header="Dashboard">
                             <ContentControl x:Name="DashboardHost"
                                             Margin="12" />

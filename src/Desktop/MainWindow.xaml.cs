@@ -4,6 +4,7 @@ using GalacticTrader.Desktop.Dashboard;
 using GalacticTrader.Desktop.Fleet;
 using GalacticTrader.Desktop.Intel;
 using GalacticTrader.Desktop.Modules;
+using GalacticTrader.Desktop.Navigation;
 using GalacticTrader.Desktop.Realtime;
 using GalacticTrader.Desktop.Routes;
 using GalacticTrader.Desktop.Settings;
@@ -72,6 +73,7 @@ public partial class MainWindow : Window
         _hotkeyBindings = DesktopHotkeyBindings.FromPreferences(new DesktopPreferencesStore().Load());
 
         InitializeComponent();
+        UpdateBreadcrumb();
         BuildStarmap(_scene);
         DashboardHost.Content = new DashboardPanel(
             _session,
@@ -199,6 +201,16 @@ public partial class MainWindow : Window
 
         _cameraController.FocusOnRoute(selected);
         ApplyCamera(updateSliders: true);
+    }
+
+    private void OnModuleTabSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.Source != ModuleTabs)
+        {
+            return;
+        }
+
+        UpdateBreadcrumb();
     }
 
     private async void OnMainWindowLoaded(object sender, RoutedEventArgs e)
@@ -433,5 +445,11 @@ public partial class MainWindow : Window
     {
         RefreshDashboardButton.IsEnabled = !isBusy;
         RefreshEventFeedButton.IsEnabled = !isBusy;
+    }
+
+    private void UpdateBreadcrumb()
+    {
+        var selectedModule = (ModuleTabs.SelectedItem as TabItem)?.Header?.ToString();
+        BreadcrumbText.Text = ModuleBreadcrumbBuilder.Build(selectedModule);
     }
 }
