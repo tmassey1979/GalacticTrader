@@ -6,6 +6,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="110" />
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0"
@@ -14,6 +15,16 @@
                        VerticalAlignment="Center"
                        Foreground="#9DB7E2"
                        Text="Loading analytics..." />
+            <Button x:Name="ExportButton"
+                    DockPanel.Dock="Right"
+                    Width="120"
+                    Height="28"
+                    Margin="6,0,0,0"
+                    Background="#00A86B"
+                    BorderBrush="#20C284"
+                    Foreground="White"
+                    Content="Export CSV"
+                    Click="OnExportClick" />
             <Button x:Name="RefreshButton"
                     DockPanel.Dock="Right"
                     Width="120"
@@ -94,5 +105,36 @@
                 </StackPanel>
             </Border>
         </UniformGrid>
+
+        <Border Grid.Row="2"
+                Padding="8"
+                Margin="0,6,0,0"
+                Background="#0E203D"
+                BorderBrush="#2E4A75"
+                BorderThickness="1"
+                CornerRadius="6">
+            <StackPanel>
+                <TextBlock Foreground="#B9CBE8"
+                           Margin="0,0,0,4"
+                           Text="Revenue Trend (latest trades)" />
+                <ItemsControl x:Name="TrendBars"
+                              Height="76">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid VerticalAlignment="Bottom">
+                                <Rectangle Fill="#55A9F5"
+                                           VerticalAlignment="Bottom"
+                                           Height="{Binding Height}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>
