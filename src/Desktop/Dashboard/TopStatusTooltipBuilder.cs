@@ -2,7 +2,7 @@ namespace GalacticTrader.Desktop.Dashboard;
 
 public static class TopStatusTooltipBuilder
 {
-    private static readonly char[] SparklinePalette = ['.', ':', '-', '=', '+', '*', '#'];
+    private static readonly char[] SparklinePalette = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
 
     public static string BuildNumeric(string label, IReadOnlyList<decimal> samples, string format)
     {
@@ -13,6 +13,8 @@ public static class TopStatusTooltipBuilder
 
         var current = samples[^1];
         var delta = current - samples[0];
+        var minimum = samples.Min();
+        var maximum = samples.Max();
         var direction = delta switch
         {
             > 0m => "up",
@@ -20,7 +22,7 @@ public static class TopStatusTooltipBuilder
             _ => "flat"
         };
 
-        return $"{label}\nCurrent: {current.ToString(format)}\nTrend ({samples.Count} samples): {direction} ({delta:+0.##;-0.##;0})\nSeries: {BuildSparkline(samples)}";
+        return $"{label}\nCurrent: {current.ToString(format)}\nTrend ({samples.Count} samples): {direction} ({delta:+0.##;-0.##;0})\nMin/Max: {minimum.ToString(format)} / {maximum.ToString(format)}\nGraph: {BuildSparkline(samples)}";
     }
 
     public static string BuildLabelTrend(string label, IReadOnlyList<string> samples)
@@ -52,14 +54,14 @@ public static class TopStatusTooltipBuilder
 
         if (samples.Count == 1)
         {
-            return ".";
+            return "▁";
         }
 
         var min = samples.Min();
         var max = samples.Max();
         if (min == max)
         {
-            return new string('=', samples.Count);
+            return new string('▄', samples.Count);
         }
 
         var span = max - min;

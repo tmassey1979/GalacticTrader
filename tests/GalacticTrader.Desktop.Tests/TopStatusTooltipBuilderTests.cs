@@ -15,7 +15,9 @@ public sealed class TopStatusTooltipBuilderTests
         Assert.Contains("Liquid Credits", tooltip, StringComparison.Ordinal);
         Assert.Contains("Current: 190", tooltip, StringComparison.Ordinal);
         Assert.Contains("Trend (4 samples): up (+90)", tooltip, StringComparison.Ordinal);
-        Assert.Contains("Series:", tooltip, StringComparison.Ordinal);
+        Assert.Contains("Min/Max: 100 / 190", tooltip, StringComparison.Ordinal);
+        Assert.Contains("Graph:", tooltip, StringComparison.Ordinal);
+        Assert.DoesNotContain("Series:", tooltip, StringComparison.Ordinal);
     }
 
     [Fact]
