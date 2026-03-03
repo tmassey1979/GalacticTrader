@@ -42,6 +42,12 @@
                 <DataGridTextColumn Header="Outcome"
                                     Binding="{Binding Outcome}"
                                     Width="95" />
+                <DataGridTextColumn Header="Atk Rt"
+                                    Binding="{Binding AttackerRating}"
+                                    Width="65" />
+                <DataGridTextColumn Header="Def Rt"
+                                    Binding="{Binding DefenderRating}"
+                                    Width="65" />
                 <DataGridTextColumn Header="Rep Δ"
                                     Binding="{Binding ReputationDelta, StringFormat={}{0:+0;-0;0}}"
                                     Width="70" />

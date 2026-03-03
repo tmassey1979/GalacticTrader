@@ -39,6 +39,7 @@ public sealed class BattleFeedBuilderTests
         Assert.Equal("Retreat", rows[0].Outcome);
         Assert.Equal("cccccccc", rows[0].Attacker);
         Assert.Equal("-", rows[0].Defender);
+        Assert.True(rows[0].AttackerRating < rows[0].DefenderRating);
         Assert.Equal(-1, rows[0].ReputationDelta);
         Assert.True(rows[0].ResourceChange < 0m);
         Assert.InRange(rows[0].EnvironmentalModifier, -0.15m, 0.35m);

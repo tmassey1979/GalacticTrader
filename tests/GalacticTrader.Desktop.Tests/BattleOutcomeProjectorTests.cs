@@ -17,6 +17,7 @@ public sealed class BattleOutcomeProjectorTests
         });
 
         Assert.Equal(2, projection.ReputationDelta);
+        Assert.True(projection.AttackerRating > projection.DefenderRating);
         Assert.True(projection.ResourceChange > 0m);
         Assert.InRange(projection.EnvironmentalModifier, -0.15m, 0.35m);
         Assert.InRange(projection.ProtectionModifier, -0.25m, 0.25m);
@@ -36,6 +37,7 @@ public sealed class BattleOutcomeProjectorTests
         });
 
         Assert.Equal(-2, projection.ReputationDelta);
+        Assert.True(projection.AttackerRating < projection.DefenderRating);
         Assert.True(projection.ResourceChange < 0m);
         Assert.InRange(projection.EnvironmentalModifier, -0.15m, 0.35m);
         Assert.InRange(projection.ProtectionModifier, -0.25m, 0.25m);

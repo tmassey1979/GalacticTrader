@@ -9,6 +9,7 @@ public static class BattleOutcomeProjector
         var outcome = log.BattleOutcome ?? string.Empty;
         var canonicalOutcome = outcome.Trim();
         var normalized = canonicalOutcome.ToLowerInvariant();
+        var ratings = ResolveRatings(log, normalized);
 
         var baseImpact = log.InsurancePayout + (log.DurationSeconds * 12m) + (log.TotalTicks * 65m);
         var reputationDelta = ResolveReputationDelta(normalized);
@@ -20,6 +21,8 @@ public static class BattleOutcomeProjector
 
         return new BattleOutcomeProjection
         {
+            AttackerRating = ratings.AttackerRating,
+            DefenderRating = ratings.DefenderRating,
             ReputationDelta = reputationDelta,
             ResourceChange = resourceChange,
             EnvironmentalModifier = environmentalModifier,
@@ -116,5 +119,38 @@ public static class BattleOutcomeProjector
         var insuranceOffset = log.InsurancePayout * 0.12m;
         var signed = (baseline + insuranceOffset) * impactMultiplier;
         return Math.Round(signed, 2, MidpointRounding.AwayFromZero);
+    }
+
+    private static (int AttackerRating, int DefenderRating) ResolveRatings(CombatLogApiDto log, string normalizedOutcome)
+    {
+        var baseline = 100 + (log.TotalTicks * 4) + (log.DurationSeconds / 3);
+        var attacker = baseline;
+        var defender = baseline;
+
+        if (normalizedOutcome.Contains("victory", StringComparison.Ordinal) ||
+            normalizedOutcome.Contains("win", StringComparison.Ordinal))
+        {
+            attacker += 15;
+            defender -= 10;
+        }
+        else if (normalizedOutcome.Contains("defeat", StringComparison.Ordinal) ||
+                 normalizedOutcome.Contains("loss", StringComparison.Ordinal))
+        {
+            attacker -= 10;
+            defender += 15;
+        }
+        else if (normalizedOutcome.Contains("retreat", StringComparison.Ordinal))
+        {
+            attacker -= 5;
+            defender += 5;
+        }
+
+        var insurancePenalty = (int)Math.Round(log.InsurancePayout / 150m, MidpointRounding.AwayFromZero);
+        attacker -= insurancePenalty;
+        defender -= insurancePenalty / 2;
+
+        attacker = Math.Clamp(attacker, 0, 500);
+        defender = Math.Clamp(defender, 0, 500);
+        return (attacker, defender);
     }
 }
