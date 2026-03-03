@@ -60,8 +60,9 @@ public sealed class AuthService : IAuthService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var normalizedUsername = Normalize(request.Username);
-        if (!_usersByUsername.TryGetValue(normalizedUsername, out var account))
+        var normalizedIdentifier = Normalize(request.Username);
+        if (!_usersByUsername.TryGetValue(normalizedIdentifier, out var account) &&
+            !_usersByEmail.TryGetValue(normalizedIdentifier, out account))
         {
             return Task.FromResult<LoginResult?>(null);
         }

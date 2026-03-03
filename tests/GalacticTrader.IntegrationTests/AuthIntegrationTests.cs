@@ -102,6 +102,30 @@ public sealed class AuthIntegrationTests : IClassFixture<ApiWebApplicationFactor
     }
 
     [Fact]
+    public async Task Login_WithEmailIdentifier_ReturnsOk()
+    {
+        var username = $"email_login_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"{username}@gt.test";
+        await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            username,
+            email,
+            password = "WarpDrive123"
+        });
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            username = email,
+            password = "WarpDrive123"
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var loginPayload = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        Assert.NotNull(loginPayload);
+        Assert.False(string.IsNullOrWhiteSpace(loginPayload!.AccessToken));
+    }
+
+    [Fact]
     public async Task BootstrapAdminPlayer_IsSeededWithRolesAndStarterResources()
     {
         var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new
