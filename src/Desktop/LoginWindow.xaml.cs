@@ -7,6 +7,8 @@ namespace GalacticTrader.Desktop;
 
 public partial class LoginWindow : Window
 {
+    private static readonly TimeSpan LoginTimeout = TimeSpan.FromSeconds(15);
+
     private readonly AuthApiClient _authApiClient;
     private readonly string _apiBaseUrl;
 
@@ -32,11 +34,17 @@ public partial class LoginWindow : Window
         }
 
         SetBusy(true);
+        using var loginTimeoutCts = new CancellationTokenSource(LoginTimeout);
         try
         {
-            Session = await _authApiClient.LoginAsync(username, password);
+            SetStatus("Authenticating with command services...", isError: false);
+            Session = await _authApiClient.LoginAsync(username, password, loginTimeoutCts.Token);
             DialogResult = true;
             Close();
+        }
+        catch (OperationCanceledException) when (loginTimeoutCts.IsCancellationRequested)
+        {
+            SetStatus("Login timed out after 15 seconds. Verify API availability and try again.", isError: true);
         }
         catch (Exception exception)
         {
