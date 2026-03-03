@@ -172,35 +172,163 @@
             </DockPanel>
         </Border>
 
-        <DataGrid Grid.Row="2"
-                  x:Name="TransactionsGrid"
-                  Background="#0C152A"
-                  BorderBrush="#2F4B78"
-                  Foreground="#DCE7FF"
-                  HeadersVisibility="Column"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  CanUserAddRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Action"
-                                    Binding="{Binding Action}"
-                                    Width="90" />
-                <DataGridTextColumn Header="Qty"
-                                    Binding="{Binding Quantity}"
-                                    Width="70" />
-                <DataGridTextColumn Header="Unit"
-                                    Binding="{Binding UnitPrice, StringFormat={}{0:N2}}"
-                                    Width="110" />
-                <DataGridTextColumn Header="Tariff"
-                                    Binding="{Binding TariffAmount, StringFormat={}{0:N2}}"
-                                    Width="100" />
-                <DataGridTextColumn Header="Total"
-                                    Binding="{Binding TotalPrice, StringFormat={}{0:N2}}"
-                                    Width="120" />
-                <DataGridTextColumn Header="Status"
-                                    Binding="{Binding Status}"
-                                    Width="*" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="340" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid Grid.Column="0"
+                      x:Name="TransactionsGrid"
+                      Background="#0C152A"
+                      BorderBrush="#2F4B78"
+                      Foreground="#DCE7FF"
+                      HeadersVisibility="Column"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Action"
+                                        Binding="{Binding Action}"
+                                        Width="90" />
+                    <DataGridTextColumn Header="Qty"
+                                        Binding="{Binding Quantity}"
+                                        Width="70" />
+                    <DataGridTextColumn Header="Unit"
+                                        Binding="{Binding UnitPrice, StringFormat={}{0:N2}}"
+                                        Width="110" />
+                    <DataGridTextColumn Header="Tariff"
+                                        Binding="{Binding TariffAmount, StringFormat={}{0:N2}}"
+                                        Width="100" />
+                    <DataGridTextColumn Header="Total"
+                                        Binding="{Binding TotalPrice, StringFormat={}{0:N2}}"
+                                        Width="120" />
+                    <DataGridTextColumn Header="Status"
+                                        Binding="{Binding Status}"
+                                        Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="10" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="10" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0"
+                        Background="#0E203D"
+                        BorderBrush="#2E4A75"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Foreground="#B9CBE8"
+                                   FontWeight="SemiBold"
+                                   Text="Market Heatmap" />
+                        <DataGrid Grid.Row="1"
+                                  x:Name="HeatmapGrid"
+                                  Margin="0,8,0,0"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  IsReadOnly="True"
+                                  Background="#08182F"
+                                  BorderBrush="#2E4A75"
+                                  Foreground="#EAF2FF"
+                                  HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Sector"
+                                                    Binding="{Binding SectorName}"
+                                                    Width="*" />
+                                <DataGridTextColumn Header="Volume"
+                                                    Binding="{Binding TradeVolume, StringFormat=N2}"
+                                                    Width="100" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="2"
+                        Background="#0E203D"
+                        BorderBrush="#2E4A75"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="8">
+                    <StackPanel>
+                        <TextBlock Foreground="#B9CBE8"
+                                   FontWeight="SemiBold"
+                                   Text="Supply / Demand Curve" />
+                        <TextBlock x:Name="SupplyDemandSummaryText"
+                                   Margin="0,6,0,0"
+                                   Foreground="#EAF2FF"
+                                   FontFamily="Consolas"
+                                   Text="Demand -- | Supply --" />
+                        <ItemsControl x:Name="SupplyDemandBars"
+                                      Margin="0,8,0,0"
+                                      Height="60">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid VerticalAlignment="Bottom">
+                                        <Rectangle VerticalAlignment="Bottom"
+                                                   Height="{Binding Height}"
+                                                   Fill="{Binding BrushHex}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="4"
+                        Background="#0E203D"
+                        BorderBrush="#2E4A75"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Foreground="#B9CBE8"
+                                   FontWeight="SemiBold"
+                                   Text="NPC Competitor Presence" />
+                        <DataGrid Grid.Row="1"
+                                  x:Name="CompetitorsGrid"
+                                  Margin="0,8,0,0"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  IsReadOnly="True"
+                                  Background="#08182F"
+                                  BorderBrush="#2E4A75"
+                                  Foreground="#EAF2FF"
+                                  HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Agent"
+                                                    Binding="{Binding Name}"
+                                                    Width="*" />
+                                <DataGridTextColumn Header="Presence"
+                                                    Binding="{Binding PresenceScore, StringFormat={}{0:N1}}"
+                                                    Width="84" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
     </Grid>
 </UserControl>

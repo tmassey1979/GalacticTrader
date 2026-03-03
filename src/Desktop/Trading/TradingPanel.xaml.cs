@@ -12,7 +12,11 @@ public partial class TradingPanel : UserControl
     private readonly DesktopSession _session;
     private readonly EconomyApiClient _economyApiClient;
     private readonly MarketApiClient _marketApiClient;
+    private readonly MarketIntelligenceApiClient _marketIntelligenceApiClient;
+    private readonly NpcApiClient _npcApiClient;
     private readonly ObservableCollection<TradeTransactionDisplayRow> _tradeRows = [];
+    private readonly ObservableCollection<TradeHeatmapDisplayRow> _heatmapRows = [];
+    private readonly ObservableCollection<NpcCompetitorDisplayRow> _competitorRows = [];
     private readonly List<TradeExecutionResultApiDto> _recentTransactions = [];
     private bool _isSyncingQuantity;
     private bool _hasLoaded;
@@ -20,14 +24,20 @@ public partial class TradingPanel : UserControl
     public TradingPanel(
         DesktopSession session,
         EconomyApiClient economyApiClient,
-        MarketApiClient marketApiClient)
+        MarketApiClient marketApiClient,
+        MarketIntelligenceApiClient marketIntelligenceApiClient,
+        NpcApiClient npcApiClient)
     {
         _session = session;
         _economyApiClient = economyApiClient;
         _marketApiClient = marketApiClient;
+        _marketIntelligenceApiClient = marketIntelligenceApiClient;
+        _npcApiClient = npcApiClient;
 
         InitializeComponent();
         TransactionsGrid.ItemsSource = _tradeRows;
+        HeatmapGrid.ItemsSource = _heatmapRows;
+        CompetitorsGrid.ItemsSource = _competitorRows;
         Loaded += OnLoaded;
     }
 
@@ -87,6 +97,9 @@ public partial class TradingPanel : UserControl
         try
         {
             var transactions = await _marketApiClient.GetTransactionsAsync(_session.PlayerId, limit: 40);
+            var marketSummaryTask = _marketIntelligenceApiClient.GetSummaryAsync(limit: 6);
+            var npcAgentsTask = _npcApiClient.GetAgentsAsync();
+            await Task.WhenAll(marketSummaryTask, npcAgentsTask);
             _recentTransactions.Clear();
             _recentTransactions.AddRange(transactions);
 
@@ -108,6 +121,19 @@ public partial class TradingPanel : UserControl
                     Status = transaction.Status
                 });
             }
+
+            var marketSummary = marketSummaryTask.Result;
+            var heatmapRows = TradeHeatmapProjector.Build(marketSummary, maxRows: 6);
+            ReplaceRows(_heatmapRows, heatmapRows);
+
+            var curveSnapshot = TradeSupplyDemandCurveBuilder.Build(transactions, maxPoints: 12);
+            SupplyDemandSummaryText.Text =
+                $"Demand {curveSnapshot.DemandUnits:N0} ({curveSnapshot.DemandRatio:P0}) | " +
+                $"Supply {curveSnapshot.SupplyUnits:N0} ({curveSnapshot.SupplyRatio:P0})";
+            SupplyDemandBars.ItemsSource = curveSnapshot.Points;
+
+            var competitorRows = NpcCompetitorPresenceProjector.Build(npcAgentsTask.Result, maxRows: 6);
+            ReplaceRows(_competitorRows, competitorRows);
 
             SetStatus($"Loaded {_tradeRows.Count} recent trades for fee baseline.", isError: false);
         }
@@ -222,5 +248,14 @@ public partial class TradingPanel : UserControl
         StatusText.Foreground = isError
             ? new SolidColorBrush(Color.FromRgb(255, 147, 147))
             : new SolidColorBrush(Color.FromRgb(157, 183, 226));
+    }
+
+    private static void ReplaceRows<TRow>(ObservableCollection<TRow> target, IReadOnlyList<TRow> source)
+    {
+        target.Clear();
+        foreach (var row in source)
+        {
+            target.Add(row);
+        }
     }
 }

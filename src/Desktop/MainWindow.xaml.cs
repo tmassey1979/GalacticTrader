@@ -84,7 +84,12 @@ public partial class MainWindow : Window
             _reputationApiClient,
             _strategicApiClient,
             telemetryApiClient);
-        TradingHost.Content = new TradingPanel(_session, economyApiClient, _marketApiClient);
+        TradingHost.Content = new TradingPanel(
+            _session,
+            economyApiClient,
+            _marketApiClient,
+            marketIntelligenceApiClient,
+            _npcApiClient);
         RoutesHost.Content = new RoutePlanningPanel(_navigationApiClient);
         BattlesHost.Content = new BattlePanel(_combatApiClient);
         FleetHost.Content = new FleetPanel(_session, fleetApiClient);
