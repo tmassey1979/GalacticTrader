@@ -97,4 +97,27 @@ public sealed class EventFeedBuilderTests
         Assert.DoesNotContain(events, static entry => entry.Title.Contains("OldSignal", StringComparison.Ordinal));
         Assert.DoesNotContain(events, static entry => entry.Title.Contains("Stable League", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void Build_IncludesMarketShockEvents_WhenTradeVolatilityIsHigh()
+    {
+        var capturedAt = new DateTime(2026, 3, 2, 20, 0, 0, DateTimeKind.Utc);
+        var listingId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var transactions = new[]
+        {
+            new TradeExecutionResultApiDto { MarketListingId = listingId, ActionType = 0, Quantity = 1, TariffAmount = 1m, TotalPrice = 10m, Status = "filled", UnitPrice = 8m },
+            new TradeExecutionResultApiDto { MarketListingId = listingId, ActionType = 1, Quantity = 1, TariffAmount = 1m, TotalPrice = 10m, Status = "filled", UnitPrice = 14m },
+            new TradeExecutionResultApiDto { MarketListingId = listingId, ActionType = 1, Quantity = 1, TariffAmount = 1m, TotalPrice = 10m, Status = "filled", UnitPrice = 11m }
+        };
+
+        var events = EventFeedBuilder.Build(
+            transactions,
+            [],
+            [],
+            [],
+            [],
+            capturedAt);
+
+        Assert.Contains(events, static entry => entry.Category == "Market");
+    }
 }

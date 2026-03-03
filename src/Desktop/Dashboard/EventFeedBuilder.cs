@@ -40,8 +40,10 @@ public static class EventFeedBuilder
 
         var territoryEvents = TerritoryConflictEventProjector.Build(territoryDominance, capturedAtUtc);
         var serviceEvents = ServicesEventProjector.Build(serviceAgents, capturedAtUtc);
+        var marketShockEvents = MarketShockEventProjector.Build(transactions, capturedAtUtc);
 
         return tradeEvents
+            .Concat(marketShockEvents)
             .Concat(combatEvents)
             .Concat(intelEvents)
             .Concat(territoryEvents)
