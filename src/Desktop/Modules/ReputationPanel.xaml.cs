@@ -10,17 +10,26 @@ public partial class ReputationPanel : UserControl
 {
     private readonly DesktopSession _session;
     private readonly ReputationApiClient _reputationApiClient;
+    private readonly LeaderboardApiClient _leaderboardApiClient;
     private readonly ObservableCollection<ReputationStandingDisplayRow> _rows = [];
     private readonly ObservableCollection<string> _benefits = [];
+    private readonly ObservableCollection<string> _topReputation = [];
+    private readonly ObservableCollection<string> _influenceZones = [];
     private bool _hasLoaded;
 
-    public ReputationPanel(DesktopSession session, ReputationApiClient reputationApiClient)
+    public ReputationPanel(
+        DesktopSession session,
+        ReputationApiClient reputationApiClient,
+        LeaderboardApiClient leaderboardApiClient)
     {
         _session = session;
         _reputationApiClient = reputationApiClient;
+        _leaderboardApiClient = leaderboardApiClient;
         InitializeComponent();
         ReputationGrid.ItemsSource = _rows;
         BenefitsList.ItemsSource = _benefits;
+        TopReputationList.ItemsSource = _topReputation;
+        InfluenceZonesList.ItemsSource = _influenceZones;
         Loaded += OnLoaded;
     }
 
@@ -87,11 +96,13 @@ public partial class ReputationPanel : UserControl
             var standingsTask = _reputationApiClient.GetFactionStandingsAsync(_session.PlayerId);
             var benefitsTask = _reputationApiClient.GetFactionBenefitsAsync(_session.PlayerId);
             var accessTask = _reputationApiClient.GetAlignmentAccessAsync(_session.PlayerId);
-            await Task.WhenAll(standingsTask, benefitsTask, accessTask);
+            var leaderboardTask = LoadReputationLeaderboardAsync();
+            await Task.WhenAll(standingsTask, benefitsTask, accessTask, leaderboardTask);
 
             var standings = standingsTask.Result;
             var benefits = benefitsTask.Result;
             var access = accessTask.Result;
+            var leaderboard = leaderboardTask.Result;
 
             _rows.Clear();
             foreach (var standing in standings.OrderByDescending(static standing => standing.ReputationScore))
@@ -116,6 +127,23 @@ public partial class ReputationPanel : UserControl
                     ? $"{benefit.FactionName} [{benefit.Tier}]"
                     : $"{benefit.FactionName} [{benefit.Tier}] - {string.Join(", ", benefit.Benefits)}";
                 _benefits.Add(summary);
+            }
+
+            _topReputation.Clear();
+            foreach (var entry in leaderboard.OrderBy(static item => item.Rank).Take(5))
+            {
+                _topReputation.Add($"#{entry.Rank} {entry.Username} | Score {entry.Score:N0}");
+            }
+
+            if (_topReputation.Count == 0)
+            {
+                _topReputation.Add("No leaderboard entries available.");
+            }
+
+            _influenceZones.Clear();
+            foreach (var zone in ReputationInfluenceZoneBuilder.Build(standings))
+            {
+                _influenceZones.Add(zone);
             }
 
             if (access is null)
@@ -150,6 +178,18 @@ public partial class ReputationPanel : UserControl
             : $"Path {access.Path} | Level {access.AlignmentLevel}\n" +
               $"Legal Insurance: {access.CanUseLegalInsurance} | Black Market: {access.CanAccessBlackMarket}\n" +
               $"Scan Mod: {access.ScanFrequencyModifier:P1} | Insurance Mod: {access.InsuranceCostModifier:P1}";
+    }
+
+    private async Task<IReadOnlyList<LeaderboardEntryApiDto>> LoadReputationLeaderboardAsync()
+    {
+        var leaderboard = await _leaderboardApiClient.GetLeaderboardAsync("reputation", limit: 10);
+        if (leaderboard.Count > 0)
+        {
+            return leaderboard;
+        }
+
+        await _leaderboardApiClient.RecalculateAllAsync();
+        return await _leaderboardApiClient.GetLeaderboardAsync("reputation", limit: 10);
     }
 
     private void SetBusy(bool isBusy)

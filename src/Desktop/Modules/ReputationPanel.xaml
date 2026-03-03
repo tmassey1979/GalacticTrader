@@ -74,6 +74,26 @@
                                FontWeight="SemiBold"
                                Text="Benefits" />
                     <ListBox x:Name="BenefitsList"
+                             Height="64"
+                             Margin="0,4,0,8"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF" />
+
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
+                               Text="Top Reputation Leaderboard" />
+                    <ListBox x:Name="TopReputationList"
+                             Height="84"
+                             Margin="0,4,0,8"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF" />
+
+                    <TextBlock Foreground="#B9CBE8"
+                               FontWeight="SemiBold"
+                               Text="Influence Zones" />
+                    <ListBox x:Name="InfluenceZonesList"
                              Height="72"
                              Margin="0,4,0,8"
                              Background="#101F39"

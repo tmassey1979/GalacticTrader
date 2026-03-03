@@ -47,6 +47,8 @@ public partial class App : Application
             fleetApiClient.SetBearerToken(loginWindow.Session.AccessToken);
             var reputationApiClient = new ReputationApiClient(_httpClient);
             reputationApiClient.SetBearerToken(loginWindow.Session.AccessToken);
+            var leaderboardApiClient = new LeaderboardApiClient(_httpClient);
+            leaderboardApiClient.SetBearerToken(loginWindow.Session.AccessToken);
             var strategicApiClient = new StrategicApiClient(_httpClient);
             strategicApiClient.SetBearerToken(loginWindow.Session.AccessToken);
             var telemetryApiClient = new TelemetryApiClient(_httpClient);
@@ -78,6 +80,7 @@ public partial class App : Application
                 marketApiClient,
                 fleetApiClient,
                 reputationApiClient,
+                leaderboardApiClient,
                 strategicApiClient,
                 telemetryApiClient,
                 marketIntelligenceApiClient,
