@@ -10,5 +10,7 @@ public sealed class ServicesAgentDisplayRow
     public float InfluenceScore { get; init; }
     public int AggressionIndex { get; init; }
     public required string StrategyBias { get; init; }
+    public required string WealthModel { get; init; }
+    public required string PublicStanding { get; init; }
     public required string CurrentGoal { get; init; }
 }

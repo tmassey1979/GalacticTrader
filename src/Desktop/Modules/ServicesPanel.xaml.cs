@@ -10,6 +10,7 @@ public partial class ServicesPanel : UserControl
 {
     private readonly NpcApiClient _npcApiClient;
     private readonly ObservableCollection<ServicesAgentDisplayRow> _rows = [];
+    private readonly ObservableCollection<string> _contractLog = [];
     private readonly HashSet<Guid> _blacklistedAgentIds = [];
     private readonly Dictionary<Guid, NpcAgentApiDto> _agentsById = [];
     private bool _hasLoaded;
@@ -19,6 +20,7 @@ public partial class ServicesPanel : UserControl
         _npcApiClient = npcApiClient;
         InitializeComponent();
         AgentsGrid.ItemsSource = _rows;
+        ContractLogList.ItemsSource = _contractLog;
         Loaded += OnLoaded;
     }
 
@@ -55,6 +57,7 @@ public partial class ServicesPanel : UserControl
                 return;
             }
 
+            AppendContractLog("offer-contract", selected.Name, $"goal {result.CurrentGoal} tick {result.DecisionTick}");
             SetStatus($"Contract offered. Goal changed to {result.CurrentGoal} (tick {result.DecisionTick}).", isError: false);
             await RefreshAsync();
         }
@@ -85,6 +88,7 @@ public partial class ServicesPanel : UserControl
                 return;
             }
 
+            AppendContractLog("protection", selected.Name, $"fleet {summary.FleetSize} active {summary.ActiveShips}");
             SetStatus($"Protection negotiated. Fleet size {summary.FleetSize}, active ships {summary.ActiveShips}.", isError: false);
             await RefreshAsync();
         }
@@ -107,6 +111,7 @@ public partial class ServicesPanel : UserControl
 
         _blacklistedAgentIds.Add(selected.AgentId);
         RebuildRows();
+        AppendContractLog("blacklist", selected.Name, "agent blacklisted");
         SetStatus($"Blacklisted {selected.Name}.", isError: false);
     }
 
@@ -114,6 +119,7 @@ public partial class ServicesPanel : UserControl
     {
         _blacklistedAgentIds.Clear();
         RebuildRows();
+        AppendContractLog("blacklist-clear", "system", "all entries removed");
         SetStatus("Blacklist cleared.", isError: false);
     }
 
@@ -128,6 +134,7 @@ public partial class ServicesPanel : UserControl
         SelectedAgentText.Text =
             $"{selected.Name} [{selected.Archetype}] | Influence {selected.InfluenceScore:N2}\n" +
             $"Aggression {selected.AggressionIndex} | Wealth {selected.Wealth:N0} | Fleet {selected.FleetSize}\n" +
+            $"Standing {selected.PublicStanding} | WealthModel {selected.WealthModel}\n" +
             $"Goal: {selected.CurrentGoal} | Bias: {selected.StrategyBias}";
     }
 
@@ -185,6 +192,8 @@ public partial class ServicesPanel : UserControl
             Name = string.Empty,
             Archetype = string.Empty,
             StrategyBias = string.Empty,
+            WealthModel = string.Empty,
+            PublicStanding = string.Empty,
             CurrentGoal = string.Empty
         };
 
@@ -207,5 +216,15 @@ public partial class ServicesPanel : UserControl
         StatusText.Foreground = isError
             ? new SolidColorBrush(Color.FromRgb(255, 147, 147))
             : new SolidColorBrush(Color.FromRgb(157, 183, 226));
+    }
+
+    private void AppendContractLog(string action, string agentName, string detail)
+    {
+        var entry = ServicesContractLogFormatter.Build(DateTime.UtcNow, action, agentName, detail);
+        _contractLog.Insert(0, entry);
+        while (_contractLog.Count > 40)
+        {
+            _contractLog.RemoveAt(_contractLog.Count - 1);
+        }
     }
 }

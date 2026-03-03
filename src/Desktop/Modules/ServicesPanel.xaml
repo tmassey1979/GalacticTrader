@@ -63,9 +63,18 @@
                     <DataGridTextColumn Header="Influence"
                                         Binding="{Binding InfluenceScore, StringFormat={}{0:N2}}"
                                         Width="75" />
+                    <DataGridTextColumn Header="Wealth"
+                                        Binding="{Binding Wealth, StringFormat={}{0:N0}}"
+                                        Width="90" />
+                    <DataGridTextColumn Header="Standing"
+                                        Binding="{Binding PublicStanding}"
+                                        Width="90" />
                     <DataGridTextColumn Header="Aggression"
                                         Binding="{Binding AggressionIndex}"
                                         Width="75" />
+                    <DataGridTextColumn Header="Wealth Model"
+                                        Binding="{Binding WealthModel}"
+                                        Width="130" />
                     <DataGridTextColumn Header="Bias"
                                         Binding="{Binding StrategyBias}"
                                         Width="120" />
@@ -119,6 +128,23 @@
                                 Content="Blacklist"
                                 Click="OnBlacklistClick" />
                     </StackPanel>
+
+                    <TextBlock Foreground="#B9CBE8"
+                               Margin="0,10,0,0"
+                               Text="Interaction Contracts" />
+                    <ListBox x:Name="ContractLogList"
+                             Height="150"
+                             Margin="0,4,0,0"
+                             Background="#101F39"
+                             BorderBrush="#2E4A75"
+                             Foreground="#EAF2FF">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock FontFamily="Consolas"
+                                           Text="{Binding}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </StackPanel>
             </Border>
         </Grid>

@@ -20,6 +20,8 @@ public static class ServicesAgentProjector
                 InfluenceScore = agent.InfluenceScore,
                 AggressionIndex = ComputeAggressionIndex(agent),
                 StrategyBias = ResolveStrategyBias(agent),
+                WealthModel = ResolveWealthModel(agent),
+                PublicStanding = ResolvePublicStanding(agent),
                 CurrentGoal = agent.CurrentGoal
             })
             .OrderByDescending(static row => row.InfluenceScore)
@@ -49,5 +51,37 @@ public static class ServicesAgentProjector
         }
 
         return "Balanced Opportunist";
+    }
+
+    private static string ResolveWealthModel(NpcAgentApiDto agent)
+    {
+        if (agent.Wealth >= 150_000m)
+        {
+            return "Capital Fortress";
+        }
+
+        if (agent.Wealth >= 50_000m || agent.RiskTolerance <= 0.35f)
+        {
+            return "Steady Compounder";
+        }
+
+        if (agent.RiskTolerance >= 0.75f)
+        {
+            return "High-Variance Raider";
+        }
+
+        return "Transaction Scaler";
+    }
+
+    private static string ResolvePublicStanding(NpcAgentApiDto agent)
+    {
+        return agent.ReputationScore switch
+        {
+            >= 70 => "Trusted",
+            >= 30 => "Recognized",
+            >= 0 => "Neutral",
+            >= -40 => "Questionable",
+            _ => "Hostile"
+        };
     }
 }

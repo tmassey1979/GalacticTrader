@@ -23,6 +23,9 @@ public sealed class ServicesAgentProjectorTests
 
         Assert.Equal(2, rows.Count);
         Assert.Equal("C", rows[0].Name);
+        Assert.Equal("Recognized", rows[0].PublicStanding);
+        Assert.Equal("Steady Compounder", rows[0].WealthModel);
         Assert.Equal("A", rows[1].Name);
+        Assert.Equal("Recognized", rows[1].PublicStanding);
     }
 }
