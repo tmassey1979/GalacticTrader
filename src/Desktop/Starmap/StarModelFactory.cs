@@ -10,7 +10,13 @@ public static class StarModelFactory
     private static readonly Lazy<Model3D?> ExternalStarBody = new(() =>
     {
         var loader = new ExternalModelLoader();
-        return loader.TryLoad(ExternalModelCatalog.StarBody);
+        var model = loader.TryLoad(ExternalModelCatalog.StarBody);
+        if (model is not null && model.CanFreeze)
+        {
+            model.Freeze();
+        }
+
+        return model;
     });
 
     public static Model3D Create(StarNode star)

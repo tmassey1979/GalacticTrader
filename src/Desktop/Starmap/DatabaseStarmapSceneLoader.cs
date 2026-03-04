@@ -18,6 +18,7 @@ public sealed class DatabaseStarmapSceneLoader
 
         var stars = DatabaseStarmapProjection.ToStars(sectors);
         var routeSegments = DatabaseStarmapProjection.ToRoutes(routes, sectors);
-        return StarmapSceneBuilder.Build(stars, routeSegments);
+        var renderBudget = StarmapRenderBudget.FromEnvironment();
+        return StarmapSceneBuilder.Build(stars, routeSegments, renderBudget);
     }
 }
