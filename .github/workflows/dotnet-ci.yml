@@ -49,6 +49,22 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      - name: Performance Regression Gate (Route + Combat)
+        run: >
+          dotnet test tests/GalacticTrader.Tests/GalacticTrader.Tests.csproj
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --filter "Category=Performance"
+
+      - name: Performance Regression Gate (Representative API p95)
+        run: >
+          dotnet test tests/GalacticTrader.IntegrationTests/GalacticTrader.IntegrationTests.csproj
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --filter "Category=Performance"
+
       - name: Unit Tests With Coverage Threshold
         run: >
           dotnet test tests/GalacticTrader.Tests/GalacticTrader.Tests.csproj

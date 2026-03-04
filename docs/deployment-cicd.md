@@ -6,6 +6,7 @@
 - `docker-publish.yml`: builds and pushes `ghcr.io/<owner>/galactictrader-api` and `ghcr.io/<owner>/galactictrader-gateway` on `main` and tags.
 - `deploy.yml`: manual deployment orchestration (`staging` or `production`) with optional rollback tag.
 - `nightly-backups.yml`: scheduled PostgreSQL and Redis backup job with retained artifacts.
+- `performance-benchmarks.yml`: scheduled/manual BenchmarkDotNet run with uploaded artifacts.
 
 ## Registry
 - Container registry: GitHub Container Registry (`ghcr.io`).

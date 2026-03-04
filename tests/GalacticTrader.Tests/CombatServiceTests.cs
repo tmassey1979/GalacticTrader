@@ -27,6 +27,7 @@ public sealed class CombatServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task ProcessTickAsync_Performance_Under50MillisecondsAverage()
     {
         await using var dbContext = CreateDbContext();

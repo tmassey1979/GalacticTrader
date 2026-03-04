@@ -59,6 +59,7 @@ public sealed class RoutePlanningServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task CalculateRouteAsync_Performance_AverageUnder20Milliseconds()
     {
         await using var dbContext = CreateDbContext();

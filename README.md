@@ -264,6 +264,9 @@ docker-compose down -v
 - Support 1000+ concurrent users
 - Deterministic simulation under load
 
+Performance regression gate and benchmark methodology:
+- [docs/performance-gate.md](docs/performance-gate.md)
+
 ## Authentication
 
 Production authentication is expected through Keycloak OAuth2/OIDC.
