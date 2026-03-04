@@ -1,15 +1,19 @@
 namespace GalacticTrader.IntegrationTests;
 
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
 
 public sealed class BalanceControlAdminIntegrationTests : IClassFixture<ApiWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly ApiWebApplicationFactory _factory;
     private const string AdminKey = "dev-admin-key";
 
     public BalanceControlAdminIntegrationTests(ApiWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("http://localhost")
@@ -17,45 +21,46 @@ public sealed class BalanceControlAdminIntegrationTests : IClassFixture<ApiWebAp
     }
 
     [Fact]
-    public async Task BalanceState_RejectsRequestsWithoutAdminKey()
+    public async Task BalanceState_RejectsRequestsWithoutAuthorization()
     {
         var response = await _client.GetAsync("/api/admin/balance/state");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
-    public async Task BalanceEndpoints_WithAdminKey_UpdateAndReturnState()
+    public async Task BalanceEndpoints_WithAdminBearerToken_UpdateAndReturnState()
     {
+        var adminToken = await LoginAndGetTokenAsync(_client, "viper", "ViperDev123!");
         var sectorId = Guid.NewGuid();
 
-        var taxResponse = await PostWithAdminKeyAsync("/api/admin/balance/tax", new { taxRatePercent = 7.5m });
+        var taxResponse = await SendWithBearerTokenAsync(_client, HttpMethod.Post, "/api/admin/balance/tax", adminToken, new { taxRatePercent = 7.5m });
         Assert.Equal(HttpStatusCode.OK, taxResponse.StatusCode);
 
-        var pirateResponse = await PostWithAdminKeyAsync("/api/admin/balance/pirates", new { intensityPercent = 63 });
+        var pirateResponse = await SendWithBearerTokenAsync(_client, HttpMethod.Post, "/api/admin/balance/pirates", adminToken, new { intensityPercent = 63 });
         Assert.Equal(HttpStatusCode.OK, pirateResponse.StatusCode);
 
-        var liquidityResponse = await PostWithAdminKeyAsync("/api/admin/balance/liquidity", new
+        var liquidityResponse = await SendWithBearerTokenAsync(_client, HttpMethod.Post, "/api/admin/balance/liquidity", adminToken, new
         {
             deltaPercent = -4.25m,
             reason = "stability-test"
         });
         Assert.Equal(HttpStatusCode.OK, liquidityResponse.StatusCode);
 
-        var instabilityResponse = await PostWithAdminKeyAsync("/api/admin/balance/instability", new
+        var instabilityResponse = await SendWithBearerTokenAsync(_client, HttpMethod.Post, "/api/admin/balance/instability", adminToken, new
         {
             sectorId,
             reason = "drill"
         });
         Assert.Equal(HttpStatusCode.OK, instabilityResponse.StatusCode);
 
-        var correctionResponse = await PostWithAdminKeyAsync("/api/admin/balance/correction", new
+        var correctionResponse = await SendWithBearerTokenAsync(_client, HttpMethod.Post, "/api/admin/balance/correction", adminToken, new
         {
             adjustmentPercent = -12.5m,
             reason = "market-reset"
         });
         Assert.Equal(HttpStatusCode.OK, correctionResponse.StatusCode);
 
-        var stateResponse = await GetWithAdminKeyAsync("/api/admin/balance/state");
+        var stateResponse = await SendWithBearerTokenAsync(_client, HttpMethod.Get, "/api/admin/balance/state", adminToken);
         stateResponse.EnsureSuccessStatusCode();
 
         var state = await stateResponse.Content.ReadFromJsonAsync<BalanceControlStateDto>();
@@ -67,21 +72,94 @@ public sealed class BalanceControlAdminIntegrationTests : IClassFixture<ApiWebAp
         Assert.Contains(sectorId, state.UnstableSectors);
     }
 
-    private Task<HttpResponseMessage> GetWithAdminKeyAsync(string path)
+    [Fact]
+    public async Task BalanceState_WithNonAdminBearerToken_ReturnsForbidden()
+    {
+        var username = $"balance_user_{Guid.NewGuid():N}"[..20];
+        await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            username,
+            email = $"{username}@gt.test",
+            password = "WarpDrive123!"
+        });
+
+        var token = await LoginAndGetTokenAsync(_client, username, "WarpDrive123!");
+        var response = await SendWithBearerTokenAsync(_client, HttpMethod.Get, "/api/admin/balance/state", token);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task LegacyAdminKey_WorksWhenMigrationFlagEnabled()
+    {
+        using var client = CreateClientWithLegacyKeyAuth(enabled: true);
+        var response = await GetWithAdminKeyAsync(client, "/api/admin/balance/state");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task LegacyAdminKey_IsRejectedWhenMigrationFlagDisabled()
+    {
+        using var client = CreateClientWithLegacyKeyAuth(enabled: false);
+        var response = await GetWithAdminKeyAsync(client, "/api/admin/balance/state");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    private HttpClient CreateClientWithLegacyKeyAuth(bool enabled)
+    {
+        var configuredFactory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, configurationBuilder) =>
+            {
+                configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Admin:AllowLegacyKeyAuth"] = enabled.ToString()
+                });
+            });
+        });
+
+        return configuredFactory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("http://localhost")
+        });
+    }
+
+    private static async Task<string> LoginAndGetTokenAsync(HttpClient client, string username, string password)
+    {
+        var response = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            username,
+            password
+        });
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
+        Assert.NotNull(payload);
+        Assert.False(string.IsNullOrWhiteSpace(payload!.AccessToken));
+        return payload.AccessToken;
+    }
+
+    private static Task<HttpResponseMessage> SendWithBearerTokenAsync(
+        HttpClient client,
+        HttpMethod method,
+        string path,
+        string accessToken,
+        object? payload = null)
+    {
+        var request = new HttpRequestMessage(method, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload);
+        }
+
+        return client.SendAsync(request);
+    }
+
+    private static Task<HttpResponseMessage> GetWithAdminKeyAsync(HttpClient client, string path)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, path);
         request.Headers.Add("X-Admin-Key", AdminKey);
-        return _client.SendAsync(request);
-    }
-
-    private Task<HttpResponseMessage> PostWithAdminKeyAsync(string path, object payload)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Post, path)
-        {
-            Content = JsonContent.Create(payload)
-        };
-        request.Headers.Add("X-Admin-Key", AdminKey);
-        return _client.SendAsync(request);
+        return client.SendAsync(request);
     }
 
     private sealed class BalanceControlStateDto
@@ -92,4 +170,6 @@ public sealed class BalanceControlAdminIntegrationTests : IClassFixture<ApiWebAp
         public decimal EconomicCorrectionPercent { get; init; }
         public IReadOnlyList<Guid> UnstableSectors { get; init; } = [];
     }
+
+    private sealed record LoginResponse(string AccessToken);
 }

@@ -1386,10 +1386,24 @@ strategic.MapGet("/volatility", async (
 });
 
 strategic.MapPost("/volatility", async (
+    HttpContext context,
     UpsertSectorVolatilityApiRequest request,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await strategicService.UpsertSectorVolatilityCycleAsync(new UpdateSectorVolatilityCycleRequest
     {
         SectorId = request.SectorId,
@@ -1411,10 +1425,24 @@ strategic.MapGet("/corporate-wars", async (
 });
 
 strategic.MapPost("/corporate-wars", async (
+    HttpContext context,
     DeclareCorporateWarApiRequest request,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await strategicService.DeclareCorporateWarAsync(new DeclareCorporateWarRequest
     {
         AttackerFactionId = request.AttackerFactionId,
@@ -1436,10 +1464,24 @@ strategic.MapGet("/infrastructure", async (
 });
 
 strategic.MapPost("/infrastructure", async (
+    HttpContext context,
     UpsertInfrastructureOwnershipApiRequest request,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await strategicService.UpsertInfrastructureOwnershipAsync(new UpdateInfrastructureOwnershipRequest
     {
         SectorId = request.SectorId,
@@ -1460,10 +1502,24 @@ strategic.MapGet("/territory-dominance", async (
 });
 
 strategic.MapPost("/territory-dominance/recalculate/{factionId:guid}", async (
+    HttpContext context,
     Guid factionId,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await strategicService.RecalculateTerritoryDominanceAsync(factionId, cancellationToken);
     return result is null ? Results.NotFound() : Results.Ok(result);
 });
@@ -1478,10 +1534,24 @@ strategic.MapGet("/territory-economic-policy", async (
 });
 
 strategic.MapPost("/territory-economic-policy", async (
+    HttpContext context,
     UpsertTerritoryEconomicPolicyApiRequest request,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await strategicService.UpsertTerritoryEconomicPolicyAsync(new UpsertTerritoryEconomicPolicyRequest
     {
         FactionId = request.FactionId,
@@ -1502,10 +1572,24 @@ strategic.MapGet("/insurance/policies/{playerId:guid}", async (
 });
 
 strategic.MapPost("/insurance/policies", async (
+    HttpContext context,
     UpsertInsurancePolicyApiRequest request,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        request.PlayerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await strategicService.UpsertInsurancePolicyAsync(new UpsertInsurancePolicyRequest
     {
         PlayerId = request.PlayerId,
@@ -1529,10 +1613,39 @@ strategic.MapGet("/insurance/claims/{playerId:guid}", async (
 });
 
 strategic.MapPost("/insurance/claims", async (
+    HttpContext context,
     FileInsuranceClaimApiRequest request,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var (callerPlayerId, isAdmin, denied) = await ResolveAuthenticatedActorAsync(
+        context,
+        authService,
+        dbContext,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var policyOwnerId = await dbContext.InsurancePolicies
+        .AsNoTracking()
+        .Where(policy => policy.Id == request.PolicyId)
+        .Select(policy => (Guid?)policy.PlayerId)
+        .FirstOrDefaultAsync(cancellationToken);
+
+    if (!isAdmin && !callerPlayerId.HasValue)
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    if (!isAdmin && policyOwnerId.HasValue && callerPlayerId!.Value != policyOwnerId.Value)
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
     var result = await strategicService.FileInsuranceClaimAsync(new FileInsuranceClaimRequest
     {
         PolicyId = request.PolicyId,
@@ -1544,10 +1657,24 @@ strategic.MapPost("/insurance/claims", async (
 });
 
 strategic.MapPost("/intelligence/networks", async (
+    HttpContext context,
     CreateIntelligenceNetworkApiRequest request,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        request.OwnerPlayerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await strategicService.CreateIntelligenceNetworkAsync(new CreateIntelligenceNetworkRequest
     {
         OwnerPlayerId = request.OwnerPlayerId,
@@ -1560,10 +1687,39 @@ strategic.MapPost("/intelligence/networks", async (
 });
 
 strategic.MapPost("/intelligence/reports", async (
+    HttpContext context,
     PublishIntelligenceReportApiRequest request,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var (callerPlayerId, isAdmin, denied) = await ResolveAuthenticatedActorAsync(
+        context,
+        authService,
+        dbContext,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var networkOwnerId = await dbContext.IntelligenceNetworks
+        .AsNoTracking()
+        .Where(network => network.Id == request.NetworkId)
+        .Select(network => (Guid?)network.OwnerPlayerId)
+        .FirstOrDefaultAsync(cancellationToken);
+
+    if (!isAdmin && !callerPlayerId.HasValue)
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    if (!isAdmin && networkOwnerId.HasValue && callerPlayerId!.Value != networkOwnerId.Value)
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
     var result = await strategicService.PublishIntelligenceReportAsync(new PublishIntelligenceReportRequest
     {
         NetworkId = request.NetworkId,
@@ -1588,9 +1744,23 @@ strategic.MapGet("/intelligence/reports/{playerId:guid}", async (
 });
 
 strategic.MapPost("/intelligence/reports/expire", async (
+    HttpContext context,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireAnyRoleAsync(
+        context,
+        authService,
+        dbContext,
+        [AuthorizationPolicies.AdminRole],
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var expired = await strategicService.ExpireIntelligenceReportsAsync(cancellationToken);
     return Results.Ok(new { expired });
 });
@@ -1636,7 +1806,20 @@ strategic.Map("/ws/dashboard/{playerId:guid}", async (
     }
 });
 
-static bool IsAdminAuthorized(HttpContext context, IConfiguration configuration)
+static bool IsLegacyAdminKeyEnabled(IConfiguration configuration)
+{
+    var configured = configuration["Admin:AllowLegacyKeyAuth"]
+        ?? configuration["Admin__AllowLegacyKeyAuth"];
+
+    if (string.IsNullOrWhiteSpace(configured))
+    {
+        return true;
+    }
+
+    return bool.TryParse(configured, out var enabled) && enabled;
+}
+
+static bool IsAdminAuthorizedByLegacyKey(HttpContext context, IConfiguration configuration)
 {
     var expectedKey = configuration["Admin:Key"]
         ?? configuration["Admin__Key"]
@@ -1650,54 +1833,145 @@ static bool IsAdminAuthorized(HttpContext context, IConfiguration configuration)
     return string.Equals(providedKey.ToString(), expectedKey, StringComparison.Ordinal);
 }
 
+static async Task<IResult?> RequireAdminBalanceAuthorizationAsync(
+    HttpContext context,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    IConfiguration configuration,
+    CancellationToken cancellationToken)
+{
+    // Prefer bearer-role auth when provided.
+    if (TryReadBearerToken(context, out _))
+    {
+        return await RequireAnyRoleAsync(
+            context,
+            authService,
+            dbContext,
+            [AuthorizationPolicies.AdminRole],
+            cancellationToken);
+    }
+
+    // Temporary migration path for legacy automation using X-Admin-Key.
+    if (IsLegacyAdminKeyEnabled(configuration) && IsAdminAuthorizedByLegacyKey(context, configuration))
+    {
+        return null;
+    }
+
+    return Results.Unauthorized();
+}
+
 var adminBalance = app.MapGroup("/api/admin/balance")
     .WithTags("Admin - Balance Controls");
 
-adminBalance.MapGet("/state", (HttpContext context, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+adminBalance.MapGet("/state", async (
+    HttpContext context,
+    IBalanceControlService balanceControlService,
+    IConfiguration configuration,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
-    if (!IsAdminAuthorized(context, configuration))
+    var denied = await RequireAdminBalanceAuthorizationAsync(
+        context,
+        authService,
+        dbContext,
+        configuration,
+        cancellationToken);
+    if (denied is not null)
     {
-        return Results.Unauthorized();
+        return denied;
     }
 
     return Results.Ok(balanceControlService.GetSnapshot());
 });
 
-adminBalance.MapPost("/tax", (HttpContext context, UpdateTaxRateRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+adminBalance.MapPost("/tax", async (
+    HttpContext context,
+    UpdateTaxRateRequest request,
+    IBalanceControlService balanceControlService,
+    IConfiguration configuration,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
-    if (!IsAdminAuthorized(context, configuration))
+    var denied = await RequireAdminBalanceAuthorizationAsync(
+        context,
+        authService,
+        dbContext,
+        configuration,
+        cancellationToken);
+    if (denied is not null)
     {
-        return Results.Unauthorized();
+        return denied;
     }
 
     return Results.Ok(balanceControlService.SetTaxRate(request.TaxRatePercent));
 });
 
-adminBalance.MapPost("/pirates", (HttpContext context, UpdatePirateIntensityRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+adminBalance.MapPost("/pirates", async (
+    HttpContext context,
+    UpdatePirateIntensityRequest request,
+    IBalanceControlService balanceControlService,
+    IConfiguration configuration,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
-    if (!IsAdminAuthorized(context, configuration))
+    var denied = await RequireAdminBalanceAuthorizationAsync(
+        context,
+        authService,
+        dbContext,
+        configuration,
+        cancellationToken);
+    if (denied is not null)
     {
-        return Results.Unauthorized();
+        return denied;
     }
 
     return Results.Ok(balanceControlService.SetPirateIntensity(request.IntensityPercent));
 });
 
-adminBalance.MapPost("/liquidity", (HttpContext context, LiquidityAdjustmentRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+adminBalance.MapPost("/liquidity", async (
+    HttpContext context,
+    LiquidityAdjustmentRequest request,
+    IBalanceControlService balanceControlService,
+    IConfiguration configuration,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
-    if (!IsAdminAuthorized(context, configuration))
+    var denied = await RequireAdminBalanceAuthorizationAsync(
+        context,
+        authService,
+        dbContext,
+        configuration,
+        cancellationToken);
+    if (denied is not null)
     {
-        return Results.Unauthorized();
+        return denied;
     }
 
     return Results.Ok(balanceControlService.ApplyLiquidityAdjustment(request.DeltaPercent, request.Reason ?? "manual"));
 });
 
-adminBalance.MapPost("/instability", (HttpContext context, SectorInstabilityRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+adminBalance.MapPost("/instability", async (
+    HttpContext context,
+    SectorInstabilityRequest request,
+    IBalanceControlService balanceControlService,
+    IConfiguration configuration,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
-    if (!IsAdminAuthorized(context, configuration))
+    var denied = await RequireAdminBalanceAuthorizationAsync(
+        context,
+        authService,
+        dbContext,
+        configuration,
+        cancellationToken);
+    if (denied is not null)
     {
-        return Results.Unauthorized();
+        return denied;
     }
 
     if (request.SectorId == Guid.Empty)
@@ -1708,11 +1982,24 @@ adminBalance.MapPost("/instability", (HttpContext context, SectorInstabilityRequ
     return Results.Ok(balanceControlService.TriggerSectorInstability(request.SectorId, request.Reason ?? "manual"));
 });
 
-adminBalance.MapPost("/correction", (HttpContext context, EconomicCorrectionRequest request, IBalanceControlService balanceControlService, IConfiguration configuration) =>
+adminBalance.MapPost("/correction", async (
+    HttpContext context,
+    EconomicCorrectionRequest request,
+    IBalanceControlService balanceControlService,
+    IConfiguration configuration,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken) =>
 {
-    if (!IsAdminAuthorized(context, configuration))
+    var denied = await RequireAdminBalanceAuthorizationAsync(
+        context,
+        authService,
+        dbContext,
+        configuration,
+        cancellationToken);
+    if (denied is not null)
     {
-        return Results.Unauthorized();
+        return denied;
     }
 
     return Results.Ok(balanceControlService.TriggerEconomicCorrection(request.AdjustmentPercent, request.Reason ?? "manual"));
@@ -2290,6 +2577,117 @@ static async Task<IResult?> RequireAnyRoleAsync(
     return hasAllowedJwtRole
         ? null
         : Results.StatusCode(StatusCodes.Status403Forbidden);
+}
+
+static async Task<IResult?> RequireOwnerOrAdminAsync(
+    HttpContext context,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    Guid ownerPlayerId,
+    CancellationToken cancellationToken)
+{
+    var (playerId, isAdmin, denied) = await ResolveAuthenticatedActorAsync(
+        context,
+        authService,
+        dbContext,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    if (isAdmin)
+    {
+        return null;
+    }
+
+    if (!playerId.HasValue || playerId.Value != ownerPlayerId)
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    return null;
+}
+
+static async Task<(Guid? PlayerId, bool IsAdmin, IResult? Denied)> ResolveAuthenticatedActorAsync(
+    HttpContext context,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken)
+{
+    if (!TryReadBearerToken(context, out var token))
+    {
+        return (null, false, Results.Unauthorized());
+    }
+
+    var session = await authService.ValidateTokenAsync(token, cancellationToken);
+    if (session is not null)
+    {
+        var userAccount = await dbContext.UserAccounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                account =>
+                    account.Id == session.Player.PlayerId ||
+                    account.Username == session.Player.Username ||
+                    account.Email == session.Player.Email,
+                cancellationToken);
+
+        if (userAccount is null)
+        {
+            return (session.Player.PlayerId, false, Results.StatusCode(StatusCodes.Status403Forbidden));
+        }
+
+        var isAdmin = userAccount.Roles.Any(role =>
+            role.Equals(AuthorizationPolicies.AdminRole, StringComparison.OrdinalIgnoreCase));
+
+        return (session.Player.PlayerId, isAdmin, null);
+    }
+
+    if (!LooksLikeJwt(token))
+    {
+        return (null, false, Results.Unauthorized());
+    }
+
+    var tokenValidationService = context.RequestServices.GetRequiredService<ITokenValidationService>();
+    var principal = await tokenValidationService.ValidateTokenAsync(token);
+    if (principal is null)
+    {
+        return (null, false, Results.Unauthorized());
+    }
+
+    var isJwtAdmin = tokenValidationService.GetRoles(principal).Any(role =>
+        role.Equals(AuthorizationPolicies.AdminRole, StringComparison.OrdinalIgnoreCase));
+
+    var playerId = tokenValidationService.GetUserId(principal)
+        ?? await ResolvePlayerIdFromPrincipalAsync(dbContext, principal, cancellationToken);
+
+    return (playerId, isJwtAdmin, null);
+}
+
+static async Task<Guid?> ResolvePlayerIdFromPrincipalAsync(
+    GalacticTraderDbContext dbContext,
+    ClaimsPrincipal principal,
+    CancellationToken cancellationToken)
+{
+    var preferredUsername = principal.FindFirst("preferred_username")?.Value
+        ?? principal.FindFirst(ClaimTypes.Name)?.Value;
+    var email = principal.FindFirst(ClaimTypes.Email)?.Value
+        ?? principal.FindFirst("email")?.Value;
+
+    var subject = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        ?? principal.FindFirst("sub")?.Value;
+    var hasSubjectGuid = Guid.TryParse(subject, out var subjectGuid);
+
+    var player = await dbContext.Players
+        .AsNoTracking()
+        .FirstOrDefaultAsync(
+            existing =>
+                (!string.IsNullOrWhiteSpace(preferredUsername) && existing.Username == preferredUsername) ||
+                (!string.IsNullOrWhiteSpace(email) && existing.Email == email) ||
+                (hasSubjectGuid && existing.KeycloakUserId == subjectGuid),
+            cancellationToken);
+
+    return player?.Id;
 }
 
 static bool LooksLikeJwt(string token)
