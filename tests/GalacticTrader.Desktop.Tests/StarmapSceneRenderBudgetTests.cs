@@ -57,4 +57,29 @@ public sealed class StarmapSceneRenderBudgetTests
 
         Assert.Equal(5, scene.Models.Children.Count);
     }
+
+    [Fact]
+    public void Build_When3DDisabled_PreservesMetadataAndSkipsModelCreation()
+    {
+        var stars = new[]
+        {
+            new StarNode("A", new Point3D(0, 0, 0), 2.0, false),
+            new StarNode("B", new Point3D(10, 0, 0), 2.0, false)
+        };
+
+        var routes = new[]
+        {
+            new RouteSegment("A-B", stars[0].Position, stars[1].Position, false)
+        };
+
+        var scene = StarmapSceneBuilder.Build(
+            stars,
+            routes,
+            new StarmapRenderBudget(MaxRenderedStars: 1, MaxRenderedRoutes: 1),
+            include3DModels: false);
+
+        Assert.Equal(2, scene.Stars.Count);
+        Assert.Single(scene.Routes);
+        Assert.Empty(scene.Models.Children);
+    }
 }

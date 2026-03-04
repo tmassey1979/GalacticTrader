@@ -134,6 +134,12 @@ public partial class MainWindow : Window
     {
         RouteList.ItemsSource = scene.Routes;
         SceneModels.Content = scene.Models;
+        if (scene.Models.Children.Count == 0)
+        {
+            RouteTelemetryText.Text = "3D starmap rendering is temporarily disabled. Set GT_DESKTOP_ENABLE_3D_STARMAP=true to re-enable.";
+            return;
+        }
+
         if (scene.Routes.Count > 0)
         {
             RouteList.SelectedIndex = 0;

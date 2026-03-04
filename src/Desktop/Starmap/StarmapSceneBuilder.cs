@@ -11,6 +11,13 @@ public static class StarmapSceneBuilder
         return Build(stars, routes, StarmapRenderBudget.Unlimited);
     }
 
+    public static StarmapScene BuildMetadataOnly()
+    {
+        var stars = StarCatalogBuilder.CreateStars();
+        var routes = RouteNetworkBuilder.CreateRoutes(stars);
+        return Build(stars, routes, StarmapRenderBudget.Unlimited, include3DModels: false);
+    }
+
     public static StarmapScene Build(IReadOnlyList<StarNode> stars, IReadOnlyList<RouteSegment> routes)
     {
         return Build(stars, routes, StarmapRenderBudget.Unlimited);
@@ -19,8 +26,14 @@ public static class StarmapSceneBuilder
     public static StarmapScene Build(
         IReadOnlyList<StarNode> stars,
         IReadOnlyList<RouteSegment> routes,
-        StarmapRenderBudget renderBudget)
+        StarmapRenderBudget renderBudget,
+        bool include3DModels = true)
     {
+        if (!include3DModels)
+        {
+            return new StarmapScene(stars, routes, new Model3DGroup());
+        }
+
         var scene = new Model3DGroup();
         var renderCenter = ResolveRenderCenter(stars);
 

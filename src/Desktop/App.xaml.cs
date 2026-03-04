@@ -31,6 +31,7 @@ public partial class App : Application
             splash.Close();
 
             var apiOptions = DesktopApiOptions.FromEnvironment();
+            var featureFlags = DesktopFeatureFlags.FromEnvironment();
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri(apiOptions.BaseUrl)
@@ -79,16 +80,27 @@ public partial class App : Application
                 loginWindow.Session.AccessToken,
                 reconnectPolicy);
 
-            var starmapLoader = new DatabaseStarmapSceneLoader(navigationApiClient);
+            var starmapLoader = new DatabaseStarmapSceneLoader(
+                navigationApiClient,
+                featureFlags.EnableStarmap3D);
+            Func<StarmapScene> fallbackFactory = featureFlags.EnableStarmap3D
+                ? StarmapSceneBuilder.Build
+                : StarmapSceneBuilder.BuildMetadataOnly;
             var starmapLoad = await StarmapSceneResolver.ResolveAsync(
                 starmapLoader.LoadAsync,
-                StarmapSceneBuilder.Build);
+                fallbackFactory);
             if (starmapLoad.UsedFallback)
             {
                 Log.Warning("Starmap fallback activated: {Warning}", starmapLoad.Warning);
             }
 
             var scene = starmapLoad.Scene;
+            Log.Information(
+                "Desktop feature flag state: EnableStarmap3D={EnableStarmap3D}; RenderedModelCount={RenderedModelCount}; TotalStars={TotalStars}; TotalRoutes={TotalRoutes}",
+                featureFlags.EnableStarmap3D,
+                scene.Models.Children.Count,
+                scene.Stars.Count,
+                scene.Routes.Count);
 
             var mainWindow = new MainWindow(
                 scene,
