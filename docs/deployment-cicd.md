@@ -7,12 +7,22 @@
 - `deploy.yml`: manual deployment orchestration (`staging` or `production`) with optional rollback tag.
 - `nightly-backups.yml`: scheduled PostgreSQL and Redis backup job with retained artifacts.
 - `performance-benchmarks.yml`: scheduled/manual BenchmarkDotNet run with uploaded artifacts.
+- `unity-client-build.yml`: Unity Windows client build/package pipeline that publishes both a zip and installer artifact when a valid Unity project is present.
 
 ## Registry
 - Container registry: GitHub Container Registry (`ghcr.io`).
 - Image naming:
   - `ghcr.io/<owner>/galactictrader/api:<tag>`
   - `ghcr.io/<owner>/galactictrader/gateway:<tag>`
+
+## Unity Client Artifacts
+
+- Workflow: `unity-client-build.yml`
+- Artifacts produced for Windows:
+  - `unity-windows-zip`
+  - `unity-windows-installer`
+- Installer definition file:
+  - `infrastructure/unity/installer/GalacticTraderUnity.iss`
 
 ## Gateway Smoke Checks
 After deploying the stack:

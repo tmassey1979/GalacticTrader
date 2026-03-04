@@ -1,0 +1,116 @@
+name: unity-client-build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "unity/**"
+      - "infrastructure/unity/**"
+      - ".github/workflows/unity-client-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  detect-unity-project:
+    runs-on: ubuntu-latest
+    outputs:
+      has_project: ${{ steps.detect.outputs.has_project }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Unity Project
+        id: detect
+        run: |
+          if [[ -f "unity/ProjectSettings/ProjectVersion.txt" && -f "unity/Packages/manifest.json" ]]; then
+            echo "has_project=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_project=false" >> "$GITHUB_OUTPUT"
+            echo "Unity project files not found; skipping build/package jobs."
+          fi
+
+  build-unity-windows:
+    needs: detect-unity-project
+    if: needs.detect-unity-project.outputs.has_project == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Unity Windows Client
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity
+          targetPlatform: StandaloneWindows64
+
+      - name: Upload Raw Unity Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-windows-build
+          path: build/StandaloneWindows64
+          if-no-files-found: error
+          retention-days: 14
+
+  package-unity-windows:
+    needs:
+      - detect-unity-project
+      - build-unity-windows
+    if: needs.detect-unity-project.outputs.has_project == 'true'
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Unity Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: unity-windows-build
+          path: dist/windows-build
+
+      - name: Create Zip Package
+        shell: pwsh
+        run: |
+          $version = "${{ github.run_number }}"
+          $zipName = "GalacticTrader-Unity-Windows-$version.zip"
+          Compress-Archive -Path "dist/windows-build/*" -DestinationPath "dist/$zipName" -Force
+          "ZIP_PATH=dist/$zipName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-windows-zip
+          path: ${{ env.ZIP_PATH }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "dist/installer" -Force | Out-Null
+          $appVersion = "0.0.${{ github.run_number }}"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DAppVersion=$appVersion" `
+            "/DBuildRoot=$pwd\\dist\\windows-build" `
+            "/DOutputDir=$pwd\\dist\\installer" `
+            "infrastructure\\unity\\installer\\GalacticTraderUnity.iss"
+
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-windows-installer
+          path: dist/installer/*.exe
+          if-no-files-found: error
+          retention-days: 14
