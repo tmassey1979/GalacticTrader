@@ -2,6 +2,15 @@
 
 ## 2026-03-04
 
+### Client Platform
+
+- Removed legacy WPF and React clients from repository build surface (`#279`):
+  - removed WPF gameplay client (`src/Desktop`) and map tooling client (`src/MapGenerator`)
+  - removed corresponding WPF test projects
+  - removed React frontend workspace (`frontend`)
+  - updated CI to stop running WPF/React client test jobs
+  - updated architecture/docs to Unity-only client direction
+
 ### Security
 
 - Desktop dependency graph hardening for NuGet advisory remediation (`#209`):

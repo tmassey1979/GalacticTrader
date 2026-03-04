@@ -2,7 +2,7 @@
 
 ## Architecture & Infrastructure Codex
 
-### Version 2.1 (Current-State + Unity Migration Aligned)
+### Version 2.2 (Unity-Only Client Surface)
 
 ## 1. Scope
 
@@ -15,8 +15,7 @@ This codex describes the architecture as it exists today, and separately marks f
 - Backend runtime: .NET 9
 - API host: ASP.NET Core Minimal API (`src/API`)
 - Data access: EF Core 9 + Npgsql provider
-- Legacy client: WPF desktop application (`src/Desktop`)
-- Primary target client: Unity (`unity/`)
+- Primary client: Unity (`unity/`)
 - Shared client integration layer: `src/Shared/GalacticTrader.ClientSdk.csproj`
 - Optional edge service: gateway (`src/Gateway`)
 
@@ -58,9 +57,9 @@ Current topology is a modular monolith for gameplay backend logic:
 - Non-relational test/dev fallback uses `EnsureCreated()`.
 - Strategic schema smoke check validates strategic tables after relational migration.
 
-## 3. Client Architecture (Current Migration State)
+## 3. Client Architecture
 
-- Unity migration is organized as an epic with issue-driven module slices.
+- Unity client direction is now the single maintained client surface.
 - Shared SDK now centralizes:
   - API contracts/clients
   - auth/session lifecycle
@@ -76,7 +75,7 @@ Current topology is a modular monolith for gameplay backend logic:
 ## 4. UI Architecture Direction
 
 - Online-only play mode; no local/offline mode target.
-- Action-first UX model replaces telemetry-heavy WPF presentation.
+- Action-first UX model is the baseline presentation strategy.
 - Starmap uses chunked streaming, distance + frustum culling, and LOD planning through shared SDK planners.
 - Trading exposes listings, preview, execute, and transaction history through shared service abstractions with user-friendly failure states.
 

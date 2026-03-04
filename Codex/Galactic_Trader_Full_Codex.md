@@ -2,7 +2,7 @@
 
 ## Full Strategic Codex
 
-### Version 2.1 (Current-State + Unity Migration Aligned)
+### Version 2.2 (Unity-Only Client Surface)
 
 ## 1. Core Philosophy
 
@@ -119,7 +119,7 @@ Roadmap items are future-state and not assumed active unless implemented in code
   - realtime stream coordination
   - starmap streaming/culling/LOD planning
   - dashboard action board and trading workflows
-- Unity migration completed slices:
+- Unity client completed slices:
   - auth/session
   - shell/module host
   - realtime integration
@@ -132,7 +132,7 @@ Roadmap items are future-state and not assumed active unless implemented in code
 - Routes module migration and starmap-overlay integration.
 - Fleet/Battles and Intel/Reputation/Territory Unity module migration.
 - Settings/hotkey migration and visual system polish.
-- QA rollout and WPF deprecation cutover.
+- QA rollout and final client cutover hardening.
 
 ## 12. Communication Systems
 

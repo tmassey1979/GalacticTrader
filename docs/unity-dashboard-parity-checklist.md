@@ -2,7 +2,7 @@
 
 Story: `#267` Unity Migration Dashboard module
 
-- [x] Summary metrics are sourced from the same backend API surfaces as WPF.
+- [x] Summary metrics are sourced from the same backend API surfaces as the legacy desktop implementation.
 - [x] Action-first board model implemented (`DashboardActionBoard` + `DashboardActionPlanner`).
 - [x] Event feed filtering implemented (`DashboardEventFeedFilter`).
 - [x] Event feed CSV export implemented (`DashboardEventFeedCsvExporter`).

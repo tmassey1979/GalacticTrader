@@ -70,7 +70,7 @@ Status legend:
 
 ## Client architecture and UI implementation state (2026-03-04)
 
-- Client architecture is actively migrating from WPF to Unity with shared SDK-based parity services.
+- Client architecture is now Unity-first with shared SDK-based parity services.
 - Implemented Unity slices relevant to this matrix:
   - auth/session, shell, realtime
   - dashboard module

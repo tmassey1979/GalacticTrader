@@ -1,6 +1,6 @@
 # Unity Client Workspace
 
-This directory is the target workspace for the Unity-based game client migration from WPF.
+This directory is the workspace for the Unity-based game client.
 
 ## Purpose
 

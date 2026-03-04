@@ -78,12 +78,6 @@ jobs:
           /p:ThresholdType=line
           /p:ThresholdStat=total
 
-      - name: Desktop Frontend Tests
-        run: dotnet test tests/GalacticTrader.Desktop.Tests/GalacticTrader.Desktop.Tests.csproj --configuration Release --no-build --verbosity normal
-
-      - name: Map Generator Frontend Tests
-        run: dotnet test tests/GalacticTrader.MapGenerator.Tests/GalacticTrader.MapGenerator.Tests.csproj --configuration Release --no-build --verbosity normal
-
       - name: Integration Tests
         run: dotnet test tests/GalacticTrader.IntegrationTests/GalacticTrader.IntegrationTests.csproj --configuration Release --no-build --verbosity normal
 
@@ -94,14 +88,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      - name: Install Frontend Dependencies
-        run: npm ci
-        working-directory: frontend
-
-      - name: Frontend Unit Tests
-        run: npm run test
-        working-directory: frontend
 
       - name: Install E2E Dependencies
         run: npm ci

@@ -7,7 +7,7 @@ Complete
 ```mermaid
 graph TB
     subgraph Clients
-        Desktop[WPF Desktop Client\nViewport3D Tactical UI]
+        Unity[Unity Client\nAction-First Gameplay UI]
         External[External Integrations\nSDK Clients]
     end
 
@@ -39,7 +39,7 @@ graph TB
         ALERT[Alert Rules]
     end
 
-    Desktop --> API
+    Unity --> API
     External --> API
 
     API --> AUTH

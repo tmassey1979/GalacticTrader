@@ -1,6 +1,6 @@
 # Unity Client Architecture Baseline
 
-This document defines the initial architecture baseline for migrating the desktop client from WPF to Unity.
+This document defines the architecture baseline for the Unity client.
 
 ## Objectives
 
@@ -31,8 +31,8 @@ This document defines the initial architecture baseline for migrating the deskto
 
 ## Shared Client SDK
 
-- Shared API contracts and client implementations now live in `src/Shared/GalacticTrader.ClientSdk.csproj`.
-- Desktop references this SDK directly, and Unity can consume the same assembly to keep API parity.
+- Shared API contracts and client implementations live in `src/Shared/GalacticTrader.ClientSdk.csproj`.
+- Unity consumes this shared assembly to keep API parity across modules.
 - Existing DTO/client namespaces are preserved for compatibility during migration.
 - HTTP error and JSON handling are standardized through shared runtime helpers:
   - `ApiClientException` for non-success responses
@@ -105,7 +105,7 @@ This document defines the initial architecture baseline for migrating the deskto
 
 - Primary release targets: `Windows`, `Linux`, `macOS`.
 - Planned console path: `Xbox` and `PS4` after platform approvals and restricted SDK onboarding.
-- Shared `ClientSdk` logic avoids platform-specific dependencies so gameplay/auth/shell/starmap behavior remains portable across desktop and console clients.
+- Shared `ClientSdk` logic avoids platform-specific dependencies so gameplay/auth/shell/starmap behavior remains portable across PC and console clients.
 
 ## Delivery Slices
 

@@ -1,8 +1,8 @@
-# Galactic Trader - Backend and Desktop Development Guide
+# Galactic Trader - Backend and Unity Development Guide
 
 A deterministic, server-authoritative economic space simulation built with .NET 9, PostgreSQL, Redis, and Keycloak.
 
-The primary client is now a WPF desktop UI with a 3D tactical starmap in `src/Desktop`.
+The primary client is Unity in `unity/`, backed by shared client SDK contracts in `src/Shared`.
 
 ## Prerequisites
 
@@ -63,10 +63,10 @@ The primary client is now a WPF desktop UI with a 3D tactical starmap in `src/De
 - **Communication Service** - Text and voice channels
 - **Telemetry Service** - Metrics and observability
 
-### Desktop Client
+### Client Surface
 
-- **WPF Desktop UI** - Command interface with `Viewport3D` starmap
-- **Animated Splash Screen** - 3D ship fly-in with logo reveal and terminal-style boot sequence
+- **Unity Client** - Primary gameplay client and packaging target
+- **Shared Client SDK** - API/realtime/auth/module abstractions in `src/Shared`
 
 ## Architecture State
 
@@ -83,9 +83,9 @@ GalacticTrader/
 |  |- Services/                          # In-process domain/application services
 |  |- Data/                              # EF Core DbContext, models, migrations, repositories
 |  |- Gateway/                           # Optional edge gateway service
-|  |- Desktop/                           # WPF desktop client
-|  `- MapGenerator/                      # WPF map tooling client
+|  `- Shared/                            # Shared client SDK/contracts for Unity
 |- tests/                                # Unit/integration/e2e/benchmarks
+|- unity/                                # Unity client workspace
 |- infrastructure/                       # Env templates and infra assets
 |- Codex/                                # Architecture and product codex docs
 |- docs/                                 # Operational and technical runbooks
@@ -126,21 +126,11 @@ dotnet run --project src/API -c Release
 dotnet run --project src/Gateway
 ```
 
-### Running the Desktop UI
+### Unity Client Notes
 
-```bash
-dotnet run --project src/Desktop
-```
-
-### Running the Map Generator
-
-```bash
-dotnet run --project src/MapGenerator
-```
-
-Map Generator usage (preview, load current map, publish, bearer token):
-- [docs/map-generator.md](docs/map-generator.md)
-- Optional identity overrides: `GT_KEYCLOAK_BASE_URL`, `GT_KEYCLOAK_REALM`, `GT_KEYCLOAK_CLIENT_ID`
+- Unity build and packaging CI: `.github/workflows/unity-client-build.yml`
+- Unity architecture baseline: `docs/unity-client-architecture.md`
+- Unity workspace notes: `unity/README.md`
 
 ### Running Tests
 
@@ -212,7 +202,7 @@ See `.env.example` for all configurable options:
 - `Keycloak__Realm` - Keycloak realm (required for external credential login)
 - `Keycloak__ClientId` - Keycloak client ID (required for external credential login)
 - `Keycloak__AllowLocalFallbackOnInvalidCredentials` - allow local `/api/auth/login` fallback when Keycloak rejects credentials (default `true`)
-- `GT_LOG_SERVER_URL` - Optional central log server URL (Seq-compatible) used by API and WPF clients
+- `GT_LOG_SERVER_URL` - Optional central log server URL (Seq-compatible) used by API and client tooling
 - `GT_LOG_SERVER_API_KEY` - Optional API key for the log server
 - `Admin__AllowLegacyKeyAuth` - temporary compatibility toggle for `X-Admin-Key` admin-balance path (default `true` only in Development, `false` otherwise)
 - `Admin__Key` - required explicit key when legacy admin-key auth is enabled
@@ -274,7 +264,7 @@ Production authentication is expected through Keycloak OAuth2/OIDC.
 In Docker development startup, Keycloak imports `infrastructure/keycloak/galactictrader-realm.json` on boot to provision:
 - realm `galactictrader`
 - roles `player`, `admin`, `map_admin`, `moderator`, `bot`
-- client `map-generator-desktop` (direct access grants enabled for local tooling)
+- client `map-generator-desktop` (legacy dev client retained in realm import)
 - seeded dev user `viper` (`epiphanygs@gmail.com`) with `player`, `admin`, `map_admin`
 
 For development and test automation, use the built-in auth endpoints:

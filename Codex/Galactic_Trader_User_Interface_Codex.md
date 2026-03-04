@@ -1,6 +1,6 @@
 # GALACTIC TRADER
 ## User Interface Codex
-### Version 2.1 (Unity Migration Aligned)
+### Version 2.2 (Unity-Only Client Surface)
 
 Date: 2026-03-04
 
@@ -13,13 +13,12 @@ Date: 2026-03-04
 
 ## 2. Primary UI Platform
 
-- Legacy client: WPF (`src/Desktop`) for transitional parity and operations.
-- Primary target client: Unity (`unity/`).
+- Primary client: Unity (`unity/`).
 - Shared behavior layer: `src/Shared/GalacticTrader.ClientSdk.csproj`.
 
 ## 3. Shell and Navigation Model
 
-- Unity shell pattern uses module lifecycle controllers instead of WPF tab-hosting.
+- Unity shell pattern uses module lifecycle controllers.
 - Standardized module UX states:
   - `Loading`
   - `Ready`
