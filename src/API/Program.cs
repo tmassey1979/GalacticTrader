@@ -159,6 +159,7 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<GalacticTraderDbContext>();
     if (dbContext.Database.IsRelational())
     {
+        await EnsureLegacyMigrationBaselineForNpgsqlAsync(dbContext, CancellationToken.None);
         await dbContext.Database.MigrateAsync();
         await ValidateStrategicSchemaSmokeCheckAsync(dbContext, CancellationToken.None);
     }
@@ -785,6 +786,154 @@ static IEndpointAuthorizationService GetEndpointAuthorizationService(HttpContext
     return context.RequestServices.GetRequiredService<IEndpointAuthorizationService>();
 }
 
+static async Task EnsureLegacyMigrationBaselineForNpgsqlAsync(
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken)
+{
+    if (!dbContext.Database.IsNpgsql())
+    {
+        return;
+    }
+
+    const string baselineMigrationId = "20260304164301_InitialSchemaBaseline";
+    const string baselineProductVersion = "9.0.0";
+    var requiredLegacyCoreTables = new[]
+    {
+        "UserAccounts",
+        "Players",
+        "Crew",
+        "Ships",
+        "ShipModules",
+        "Cargo",
+        "Sectors",
+        "Routes",
+        "Commodities",
+        "Markets",
+        "MarketListings",
+        "MarketPriceHistories",
+        "TradeTransactions",
+        "Factions",
+        "PlayerFactionRelationships",
+        "CombatLogs",
+        "NPCAgents",
+        "NPCShips",
+        "ChannelMessages",
+        "Leaderboards"
+    };
+
+    var valuesSql = string.Join(
+        ", ",
+        requiredLegacyCoreTables.Select(tableName => $"('{tableName}')"));
+
+    var connection = dbContext.Database.GetDbConnection();
+    var shouldClose = connection.State != ConnectionState.Open;
+    if (shouldClose)
+    {
+        await connection.OpenAsync(cancellationToken);
+    }
+
+    try
+    {
+        await using (var createHistoryCommand = connection.CreateCommand())
+        {
+            createHistoryCommand.CommandText =
+                """
+                CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+                    "MigrationId" character varying(150) NOT NULL,
+                    "ProductVersion" character varying(32) NOT NULL,
+                    CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
+                );
+                """;
+            await createHistoryCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        long migrationHistoryCount;
+        await using (var historyCountCommand = connection.CreateCommand())
+        {
+            historyCountCommand.CommandText = """SELECT COUNT(*) FROM "__EFMigrationsHistory";""";
+            var scalar = await historyCountCommand.ExecuteScalarAsync(cancellationToken);
+            migrationHistoryCount = scalar is null ? 0L : Convert.ToInt64(scalar);
+        }
+
+        if (migrationHistoryCount > 0)
+        {
+            return;
+        }
+
+        var existingCoreTables = new HashSet<string>(StringComparer.Ordinal);
+        await using (var coreTableQueryCommand = connection.CreateCommand())
+        {
+            coreTableQueryCommand.CommandText =
+                $"""
+                SELECT required.table_name
+                FROM (VALUES {valuesSql}) AS required(table_name)
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables table_info
+                    WHERE table_info.table_schema = 'public'
+                      AND table_info.table_name = required.table_name
+                );
+                """;
+
+            await using var reader = await coreTableQueryCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                existingCoreTables.Add(reader.GetString(0));
+            }
+        }
+
+        if (existingCoreTables.Count == 0)
+        {
+            return;
+        }
+
+        if (existingCoreTables.Count != requiredLegacyCoreTables.Length)
+        {
+            var missingCoreTables = requiredLegacyCoreTables
+                .Where(tableName => !existingCoreTables.Contains(tableName))
+                .ToList();
+
+            throw new InvalidOperationException(
+                "Detected partial legacy PostgreSQL schema with no EF migration history. " +
+                $"Missing core tables: {string.Join(", ", missingCoreTables)}. " +
+                "Run scripts/strategic-schema-remediation.sql or restore from backup before startup.");
+        }
+
+        await using (var stampBaselineCommand = connection.CreateCommand())
+        {
+            stampBaselineCommand.CommandText =
+                """
+                INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+                VALUES (@migrationId, @productVersion)
+                ON CONFLICT ("MigrationId") DO NOTHING;
+                """;
+
+            var migrationIdParameter = stampBaselineCommand.CreateParameter();
+            migrationIdParameter.ParameterName = "@migrationId";
+            migrationIdParameter.Value = baselineMigrationId;
+            stampBaselineCommand.Parameters.Add(migrationIdParameter);
+
+            var productVersionParameter = stampBaselineCommand.CreateParameter();
+            productVersionParameter.ParameterName = "@productVersion";
+            productVersionParameter.Value = baselineProductVersion;
+            stampBaselineCommand.Parameters.Add(productVersionParameter);
+
+            await stampBaselineCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        Log.Warning(
+            "Legacy PostgreSQL schema detected without migration history; stamped baseline migration {MigrationId}.",
+            baselineMigrationId);
+    }
+    finally
+    {
+        if (shouldClose)
+        {
+            await connection.CloseAsync();
+        }
+    }
+}
+
 static async Task ValidateStrategicSchemaSmokeCheckAsync(
     GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken)
@@ -807,7 +956,7 @@ static async Task ValidateStrategicSchemaSmokeCheckAsync(
     };
 
     var missingTables = new List<string>();
-    await using var connection = dbContext.Database.GetDbConnection();
+    var connection = dbContext.Database.GetDbConnection();
     var shouldClose = connection.State != ConnectionState.Open;
     if (shouldClose)
     {
