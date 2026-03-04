@@ -127,10 +127,12 @@ Roadmap items are future-state and not assumed active unless implemented in code
   - starmap subsystem
   - trading module
   - routes/navigation planning module
+  - fleet module
+  - battles module
 
 ### In Progress / Remaining (Roadmap)
 
-- Fleet/Battles and Intel/Reputation/Territory Unity module migration.
+- Intel/Reputation/Territory Unity module migration.
 - Settings/hotkey migration and visual system polish.
 - QA rollout and final client cutover hardening.
 

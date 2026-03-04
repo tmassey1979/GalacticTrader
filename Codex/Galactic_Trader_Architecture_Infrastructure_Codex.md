@@ -66,10 +66,10 @@ Current topology is a modular monolith for gameplay backend logic:
   - shell/module-host lifecycle
   - realtime coordination
   - starmap streaming planner
-  - dashboard, trading, and routes module orchestration
+  - dashboard, trading, routes, fleet, and battles module orchestration
 - Unity UI implementation status:
-  - Completed scaffolding/services: Auth, Shell, Realtime, Dashboard, Starmap, Trading, Routes
-  - Remaining roadmap: Fleet/Battles, Intel/Reputation/Territory, settings, visual system polish, QA cutover
+  - Completed scaffolding/services: Auth, Shell, Realtime, Dashboard, Starmap, Trading, Routes, Fleet, Battles
+  - Remaining roadmap: Intel/Reputation/Territory, settings, visual system polish, QA cutover
 
 ## 4. UI Architecture Direction
 
@@ -128,6 +128,7 @@ When architecture changes, update these sources together:
 - `Codex/Galactic_Trader_Architecture_Infrastructure_Codex.md` (this file)
 - `docs/unity-client-architecture.md` (Unity migration architecture baseline)
 - `docs/unity-dashboard-parity-checklist.md`
+- `docs/unity-fleet-battles-parity-checklist.md`
 - `docs/unity-starmap-performance-budgets.md`
 - `docs/unity-trading-parity-checklist.md`
 - `docs/unity-routes-parity-checklist.md`

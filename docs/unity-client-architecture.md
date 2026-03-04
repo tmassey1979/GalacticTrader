@@ -66,6 +66,14 @@ This document defines the architecture baseline for the Unity client.
   - `RouteWaypointParseResult` for name/GUID waypoint token parsing and validation
   - `RouteRiskSimulation` and `RouteRiskBand` for projected route risk modeling
   - `RouteOverlayState` for starmap planned/dangerous/suggested overlay edges
+- Fleet module primitives are encapsulated in `GalacticTrader.ClientSdk.Fleet`:
+  - `FleetModuleService` for ship/template/escort aggregation and fleet action workflows
+  - `FleetStatusSummary` for crew, insurance, hull, and strength at-a-glance metrics
+  - `FleetOperationResult`/`FleetOperationFailureState` for purchase failure handling
+- Battles module primitives are encapsulated in `GalacticTrader.ClientSdk.Battles`:
+  - `BattlesModuleService` for combat logs/active combat aggregation and outcome modeling
+  - `BattleOutcomeSummary` for victory/defeat and duration/payout projections
+  - strategic realtime event projection into battle log state
 
 ## Action-First UX Principles
 
@@ -120,6 +128,22 @@ This document defines the architecture baseline for the Unity client.
 - Optimization workflows return recommended profile and overlay edges for UI suggestion cards.
 - Unity controller scaffold (`UnityRoutesModuleController`) loads state, plans routes, and loads optimizations via shared `RouteModuleService`.
 - Parity checklist is tracked in `docs/unity-routes-parity-checklist.md`.
+
+## Fleet and Battles Module Baseline
+
+- Fleet module state must expose:
+  - ship templates, owned ships, escort summary, and derived fleet posture summary
+  - purchase ship action workflow and convoy simulation workflow
+  - realtime fleet-strength/protection updates via strategic snapshots
+- Battles module state must expose:
+  - recent battle logs and active combats
+  - derived outcome summary (wins/losses/duration/insurance impact)
+  - start/tick/end combat action workflows
+  - realtime combat event projection into battle history
+- Unity controller scaffolds:
+  - `UnityFleetModuleController`
+  - `UnityBattlesModuleController`
+- Parity checklist is tracked in `docs/unity-fleet-battles-parity-checklist.md`.
 
 ## Platform Targets
 

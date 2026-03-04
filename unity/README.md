@@ -38,6 +38,14 @@ This directory is the workspace for the Unity-based game client.
   - `UnityRoutesModuleController`
   - shared route state/planning/optimization orchestration via `GalacticTrader.ClientSdk.Routes`
   - waypoint parsing, risk simulation, and starmap overlay projection models
+- Fleet module scaffolding is present under `Assets/Scripts/Modules/Fleet`:
+  - `UnityFleetModuleController`
+  - shared fleet state aggregation with purchase ship and convoy simulation action workflows
+  - realtime projection of fleet strength and protection posture
+- Battles module scaffolding is present under `Assets/Scripts/Modules/Battles`:
+  - `UnityBattlesModuleController`
+  - shared battle logs/active combat aggregation and outcome summary models
+  - start/tick/end combat action workflow bindings and realtime combat event projection
 - Realtime scaffolding is present under `Assets/Scripts/Realtime`:
   - `UnityRealtimeController`
 

@@ -36,8 +36,9 @@ Date: 2026-03-04
   - Starmap streaming subsystem (`UnityStarmapStreamingController`)
   - Trading module (`UnityTradingModuleController`)
   - Routes and navigation planning module (`UnityRoutesModuleController`)
+  - Fleet module (`UnityFleetModuleController`)
+  - Battles module (`UnityBattlesModuleController`)
 - Planned:
-  - Fleet/Battles
   - Intel/Reputation/Territory
   - Settings/hotkeys migration polish
   - Final visual system pass and QA cutover
