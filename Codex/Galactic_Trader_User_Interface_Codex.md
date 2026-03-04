@@ -35,8 +35,7 @@ Date: 2026-03-04
   - Dashboard module (`UnityDashboardModuleController`)
   - Starmap streaming subsystem (`UnityStarmapStreamingController`)
   - Trading module (`UnityTradingModuleController`)
-- In progress:
-  - Routes and navigation planning module migration
+  - Routes and navigation planning module (`UnityRoutesModuleController`)
 - Planned:
   - Fleet/Battles
   - Intel/Reputation/Territory

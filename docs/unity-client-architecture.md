@@ -61,6 +61,11 @@ This document defines the architecture baseline for the Unity client.
   - `TradingModuleService` for listings/history load, preview, and trade execution orchestration
   - `TradingListingSummary` and `TradingPreviewSummary` for spread/fee visualization models
   - `TradingOperationResult`/`TradingOperationFailureState` for user-friendly failure mapping
+- Routes module primitives are encapsulated in `GalacticTrader.ClientSdk.Routes`:
+  - `RouteModuleService` for state load, waypoint-aware planning, and optimization orchestration
+  - `RouteWaypointParseResult` for name/GUID waypoint token parsing and validation
+  - `RouteRiskSimulation` and `RouteRiskBand` for projected route risk modeling
+  - `RouteOverlayState` for starmap planned/dangerous/suggested overlay edges
 
 ## Action-First UX Principles
 
@@ -100,6 +105,21 @@ This document defines the architecture baseline for the Unity client.
 - Trade execution maps backend failures to action-friendly UI states (credits/cargo/quantity/rate-limit/auth).
 - Unity controller scaffold (`UnityTradingModuleController`) loads state, previews trades, and executes buy/sell actions via shared `TradingModuleService`.
 - Parity checklist is tracked in `docs/unity-trading-parity-checklist.md`.
+
+## Routes Module Baseline
+
+- Routes module state must expose:
+  - sectors and route graph options for planner input controls
+  - dangerous-route subset for tactical alerts
+  - overlay-ready route edges for starmap rendering
+- Route planning supports:
+  - travel mode presets (`Standard`, `HighBurn`, `StealthTransit`, `Convoy`, `GhostRoute`, `ArmedEscort`)
+  - algorithm selection (`dijkstra` or `astar`)
+  - waypoint token parsing (sector names or GUIDs)
+  - multi-leg route composition
+- Optimization workflows return recommended profile and overlay edges for UI suggestion cards.
+- Unity controller scaffold (`UnityRoutesModuleController`) loads state, plans routes, and loads optimizations via shared `RouteModuleService`.
+- Parity checklist is tracked in `docs/unity-routes-parity-checklist.md`.
 
 ## Platform Targets
 

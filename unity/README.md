@@ -34,6 +34,10 @@ This directory is the workspace for the Unity-based game client.
   - `UnityTradingModuleController`
   - shared listings/history/preview/execute orchestration via `GalacticTrader.ClientSdk.Trading`
   - spread + fee summary models and user-friendly trade failure states
+- Routes module scaffolding is present under `Assets/Scripts/Modules/Routes`:
+  - `UnityRoutesModuleController`
+  - shared route state/planning/optimization orchestration via `GalacticTrader.ClientSdk.Routes`
+  - waypoint parsing, risk simulation, and starmap overlay projection models
 - Realtime scaffolding is present under `Assets/Scripts/Realtime`:
   - `UnityRealtimeController`
 
