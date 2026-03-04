@@ -17,6 +17,7 @@ public sealed class UnityStarmapStreamingController : MonoBehaviour
     [Header("LOD Distances")]
     [SerializeField] private float nearLodDistance = 80f;
     [SerializeField] private float midLodDistance = 220f;
+    [SerializeField] private float horizontalFieldOfViewDegrees = 90f;
 
     private StarmapStreamingPlanner? _planner;
 
@@ -43,6 +44,11 @@ public sealed class UnityStarmapStreamingController : MonoBehaviour
 
     public StarmapFramePlan? EvaluateFrame(Vector3 cameraPosition)
     {
+        return EvaluateFrame(cameraPosition, Vector3.forward);
+    }
+
+    public StarmapFramePlan? EvaluateFrame(Vector3 cameraPosition, Vector3 cameraForward)
+    {
         if (_planner is null)
         {
             return null;
@@ -50,7 +56,9 @@ public sealed class UnityStarmapStreamingController : MonoBehaviour
 
         var camera = new StarmapCameraState(
             Position: new MapPoint3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
-            ViewDistance: Mathf.Max(0f, viewDistance));
+            ViewDistance: Mathf.Max(0f, viewDistance),
+            Forward: new MapPoint3(cameraForward.x, cameraForward.y, cameraForward.z),
+            HorizontalFieldOfViewDegrees: Mathf.Clamp(horizontalFieldOfViewDegrees, 1f, 179f));
 
         LastFramePlan = _planner.PlanFrame(camera);
         return LastFramePlan;

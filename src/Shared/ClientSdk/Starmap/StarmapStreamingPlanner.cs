@@ -32,6 +32,7 @@ public sealed class StarmapStreamingPlanner
                 Sector = sector,
                 Distance = Math.Sqrt(sector.Position.DistanceSquaredTo(camera.Position))
             })
+            .Where(entry => IsVisibleInCamera(entry.Sector.Position, camera, entry.Distance))
             .OrderByDescending(static entry => entry.Sector.IsHub)
             .ThenBy(static entry => entry.Distance)
             .ThenBy(static entry => entry.Sector.Name, StringComparer.Ordinal)
@@ -55,7 +56,7 @@ public sealed class StarmapStreamingPlanner
 
         var candidateRoutes = _index.Routes
             .Where(route => renderedSectorIds.Contains(route.FromSectorId) && renderedSectorIds.Contains(route.ToSectorId))
-            .Select(route => CreateRouteRenderPlan(route, camera.Position))
+            .Select(route => CreateRouteRenderPlan(route, camera))
             .Where(static route => route is not null)
             .Select(static route => route!)
             .OrderBy(static route => route.DistanceFromCamera)
@@ -107,7 +108,7 @@ public sealed class StarmapStreamingPlanner
         return capped;
     }
 
-    private StarmapRouteRenderPlan? CreateRouteRenderPlan(StarmapRouteEdge route, MapPoint3 cameraPosition)
+    private StarmapRouteRenderPlan? CreateRouteRenderPlan(StarmapRouteEdge route, StarmapCameraState camera)
     {
         if (!_index.SectorsById.TryGetValue(route.FromSectorId, out var fromSector) ||
             !_index.SectorsById.TryGetValue(route.ToSectorId, out var toSector))
@@ -120,7 +121,12 @@ public sealed class StarmapStreamingPlanner
             Y: (fromSector.Position.Y + toSector.Position.Y) / 2d,
             Z: (fromSector.Position.Z + toSector.Position.Z) / 2d);
 
-        var distance = Math.Sqrt(midpoint.DistanceSquaredTo(cameraPosition));
+        var distance = Math.Sqrt(midpoint.DistanceSquaredTo(camera.Position));
+        if (!IsVisibleInCamera(midpoint, camera, distance))
+        {
+            return null;
+        }
+
         return new StarmapRouteRenderPlan(
             route.RouteId,
             route.FromSectorId,
@@ -136,5 +142,38 @@ public sealed class StarmapStreamingPlanner
         var deltaY = first.Y - second.Y;
         var deltaZ = first.Z - second.Z;
         return (deltaX * deltaX) + (deltaY * deltaY) + (deltaZ * deltaZ);
+    }
+
+    private static bool IsVisibleInCamera(
+        MapPoint3 worldPosition,
+        StarmapCameraState camera,
+        double distanceFromCamera)
+    {
+        if (distanceFromCamera > camera.ViewDistance)
+        {
+            return false;
+        }
+
+        var normalizedForward = MapPoint3.Normalize(camera.Forward);
+        if (normalizedForward.MagnitudeSquared <= double.Epsilon)
+        {
+            return true;
+        }
+
+        if (camera.HorizontalFieldOfViewDegrees <= 0d || camera.HorizontalFieldOfViewDegrees >= 180d)
+        {
+            return true;
+        }
+
+        var toTarget = MapPoint3.Normalize(worldPosition - camera.Position);
+        if (toTarget.MagnitudeSquared <= double.Epsilon)
+        {
+            return true;
+        }
+
+        var dot = Math.Clamp(MapPoint3.Dot(normalizedForward, toTarget), -1d, 1d);
+        var angleDegrees = Math.Acos(dot) * (180d / Math.PI);
+        var halfFov = camera.HorizontalFieldOfViewDegrees / 2d;
+        return angleDegrees <= halfFov;
     }
 }

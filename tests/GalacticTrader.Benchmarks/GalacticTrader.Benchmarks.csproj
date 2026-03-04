@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\\..\\src\\Data\\GalacticTrader.Data.csproj" />
     <ProjectReference Include="..\\..\\src\\Services\\GalacticTrader.Services.csproj" />
+    <ProjectReference Include="..\\..\\src\\Shared\\GalacticTrader.ClientSdk.csproj" />
   </ItemGroup>
 
 </Project>

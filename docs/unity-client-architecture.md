@@ -80,8 +80,10 @@ This document defines the initial architecture baseline for migrating the deskto
   - frame planning (`StarmapStreamingPlanner`, `StarmapFramePlan`)
   - render budgets (`StarmapRenderBudget`)
   - distance-based LOD tiers (`StarmapLodBands`, `StarmapLodTier`)
+- Planner applies both distance culling and camera-forward frustum culling via `StarmapCameraState`.
 - Unity should render from planned frame slices (`UnityStarmapStreamingController`) instead of eagerly constructing the full world.
 - Route rendering is constrained to visible/rendered sector sets to avoid hidden-route overdraw.
+- Performance budgets are tracked in `docs/unity-starmap-performance-budgets.md`.
 
 ## Platform Targets
 

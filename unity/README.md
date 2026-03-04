@@ -25,6 +25,8 @@ This directory is the target workspace for the Unity-based game client migration
 - Starmap streaming scaffolding is present under `Assets/Scripts/Starmap`:
   - `UnityStarmapStreamingController`
   - `StarmapDtoMapper`
+  - chunked planning with distance + frustum culling and LOD selection
+  - see `docs/unity-starmap-performance-budgets.md` for budget targets and benchmark workflow
 - Dashboard module scaffolding is present under `Assets/Scripts/Modules/Dashboard`:
   - `UnityDashboardModuleController`
   - realtime strategic snapshot projection into dashboard board/feed state

@@ -31,7 +31,11 @@ public sealed class StarmapStreamingPlannerTests
             new StarmapRenderBudget(MaxRenderedSectors: 10, MaxRenderedRoutes: 8, MaxActiveChunks: 100),
             StarmapLodBands.StartupDefault);
 
-        var frame = planner.PlanFrame(new StarmapCameraState(new MapPoint3(0, 0, 0), ViewDistance: 400d));
+        var frame = planner.PlanFrame(new StarmapCameraState(
+            new MapPoint3(0, 0, 0),
+            ViewDistance: 400d,
+            Forward: new MapPoint3(1, 0, 0),
+            HorizontalFieldOfViewDegrees: 179d));
 
         Assert.True(frame.ActiveChunks.Count <= 100);
         Assert.Equal(10, frame.Sectors.Count);
@@ -58,7 +62,11 @@ public sealed class StarmapStreamingPlannerTests
             StarmapRenderBudget.Unlimited,
             new StarmapLodBands(NearDistance: 60d, MidDistance: 200d));
 
-        var frame = planner.PlanFrame(new StarmapCameraState(new MapPoint3(0, 0, 0), ViewDistance: 450d));
+        var frame = planner.PlanFrame(new StarmapCameraState(
+            new MapPoint3(0, 0, 0),
+            ViewDistance: 450d,
+            Forward: new MapPoint3(1, 0, 0),
+            HorizontalFieldOfViewDegrees: 179d));
         var lodByName = frame.Sectors.ToDictionary(static sector => sector.Name, static sector => sector.LodTier);
 
         Assert.Equal(StarmapLodTier.Near, lodByName["Near"]);
@@ -93,6 +101,31 @@ public sealed class StarmapStreamingPlannerTests
         Assert.Single(frame.Routes);
         Assert.Contains(frame.Routes, route => route.FromSectorId == nearA.SectorId && route.ToSectorId == nearB.SectorId);
         Assert.DoesNotContain(frame.Routes, route => route.ToSectorId == far.SectorId || route.FromSectorId == far.SectorId);
+    }
+
+    [Fact]
+    public void PlanFrame_AppliesFrustumCullingAgainstCameraForward()
+    {
+        var front = new StarmapSectorNode(Guid.NewGuid(), "Front", new MapPoint3(80, 0, 0));
+        var side = new StarmapSectorNode(Guid.NewGuid(), "Side", new MapPoint3(0, 80, 0));
+        var rear = new StarmapSectorNode(Guid.NewGuid(), "Rear", new MapPoint3(-80, 0, 0));
+        var sectors = new[] { front, side, rear };
+        var routes = Array.Empty<StarmapRouteEdge>();
+
+        var planner = new StarmapStreamingPlanner(
+            StarmapChunkIndex.Build(sectors, routes, new StarmapChunkingOptions(ChunkSize: 100d, BaseChunkRadius: 2)),
+            StarmapRenderBudget.Unlimited,
+            StarmapLodBands.StartupDefault);
+
+        var frame = planner.PlanFrame(new StarmapCameraState(
+            Position: new MapPoint3(0, 0, 0),
+            ViewDistance: 200d,
+            Forward: new MapPoint3(1, 0, 0),
+            HorizontalFieldOfViewDegrees: 90d));
+
+        Assert.Contains(frame.Sectors, sector => sector.Name == "Front");
+        Assert.DoesNotContain(frame.Sectors, sector => sector.Name == "Side");
+        Assert.DoesNotContain(frame.Sectors, sector => sector.Name == "Rear");
     }
 
     private static IReadOnlyList<StarmapSectorNode> BuildGrid(int sideLength, double spacing)
