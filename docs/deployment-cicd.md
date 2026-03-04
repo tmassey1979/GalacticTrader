@@ -89,6 +89,9 @@ dotnet ef migrations script --idempotent \
 
 Apply with your standard PostgreSQL change-control tooling (or allow app startup to apply migrations automatically).
 
+Legacy-environment remediation runbook:
+- `docs/strategic-schema-remediation.md`
+
 ### Rollback Procedure (Schema)
 
 1. Take a fresh PostgreSQL backup/snapshot.

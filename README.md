@@ -283,6 +283,7 @@ Strategic APIs are available under `/api/strategic` for:
 Migration and rollout guidance:
 - [docs/strategic-systems-migration-plan.md](docs/strategic-systems-migration-plan.md)
 - [docs/strategic-systems-phase2-migration-plan.md](docs/strategic-systems-phase2-migration-plan.md)
+- [docs/strategic-schema-remediation.md](docs/strategic-schema-remediation.md)
 
 ## Contributing
 
