@@ -188,6 +188,7 @@ Once running, view the Swagger documentation at:
 - Through gateway: http://localhost:8081/swagger
 - See [docs/api-openapi.md](docs/api-openapi.md) for auth, examples, error codes, and SDK generation.
 - Gateway routes and smoke checks: [docs/api-gateway.md](docs/api-gateway.md)
+- Release notes: [docs/release-notes.md](docs/release-notes.md)
 
 ## Configuration
 
