@@ -22,6 +22,14 @@ This directory is the target workspace for the Unity-based game client migration
   - `UnityHotkeyModuleRouter`
   - `UnityShellModule`
   - `ModuleUxStateOverlayController`
+- Starmap streaming scaffolding is present under `Assets/Scripts/Starmap`:
+  - `UnityStarmapStreamingController`
+  - `StarmapDtoMapper`
+
+## Target Platforms
+
+- Baseline targets: Windows, Linux, macOS.
+- Planned targets (requires platform approvals/tooling): Xbox and PS4.
 
 ## Target Structure
 

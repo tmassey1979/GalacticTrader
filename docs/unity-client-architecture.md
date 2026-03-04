@@ -63,6 +63,22 @@ This document defines the initial architecture baseline for migrating the deskto
 - Scene loading must be progressive with explicit budget controls.
 - Realtime subscriptions are scoped by active module and cleaned up on module exit.
 
+## Starmap Streaming Baseline
+
+- Shared streaming primitives are defined in `GalacticTrader.ClientSdk.Starmap`:
+  - chunk indexing (`StarmapChunkIndex`, `StarmapChunkingOptions`)
+  - frame planning (`StarmapStreamingPlanner`, `StarmapFramePlan`)
+  - render budgets (`StarmapRenderBudget`)
+  - distance-based LOD tiers (`StarmapLodBands`, `StarmapLodTier`)
+- Unity should render from planned frame slices (`UnityStarmapStreamingController`) instead of eagerly constructing the full world.
+- Route rendering is constrained to visible/rendered sector sets to avoid hidden-route overdraw.
+
+## Platform Targets
+
+- Primary release targets: `Windows`, `Linux`, `macOS`.
+- Planned console path: `Xbox` and `PS4` after platform approvals and restricted SDK onboarding.
+- Shared `ClientSdk` logic avoids platform-specific dependencies so gameplay/auth/shell/starmap behavior remains portable across desktop and console clients.
+
 ## Delivery Slices
 
 - Slice 1: Architecture, shared SDK contracts, auth/session, shell.
