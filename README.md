@@ -68,22 +68,31 @@ The primary client is now a WPF desktop UI with a 3D tactical starmap in `src/De
 - **WPF Desktop UI** - Command interface with `Viewport3D` starmap
 - **Animated Splash Screen** - 3D ship fly-in with logo reveal and terminal-style boot sequence
 
+## Architecture State
+
+- **Current state**: modular monolith backend (`src/API` + in-process domain services in `src/Services`) on .NET 9.
+- **Current state**: PostgreSQL + EF Core migrations for relational deployments; in-memory EF only for local/test fallback scenarios.
+- **Target state (roadmap)**: selective service extraction and Kubernetes-first deployment options where tracked by open issues.
+
 ## Project Structure
 
 ```
 GalacticTrader/
-├── src/
-│   ├── API/                          # Web API Gateway
-│   ├── Services/                     # Business logic services
-│   ├── Data/                         # Entity Framework Core & repositories
-│   └── Shared/                       # Shared utilities
-├── tests/                            # Unit and integration tests
-├── infrastructure/                   # Docker, k8s configs
-├── Codex/                            # Architecture documentation
-├── Dockerfile                        # API container config
-├── docker-compose.yml                # Development environment
-├── global.json                       # .NET SDK version
-└── GalacticTrader.sln               # Solution file
+|- src/
+|  |- API/                               # ASP.NET Core minimal API host
+|  |- Services/                          # In-process domain/application services
+|  |- Data/                              # EF Core DbContext, models, migrations, repositories
+|  |- Gateway/                           # Optional edge gateway service
+|  |- Desktop/                           # WPF desktop client
+|  `- MapGenerator/                      # WPF map tooling client
+|- tests/                                # Unit/integration/e2e/benchmarks
+|- infrastructure/                       # Env templates and infra assets
+|- Codex/                                # Architecture and product codex docs
+|- docs/                                 # Operational and technical runbooks
+|- Dockerfile                            # API container build
+|- docker-compose.yml                    # Local development stack
+|- global.json                           # .NET SDK pin
+`- GalacticTrader.sln                    # Solution root
 ```
 
 ## Development Workflow
@@ -309,3 +318,4 @@ Proprietary - All rights reserved
 ## Support
 
 For issues and questions, open a GitHub issue or check the documentation.
+

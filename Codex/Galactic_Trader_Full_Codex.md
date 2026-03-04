@@ -2,249 +2,137 @@
 
 ## Full Strategic Codex
 
-### Version 1.0
+### Version 2.0 (Current-State Aligned)
 
-------------------------------------------------------------------------
+## 1. Core Philosophy
 
-# I. Core Philosophy
+Galactic Trader is a real-time, backend-authoritative economic strategy game.
 
-Galactic Trader is a real-time, backend-authoritative, strategy-first
-economic space simulation.
+Core pillars:
 
-## Pillars
+- Strategy over reflex
+- Logistics over raw combat volume
+- Economy over isolated kill count
+- Reputation and alignment as progression gates
+- Server authority over client authority
 
--   Strategy \> Reflex
--   Logistics \> Dogfighting
--   Economics \> Kill Count
--   Reputation \> Raw Power
--   Server Authority \> Client Authority
+## 2. Universe Model
 
-------------------------------------------------------------------------
+The universe is modeled as a directed weighted graph.
 
-# II. Universe Architecture
+Primary sector attributes include:
 
-## Sector Graph Model
+- Id, name, coordinates
+- Security and hazard ratings
+- Economic modifiers
+- Faction control and stability indicators
 
-Universe is a directed weighted graph.
+Routes encode travel time, fuel cost, baseline risk, and legal context.
 
-### Sector Fields
+## 3. Navigation and Autopilot
 
--   Id (UUID)
--   Name
--   Coordinates (x,y,z for rendering only)
--   SecurityLevel (0--100)
--   HazardRating (0--100)
--   ResourceModifier
--   FactionControlId
--   EconomicIndex
--   SensorInterferenceLevel
+Manual piloting is presentation; autopilot state is canonical.
 
-### Route (Edge)
+Travel modes include standard, high-burn, stealth, convoy, and escort-oriented profiles.
 
--   FromSectorId
--   ToSectorId
--   TravelTimeSeconds
--   FuelCost
--   BaseRiskScore
--   VisibilityRating
--   LegalStatus (legal / gray / black)
--   WarpGateType
+Encounter scoring model:
 
-------------------------------------------------------------------------
+`EncounterScore = BaseRouteRisk + SectorHazard + CargoValueFactor + PlayerNotoriety - EscortStrength - FactionProtection - StealthModifier`
 
-# III. Navigation & Autopilot
+## 4. Strategic Combat
 
-Manual piloting is cosmetic. Autopilot is canonical.
+Combat is deterministic and tick-based.
 
-## Travel Modes
+Representative attack model:
 
--   Standard
--   High Burn
--   Stealth Transit
--   Convoy
--   Ghost Route
--   Armed Escort
+`EffectiveAttack = (WeaponTier * CrewSkill * EnergyAllocation) + DoctrineBonus + PositioningBonus - TargetShield - CountermeasureReduction`
 
-## Encounter Formula
+Damage is resolved across shields, hull, and selected subsystems.
 
-EncounterScore = BaseRouteRisk + SectorHazard + CargoValueFactor +
-PlayerNotoriety - EscortStrength - FactionProtection - StealthModifier
+## 5. Economy and Market Dynamics
 
-------------------------------------------------------------------------
+Representative pricing model:
 
-# IV. Strategic Combat System
+`Price = BasePrice * DemandMultiplier * RiskPremium * ScarcityModifier`
 
-Deterministic, tick-based (250ms). Server authoritative.
+Price movement is influenced by supply, demand, faction stability, pirate pressure, and player actions.
 
-EffectiveAttack = (WeaponTier × CrewSkill × EnergyAllocation) +
-DoctrineBonus + PositioningBonus - TargetShield -
-CountermeasureReduction
+## 6. Reputation and Alignment
 
-Damage Targets: - Shields - Hull - Subsystems (Engines, Weapons,
-Sensors, Cargo, Life Support, Reactor)
+Lawful and dirty paths drive access control and economic multipliers.
 
-------------------------------------------------------------------------
+Impacted systems include:
 
-# V. Economic Simulation
+- Sector/service access
+- Trade terms and scan frequency
+- Insurance behavior and pricing
 
-Price = BasePrice × DemandMultiplier × RiskPremium × ScarcityModifier
+## 7. Ship and Crew Systems
 
-Dynamic markets influenced by: - Supply - Demand - Faction stability -
-Pirate activity - Player monopolies
+Ship model exposes core tactical/economic stats (hull, shields, cargo, signatures, hardpoints, crew slots).
 
-------------------------------------------------------------------------
+Crew model tracks role/skill progression and modifies combat/navigation outcomes.
 
-# VI. Reputation & Alignment
+## 8. NPC Agent Model
 
-Lawful Path: - Legal trade - Infrastructure investment - Insurance
-benefits
+NPCs are modeled as autonomous actors with archetype-weighted behavior (merchant, pirate, industrialist, etc.).
 
-Dirty Path: - Piracy - Smuggling - Sabotage - Sensor spoofing
+Decision flow:
 
-Reputation impacts: - Sector access - Trade terms - Scan frequency -
-Insurance costs
+1. Goal evaluation
+2. Opportunity scan
+3. Action selection
+4. Route planning
+5. Combat/trade execution
 
-------------------------------------------------------------------------
+## 9. Metrics and Telemetry
 
-# VII. Ship & Crew Architecture
+Key operational metrics include API latency, combat tick timing, route planning timing, strategic maintenance counters, and economic/state gauges.
 
-## Ship Core Stats
+Leaderboards track wealth, reputation, combat, and trade dimensions.
 
--   HullIntegrity
--   ShieldCapacity
--   ReactorOutput
--   CargoCapacity
--   SensorRange
--   SignatureProfile
--   CrewSlots
--   Hardpoints
+## 10. Backend Architecture State
 
-## Crew Attributes
+### Current State (Implemented)
 
--   CombatSkill
--   Engineering
--   Navigation
--   Morale
--   Loyalty
+- .NET 9 API host with in-process modular service boundaries (`src/API` + `src/Services`).
+- EF Core 9 + PostgreSQL relational persistence.
+- Redis cache integration.
+- Keycloak integration is explicit-config opt-in for credential login.
+- Gateway available as separate edge service.
 
-------------------------------------------------------------------------
+### Target State (Roadmap)
 
-# VIII. NPC Autonomous Agent System
+- Optional service extraction for simulation/communication workloads.
+- Optional Kubernetes-first production topology.
 
-NPCs behave like real players with weighted archetypes.
+Roadmap items are future-state and not assumed active unless implemented in code and deployment manifests.
 
-## Archetypes
+## 11. Communication Systems
 
--   Merchant
--   Industrialist
--   Reputable Trader
--   Rogue Trader
--   Pirate
--   Alien Syndicate
+Communication stack includes persistent text channels, websocket delivery, and voice signaling/spatial mix workflows.
 
-NPC Attributes: - Wealth - Reputation - Alignment - FleetSize -
-RiskTolerance - InfluenceScore
+## 12. Admin and Balance Controls
 
-Decision Engine: 1. Goal Evaluation 2. Opportunity Scan 3. Action
-Selection 4. Route Planning 5. Combat Decision
+Admin controls cover tax rates, pirate intensity, liquidity adjustments, and correction events.
 
-------------------------------------------------------------------------
+Legacy `X-Admin-Key` auth is deprecated and on a dated removal plan; bearer-role auth is the target long-term path.
 
-# IX. Metrics & Telemetry
+## 13. Strategic Systems
 
-## Player Metrics
+Implemented strategic domains include:
 
--   Total Users
--   Active Users
--   Average Active (5m, 1h, 24h)
+- Sector volatility cycles
+- Corporate wars
+- Infrastructure ownership
+- Territory dominance
+- Insurance policies/claims
+- Intelligence networks/reports
 
-## Combat Metrics
+## 14. Core Loop
 
--   Total Battles
--   Active Battles
--   Outcome Distribution
-
-## Economic Metrics
-
--   Currency in Circulation
--   Gini Coefficient
--   Daily Trade Volume
--   Sector Heatmap
-
-## Leaderboards
-
--   Wealth
--   Reputation
--   Combat
--   Trade
-
-------------------------------------------------------------------------
-
-# X. Backend Architecture
-
-Stack: - .NET 10 Web API - PostgreSQL - Redis - Keycloak - Docker -
-Prometheus - Grafana
-
-Microservices: - Navigation Service - Combat Service - Economy Service -
-Market Service - Fleet Service - Communication Service - NPC Service
-
-------------------------------------------------------------------------
-
-# XI. Observability
-
-Prometheus Metrics: - api_request_duration_seconds -
-combat_tick_duration_seconds - route_calculation_time_seconds -
-db_query_duration_seconds - redis_cache_hit_ratio
-
-Dashboards: - Live Ops - Economic Health - Strategic Map
-
-------------------------------------------------------------------------
-
-# XII. Communication System
-
-Text Channels: - Global - Sector - Faction - Private - Fleet
-
-Voice: - WebRTC-based - Proximity - Fleet - Encrypted Private
-
-------------------------------------------------------------------------
-
-# XIII. Immersion Layer
-
-3D Cockpit Interface: - Holographic Star Map - Route Planner - Cargo
-Terminal - Tactical HUD - Subsystem Indicators - AI Crew Chatter -
-Spatial Audio
-
-------------------------------------------------------------------------
-
-# XIV. Balance Controls
-
-Admin Tools: - Adjust tax rates - Adjust pirate intensity -
-Inject/remove liquidity - Trigger sector instability - Economic
-correction events
-
-------------------------------------------------------------------------
-
-# XV. Long-Term Strategic Systems
-
--   Sector volatility cycles
--   Corporate wars
--   Insurance economy
--   Infrastructure ownership
--   Intelligence networks
--   Territory dominance tracking
-
-------------------------------------------------------------------------
-
-# XVI. Core Loop
-
-1.  Analyze market
-2.  Select cargo
-3.  Plan route
-4.  Adjust risk profile
-5.  Monitor autopilot
-6.  Respond to events
-7.  Scale wealth and influence
-
-------------------------------------------------------------------------
-
-End of Codex
+1. Analyze market and risk
+2. Select cargo and route strategy
+3. Execute movement/trade/combat decisions
+4. Respond to dynamic events
+5. Grow wealth, influence, and strategic control

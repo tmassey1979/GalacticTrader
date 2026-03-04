@@ -2,229 +2,110 @@
 
 ## Architecture & Infrastructure Codex
 
-### Version 1.0
+### Version 2.0 (Current-State Aligned)
 
-------------------------------------------------------------------------
+## 1. Scope
 
-# I. Architectural Philosophy
+This codex describes the architecture as it exists today, and separately marks forward-looking target architecture.
 
-Galactic Trader is built as a server-authoritative, horizontally
-scalable, microservice-driven simulation platform.
+## 2. Current State (Implemented)
 
-Design Goals:
+### Runtime and Language
 
--   Deterministic backend simulation
--   Real-time economic computation
--   Horizontal scalability
--   Observability-first architecture
--   Container-native deployment
--   Zero client authority for gameplay logic
+- Backend runtime: .NET 9
+- API host: ASP.NET Core Minimal API (`src/API`)
+- Data access: EF Core 9 + Npgsql provider
+- Primary client: WPF desktop application (`src/Desktop`)
+- Optional edge service: gateway (`src/Gateway`)
 
-------------------------------------------------------------------------
+### Service Topology
 
-# II. High-Level System Architecture
+Current topology is a modular monolith for gameplay backend logic:
 
-Clients: - WPF .NET 9 Desktop Client - 3D Rendering Layer (embedded
-engine) - Web Admin Console
+- One API process exposes endpoints for navigation, combat, economy, market, NPC, fleet, reputation, strategic systems, telemetry, and communication.
+- Domain logic is organized by service classes under `src/Services`, but executes in-process with the API host.
+- PostgreSQL is the primary relational database in relational environments.
+- In-memory EF provider is used only for local/test fallback scenarios where relational persistence is not configured.
 
-Backend Core: - .NET 10 REST APIs - Microservices Architecture -
-PostgreSQL (Primary DB) - Redis (Caching + Fast State) - Keycloak
-(Identity Provider) - Prometheus (Metrics) - Grafana (Dashboards)
+### Infrastructure
 
-Infrastructure: - Docker Containers - Docker Compose (Dev) - Reverse
-Proxy (YARP or NGINX) - Optional Kubernetes (Future Scale)
+- Local/dev orchestration: Docker Compose (`docker-compose.yml`)
+- Core runtime services:
+  - API (`:8080`)
+  - Gateway (`:8081`)
+  - PostgreSQL
+  - Redis
+  - Keycloak
+  - Prometheus
+  - Grafana
+  - Vault (optional)
 
-------------------------------------------------------------------------
+### Auth and Authorization
 
-# III. Service Architecture
+- Primary app login path: `/api/auth/login`
+- Keycloak credential login is enabled only when required config is explicitly present (`Keycloak__ServerUrl`, `Keycloak__Realm`, `Keycloak__ClientId`).
+- Startup logs report resolved auth mode and fallback policy.
+- `X-Admin-Key` auth is deprecated and default-off outside Development; bearer admin-role auth is the target path.
 
-## API Gateway
+### Database Lifecycle
 
-Responsibilities: - Route traffic - JWT validation - Rate limiting - API
-aggregation
+- Relational startup uses managed migrations (`Database.Migrate()`).
+- Non-relational test/dev fallback uses `EnsureCreated()`.
+- Strategic schema smoke check validates strategic tables after relational migration.
 
-## Identity Service
+## 3. Monolith vs Microservices Boundary
 
-External via Keycloak: - OAuth2 / OIDC - JWT issuance - Role-based
-access control
+### Current Boundary
 
-## Navigation Service
+- Implemented: modular monolith backend (single API host process + in-process service modules).
+- Not implemented as independently deployable services: navigation/combat/economy/market/etc.
 
--   Route calculations (A\* / Dijkstra)
--   Sector graph caching
--   Autopilot state machine
+### Target Boundary (Roadmap)
 
-## Combat Service
+The following are candidate future extraction boundaries (not current production shape):
 
--   Tick-based deterministic engine
--   Subsystem resolution
--   Combat logs persistence
+- Dedicated simulation workers (combat/economy/NPC cycles)
+- Independent communication/signaling service
+- Separate telemetry aggregation path
 
-## Economy Service
+These roadmap items require explicit issue-driven implementation and are not assumed active today.
 
--   Dynamic pricing engine
--   Market recalculation
--   Trade volume tracking
+## 4. Observability
 
-## Market Service
+Implemented metric families include:
 
--   Transaction validation
--   Inventory updates
--   Supply/Demand recalculation
+- API latency (`api_request_duration_seconds`)
+- Route calculation and combat tick durations
+- Database duration envelope metric
+- Strategic intelligence expiry counters/histograms
+- Legacy admin-key deprecation usage counter (`admin_legacy_key_auth_attempts_total`)
 
-## NPC Service
+Dashboards and operational flow are documented under `docs/deployment-cicd.md` and related runbooks.
 
--   Archetype behavior engine
--   Decision weighting logic
--   Autonomous route planning
--   Combat engagement decision
+## 5. Deployment States
 
-## Fleet Service
+### Current Deployable States
 
--   Fleet composition management
--   Escort calculations
--   Convoy bonus logic
+- Local compose stack
+- Staging and production script-driven deployments
+- Container images published through CI
 
-## Communication Service
+### Target States (Roadmap)
 
--   Text messaging storage
--   WebRTC session coordination
--   Channel management
+Kubernetes deployment options and provider comparisons are tracked as roadmap issues and may be blocked depending on project state.
 
-## Telemetry Service
+## 6. Documentation Contracts
 
--   Prometheus instrumentation
--   Metric aggregation
--   Leaderboard computation
+When architecture changes, update these sources together:
 
-------------------------------------------------------------------------
+- `README.md` (runtime + topology summary)
+- `docs/architecture.md` (operational architecture diagrams)
+- `Codex/Galactic_Trader_Architecture_Infrastructure_Codex.md` (this file)
 
-# IV. Data Architecture
-
-Primary Database: PostgreSQL
-
-Core Tables: - Players - Ships - Crew - Sectors - Routes - Factions -
-Markets - TradeTransactions - CombatLogs - NPCState - Leaderboards
-
-Indexes: - PlayerId - SectorId - FactionId - MarketId - Timestamp
-
-Caching Layer: Redis
-
-Used For: - Active session tracking - Route cache - Leaderboard
-snapshots - Combat tick state - Sector heatmaps
-
-------------------------------------------------------------------------
-
-# V. Simulation Engine Design
-
-## Tick Engine
-
--   Resolution: 250ms (combat)
--   Resolution: 1s (navigation + NPC decisions)
--   Stateless REST endpoints
--   Stateful simulation workers
-
-Each tick: 1. Update ship states 2. Evaluate encounters 3. Process
-combat ticks 4. Update economic deltas 5. Emit telemetry events
-
-------------------------------------------------------------------------
-
-# VI. Infrastructure Deployment
-
-## Dockerized Services
-
-Containers: - api-gateway - navigation-service - combat-service -
-economy-service - npc-service - fleet-service - communication-service -
-postgres - redis - keycloak - prometheus - grafana
-
-Network: - Internal Docker network - Gateway exposed externally
-
-------------------------------------------------------------------------
-
-# VII. Observability & Monitoring
-
-Prometheus Metrics:
-
--   api_request_duration_seconds
--   combat_tick_duration_seconds
--   route_calculation_time_seconds
--   db_query_duration_seconds
--   redis_cache_hit_ratio
--   active_users_current
--   active_battles_current
--   total_currency_in_circulation
-
-Grafana Dashboards:
-
-1.  Live System Health
-2.  Economic Stability
-3.  Sector Risk Heatmap
-4.  NPC vs Player Influence
-5.  Combat Distribution
-
-------------------------------------------------------------------------
-
-# VIII. Security Architecture
-
--   JWT validation middleware
--   Role-based endpoint protection
--   Service-to-service authentication
--   Database role separation
--   Rate limiting on gateway
--   Anti-exploit anomaly detection
-
-------------------------------------------------------------------------
-
-# IX. Scaling Strategy
-
-Phase 1: - Single-node Docker deployment
-
-Phase 2: - Separate DB and Redis host - Horizontal scaling of stateless
-services
-
-Phase 3: - Kubernetes cluster - Dedicated simulation workers -
-Load-balanced gateway
-
-------------------------------------------------------------------------
-
-# X. Backup & Resilience
-
--   Nightly PostgreSQL backups
--   Redis snapshotting
--   Health checks on all services
--   Automatic container restart policies
--   Graceful shutdown of tick engines
-
-------------------------------------------------------------------------
-
-# XI. CI/CD Strategy
-
--   Git-based version control
--   Automated build pipeline
--   Docker image publishing
--   Versioned deployments
--   Environment-based config (Dev / Staging / Prod)
-
-------------------------------------------------------------------------
-
-# XII. Performance Targets
-
--   Combat tick under 50ms processing
--   Route calculation under 20ms average
--   API p95 latency under 150ms
--   1,000+ concurrent users scalable
--   Deterministic simulation under load
-
-------------------------------------------------------------------------
-
-# XIII. Future Infrastructure Enhancements
-
--   Event Bus (Kafka or RabbitMQ)
--   Distributed caching layer
--   AI model service for advanced NPC behavior
--   Edge CDN for asset distribution
--   Cross-region deployment
-
-------------------------------------------------------------------------
-
-End of Architecture & Infrastructure Codex
+## 7. References
+
+- `README.md`
+- `docs/architecture.md`
+- `docs/deployment-cicd.md`
+- `docs/admin-auth-deprecation.md`
+- `docs/strategic-schema-remediation.md`
