@@ -3,7 +3,7 @@
 ## Workflows
 - `dotnet-ci.yml`: runs restore/build/test on pushes and pull requests.
 - `docker-compose-smoke.yml`: brings up backend services with Docker Compose and runs gateway smoke checks on pushes and pull requests.
-- `docker-publish.yml`: builds and pushes `ghcr.io/<owner>/galactictrader-api` and `ghcr.io/<owner>/galactictrader-gateway` on `main` and tags.
+- `docker-publish.yml`: builds and pushes `ghcr.io/<owner>/galactictrader/api` and `ghcr.io/<owner>/galactictrader/gateway` on `main` and tags.
 - `deploy.yml`: manual deployment orchestration (`staging` or `production`) with optional rollback tag.
 - `nightly-backups.yml`: scheduled PostgreSQL and Redis backup job with retained artifacts.
 - `performance-benchmarks.yml`: scheduled/manual BenchmarkDotNet run with uploaded artifacts.
@@ -11,8 +11,8 @@
 ## Registry
 - Container registry: GitHub Container Registry (`ghcr.io`).
 - Image naming:
-  - `ghcr.io/<owner>/galactictrader-api:<tag>`
-  - `ghcr.io/<owner>/galactictrader-gateway:<tag>`
+  - `ghcr.io/<owner>/galactictrader/api:<tag>`
+  - `ghcr.io/<owner>/galactictrader/gateway:<tag>`
 
 ## Gateway Smoke Checks
 After deploying the stack:

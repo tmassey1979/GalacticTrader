@@ -9,7 +9,8 @@ if [[ "$MODE" == "--dry-run" ]]; then
 fi
 
 OWNER="${IMAGE_OWNER:-${GITHUB_REPOSITORY_OWNER:-tmassey1979}}"
-API_IMAGE="ghcr.io/${OWNER}/galactictrader-api:${IMAGE_TAG}"
+API_IMAGE_PATH="${API_IMAGE_PATH:-galactictrader/api}"
+API_IMAGE="ghcr.io/${OWNER}/${API_IMAGE_PATH}:${IMAGE_TAG}"
 ENV_FILE="${ENV_FILE:-infrastructure/production.env}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
