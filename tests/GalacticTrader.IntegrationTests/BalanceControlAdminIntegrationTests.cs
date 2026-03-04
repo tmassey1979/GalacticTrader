@@ -112,16 +112,26 @@ public sealed class BalanceControlAdminIntegrationTests : IClassFixture<ApiWebAp
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    private HttpClient CreateClientWithLegacyKeyAuth(bool enabled, bool includeAdminKeyConfiguration)
+    [Fact]
+    public async Task LegacyAdminKey_IsDisabledByDefault_InNonDevelopmentEnvironment()
+    {
+        using var client = CreateClientWithLegacyKeyAuth(enabled: null, includeAdminKeyConfiguration: true);
+        var response = await GetWithAdminKeyAsync(client, "/api/admin/balance/state");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    private HttpClient CreateClientWithLegacyKeyAuth(bool? enabled, bool includeAdminKeyConfiguration)
     {
         var configuredFactory = _factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, configurationBuilder) =>
             {
-                var values = new Dictionary<string, string?>
+                var values = new Dictionary<string, string?>();
+                if (enabled.HasValue)
                 {
-                    ["Admin:AllowLegacyKeyAuth"] = enabled.ToString()
-                };
+                    values["Admin:AllowLegacyKeyAuth"] = enabled.Value.ToString();
+                }
+
                 if (includeAdminKeyConfiguration)
                 {
                     values["Admin:Key"] = AdminKey;

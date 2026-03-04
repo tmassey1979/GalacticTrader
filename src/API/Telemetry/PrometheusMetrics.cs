@@ -72,4 +72,12 @@ internal static class PrometheusMetrics
         {
             Buckets = Histogram.ExponentialBuckets(0.001, 2, 12)
         });
+
+    public static readonly Counter AdminLegacyKeyAuthorizationAttempts = Metrics.CreateCounter(
+        "admin_legacy_key_auth_attempts_total",
+        "Legacy X-Admin-Key authorization attempts during deprecation window.",
+        new CounterConfiguration
+        {
+            LabelNames = ["result"]
+        });
 }

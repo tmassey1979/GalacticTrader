@@ -110,3 +110,9 @@ dotnet ef database update <PreviousMigrationName> \
 ## Vault Secrets
 - API supports HashiCorp Vault secret bootstrap at startup.
 - See `docs/vault-secrets.md` for configuration and local seeding commands.
+
+## Admin Auth Deprecation
+
+- Legacy `X-Admin-Key` support is deprecated and default-off outside Development.
+- Migration timeline and cutover dates are documented in:
+  - `docs/admin-auth-deprecation.md`

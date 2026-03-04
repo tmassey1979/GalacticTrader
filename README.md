@@ -199,11 +199,13 @@ See `.env.example` for all configurable options:
 - `ASPNETCORE_ENVIRONMENT` - Development/Staging/Production
 - `ConnectionStrings__Default` - PostgreSQL connection string
 - `Redis__Connection` - Redis connection string
-- `Keycloak__ServerUrl` - Keycloak server URL
+- `Keycloak__ServerUrl` - Keycloak server URL (required with `Keycloak__Realm` + `Keycloak__ClientId` to enable external credential login)
+- `Keycloak__Realm` - Keycloak realm (required for external credential login)
+- `Keycloak__ClientId` - Keycloak client ID (required for external credential login)
 - `Keycloak__AllowLocalFallbackOnInvalidCredentials` - allow local `/api/auth/login` fallback when Keycloak rejects credentials (default `true`)
 - `GT_LOG_SERVER_URL` - Optional central log server URL (Seq-compatible) used by API and WPF clients
 - `GT_LOG_SERVER_API_KEY` - Optional API key for the log server
-- `Admin__AllowLegacyKeyAuth` - temporary compatibility toggle for `X-Admin-Key` admin-balance path
+- `Admin__AllowLegacyKeyAuth` - temporary compatibility toggle for `X-Admin-Key` admin-balance path (default `true` only in Development, `false` otherwise)
 - `Admin__Key` - required explicit key when legacy admin-key auth is enabled
 - `Strategic__IntelligenceExpiryWorker__Enabled` - enable/disable scheduled intelligence report expiry worker
 - `Strategic__IntelligenceExpiryWorker__IntervalSeconds` - scheduled intelligence report expiry interval in seconds (default `300`)
@@ -211,6 +213,7 @@ See `.env.example` for all configurable options:
 - `Vault__Address` / `Vault__Token` / `Vault__Path` - Vault connection and secret path
 
 See [docs/vault-secrets.md](docs/vault-secrets.md) for Vault setup and seeding steps.
+Legacy admin key deprecation timeline: [docs/admin-auth-deprecation.md](docs/admin-auth-deprecation.md)
 
 ## Docker Commands
 

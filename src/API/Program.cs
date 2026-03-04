@@ -148,6 +148,8 @@ builder.Services.AddHostedService<TelemetryGaugeRefreshService>();
 builder.Services.AddHostedService<IntelligenceReportExpiryWorker>();
 
 var app = builder.Build();
+var resolvedKeycloakOptions = app.Services.GetRequiredService<IOptions<KeycloakOptions>>().Value;
+LogAuthenticationMode(app.Environment, resolvedKeycloakOptions);
 
 using (var scope = app.Services.CreateScope())
 {
@@ -1956,17 +1958,17 @@ strategic.Map("/ws/dashboard/{playerId:guid}", async (
     }
 });
 
-static bool IsLegacyAdminKeyEnabled(IConfiguration configuration)
+static bool IsLegacyAdminKeyEnabled(IConfiguration configuration, IHostEnvironment environment)
 {
     var configured = configuration["Admin:AllowLegacyKeyAuth"]
         ?? configuration["Admin__AllowLegacyKeyAuth"];
 
-    if (string.IsNullOrWhiteSpace(configured))
+    if (bool.TryParse(configured, out var enabled))
     {
-        return true;
+        return enabled;
     }
 
-    return bool.TryParse(configured, out var enabled) && enabled;
+    return environment.IsDevelopment();
 }
 
 static bool IsAdminAuthorizedByLegacyKey(HttpContext context, IConfiguration configuration)
@@ -2005,13 +2007,45 @@ static async Task<IResult?> RequireAdminBalanceAuthorizationAsync(
             cancellationToken);
     }
 
+    var hostEnvironment = context.RequestServices.GetRequiredService<IHostEnvironment>();
+    var legacyKeyEnabled = IsLegacyAdminKeyEnabled(configuration, hostEnvironment);
+    var legacyKeyHeaderPresent = context.Request.Headers.ContainsKey("X-Admin-Key");
+
     // Temporary migration path for legacy automation using X-Admin-Key.
-    if (IsLegacyAdminKeyEnabled(configuration) && IsAdminAuthorizedByLegacyKey(context, configuration))
+    if (legacyKeyEnabled && IsAdminAuthorizedByLegacyKey(context, configuration))
     {
+        PrometheusMetrics.AdminLegacyKeyAuthorizationAttempts.WithLabels("success").Inc();
+        Log.Warning("Deprecated X-Admin-Key admin authentication path used.");
         return null;
     }
 
+    if (legacyKeyHeaderPresent)
+    {
+        var failureReason = legacyKeyEnabled ? "invalid" : "disabled";
+        PrometheusMetrics.AdminLegacyKeyAuthorizationAttempts.WithLabels(failureReason).Inc();
+        Log.Warning(
+            "Rejected deprecated X-Admin-Key admin authentication attempt. reason={Reason}",
+            failureReason);
+    }
+
     return Results.Unauthorized();
+}
+
+static bool IsKeycloakCredentialLoginConfigured(KeycloakOptions options)
+{
+    return !string.IsNullOrWhiteSpace(options.ServerUrl) &&
+           !string.IsNullOrWhiteSpace(options.Realm) &&
+           !string.IsNullOrWhiteSpace(options.ClientId);
+}
+
+static void LogAuthenticationMode(IHostEnvironment environment, KeycloakOptions options)
+{
+    var keycloakCredentialLoginConfigured = IsKeycloakCredentialLoginConfigured(options);
+    Log.Information(
+        "Authentication mode resolved. environment={Environment}; keycloakCredentialLoginConfigured={KeycloakConfigured}; allowLocalFallbackOnInvalidCredentials={AllowLocalFallback}",
+        environment.EnvironmentName,
+        keycloakCredentialLoginConfigured,
+        options.AllowLocalFallbackOnInvalidCredentials);
 }
 
 var adminBalance = app.MapGroup("/api/admin/balance")

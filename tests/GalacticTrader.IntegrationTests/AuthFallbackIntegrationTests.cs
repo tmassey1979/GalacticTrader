@@ -17,6 +17,31 @@ public sealed class AuthFallbackIntegrationTests : IClassFixture<ApiWebApplicati
     }
 
     [Fact]
+    public async Task Login_UsesLocalAuth_WhenKeycloakIsNotConfigured()
+    {
+        using var client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("http://localhost")
+        });
+
+        var username = $"localauth_{Guid.NewGuid():N}"[..20];
+        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        {
+            username,
+            email = $"{username}@gt.test",
+            password = "WarpDrive123!"
+        });
+        Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
+
+        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            username,
+            password = "WarpDrive123!"
+        });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Login_FallsBackToLocalAuth_WhenKeycloakRejectsCredentials_AndFallbackEnabled()
     {
         await using var keycloak = await FakeUnauthorizedKeycloakServer.StartAsync();

@@ -10,7 +10,7 @@ public class KeycloakOptions
     /// <summary>
     /// Keycloak server URL (e.g., http://localhost:8080)
     /// </summary>
-    public string ServerUrl { get; set; } = "http://localhost:8180";
+    public string ServerUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// Optional issuer base URL or full issuer URL used for validating incoming tokens.
@@ -20,12 +20,12 @@ public class KeycloakOptions
     /// <summary>
     /// Keycloak realm name (e.g., "galactic-trader")
     /// </summary>
-    public string Realm { get; set; } = "galactictrader";
+    public string Realm { get; set; } = string.Empty;
 
     /// <summary>
     /// OAuth2/OIDC client ID
     /// </summary>
-    public string ClientId { get; set; } = "map-generator-desktop";
+    public string ClientId { get; set; } = string.Empty;
 
     /// <summary>
     /// OAuth2/OIDC client secret (for server-to-server auth)
