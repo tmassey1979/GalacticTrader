@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Shared\GalacticTrader.ClientSdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Assets\Models\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

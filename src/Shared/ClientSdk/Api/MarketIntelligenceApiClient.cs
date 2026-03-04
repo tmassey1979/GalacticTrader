@@ -14,19 +14,18 @@ public sealed class MarketIntelligenceApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<MarketIntelligenceSummaryApiDto> GetSummaryAsync(int limit = 8, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/telemetry/market-intelligence?limit={Math.Clamp(limit, 3, 20)}", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load market intelligence failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load market intelligence failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<MarketIntelligenceSummaryApiDto>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<MarketIntelligenceSummaryApiDto>(response, cancellationToken);
         return payload ?? new MarketIntelligenceSummaryApiDto();
     }
 }
+
+
+

@@ -14,19 +14,15 @@ public sealed class FleetApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<IReadOnlyList<ShipApiDto>> GetPlayerShipsAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/fleet/players/{playerId}/ships", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load ships failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load ships failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<ShipApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<ShipApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
@@ -41,12 +37,11 @@ public sealed class FleetApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load escort summary failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load escort summary failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<EscortSummaryApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<EscortSummaryApiDto>(response, cancellationToken);
     }
 }
+
+
+

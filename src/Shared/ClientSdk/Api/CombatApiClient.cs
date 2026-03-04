@@ -14,19 +14,18 @@ public sealed class CombatApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<IReadOnlyList<CombatLogApiDto>> GetRecentLogsAsync(int limit = 20, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/combat/logs?limit={limit}", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load combat logs failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load combat logs failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<CombatLogApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<CombatLogApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 }
+
+
+

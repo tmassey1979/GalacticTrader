@@ -29,6 +29,15 @@ This document defines the initial architecture baseline for migrating the deskto
 - `Territory`: dominance and policy actions.
 - `Communication`: channels and realtime events.
 
+## Shared Client SDK
+
+- Shared API contracts and client implementations now live in `src/Shared/GalacticTrader.ClientSdk.csproj`.
+- Desktop references this SDK directly, and Unity can consume the same assembly to keep API parity.
+- Existing DTO/client namespaces are preserved for compatibility during migration.
+- HTTP error and JSON handling are standardized through shared runtime helpers:
+  - `ApiClientException` for non-success responses
+  - `ApiClientRuntime` for consistent bearer token, status handling, and JSON reads
+
 ## Action-First UX Principles
 
 - Primary screen focus is on available actions, not telemetry blocks.

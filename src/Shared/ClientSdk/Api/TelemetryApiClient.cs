@@ -14,19 +14,18 @@ public sealed class TelemetryApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<GlobalMetricsSummaryApiDto> GetGlobalSummaryAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync("/api/telemetry/global-summary", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load global summary failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load global summary failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<GlobalMetricsSummaryApiDto>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<GlobalMetricsSummaryApiDto>(response, cancellationToken);
         return payload ?? new GlobalMetricsSummaryApiDto();
     }
 }
+
+
+

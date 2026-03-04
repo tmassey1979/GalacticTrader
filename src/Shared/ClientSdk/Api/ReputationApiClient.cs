@@ -14,32 +14,24 @@ public sealed class ReputationApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<IReadOnlyList<PlayerFactionStandingApiDto>> GetFactionStandingsAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/reputation/factions/{playerId}", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load faction standings failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load faction standings failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<PlayerFactionStandingApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<PlayerFactionStandingApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
     public async Task<IReadOnlyList<FactionBenefitApiDto>> GetFactionBenefitsAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/reputation/factions/{playerId}/benefits", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load faction benefits failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load faction benefits failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<FactionBenefitApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<FactionBenefitApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
@@ -51,13 +43,9 @@ public sealed class ReputationApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load alignment access failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load alignment access failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<AlignmentAccessApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<AlignmentAccessApiDto>(response, cancellationToken);
     }
 
     public async Task<AlignmentStateApiDto?> ApplyAlignmentActionAsync(
@@ -70,12 +58,11 @@ public sealed class ReputationApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Apply alignment action failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Apply alignment action failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<AlignmentStateApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<AlignmentStateApiDto>(response, cancellationToken);
     }
 }
+
+
+

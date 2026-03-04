@@ -14,32 +14,24 @@ public sealed class NavigationApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<IReadOnlyList<SectorApiDto>> GetSectorsAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync("/api/navigation/sectors", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Failed to load sectors ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Failed to load sectors", cancellationToken);
 
-        var sectors = await response.Content.ReadFromJsonAsync<List<SectorApiDto>>(cancellationToken);
+        var sectors = await ApiClientRuntime.ReadAsync<List<SectorApiDto>>(response, cancellationToken);
         return sectors ?? [];
     }
 
     public async Task<IReadOnlyList<RouteApiDto>> GetRoutesAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync("/api/navigation/routes", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Failed to load routes ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Failed to load routes", cancellationToken);
 
-        var routes = await response.Content.ReadFromJsonAsync<List<RouteApiDto>>(cancellationToken);
+        var routes = await ApiClientRuntime.ReadAsync<List<RouteApiDto>>(response, cancellationToken);
         return routes ?? [];
     }
 
@@ -48,13 +40,9 @@ public sealed class NavigationApiClient
         CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/navigation/routes/dangerous?riskThreshold={riskThreshold}", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Failed to load dangerous routes ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Failed to load dangerous routes", cancellationToken);
 
-        var routes = await response.Content.ReadFromJsonAsync<List<RouteApiDto>>(cancellationToken);
+        var routes = await ApiClientRuntime.ReadAsync<List<RouteApiDto>>(response, cancellationToken);
         return routes ?? [];
     }
 
@@ -74,13 +62,9 @@ public sealed class NavigationApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Route planning failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Route planning failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<RoutePlanApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<RoutePlanApiDto>(response, cancellationToken);
     }
 
     public async Task<RouteOptimizationApiDto> GetRouteOptimizationAsync(
@@ -89,39 +73,30 @@ public sealed class NavigationApiClient
         CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/navigation/planning/{fromSectorId}/{toSectorId}/optimize", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Route optimization failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Route optimization failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<RouteOptimizationApiDto>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<RouteOptimizationApiDto>(response, cancellationToken);
         return payload ?? new RouteOptimizationApiDto();
     }
 
     public async Task<SectorApiDto> CreateSectorAsync(CreateSectorApiRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("/api/navigation/sectors", request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Create sector failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Create sector failed", cancellationToken);
 
-        var sector = await response.Content.ReadFromJsonAsync<SectorApiDto>(cancellationToken);
+        var sector = await ApiClientRuntime.ReadAsync<SectorApiDto>(response, cancellationToken);
         return sector ?? throw new InvalidOperationException("Create sector response was empty.");
     }
 
     public async Task<RouteApiDto> CreateRouteAsync(CreateRouteApiRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("/api/navigation/routes", request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Create route failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Create route failed", cancellationToken);
 
-        var route = await response.Content.ReadFromJsonAsync<RouteApiDto>(cancellationToken);
+        var route = await ApiClientRuntime.ReadAsync<RouteApiDto>(response, cancellationToken);
         return route ?? throw new InvalidOperationException("Create route response was empty.");
     }
 }
+
+
+

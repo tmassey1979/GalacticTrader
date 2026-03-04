@@ -14,19 +14,15 @@ public sealed class NpcApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<IReadOnlyList<NpcAgentApiDto>> GetAgentsAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync("/api/npc/agents", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load NPC agents failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load NPC agents failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<NpcAgentApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<NpcAgentApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
@@ -38,13 +34,9 @@ public sealed class NpcApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Tick NPC agent failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Tick NPC agent failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<NpcDecisionResultApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<NpcDecisionResultApiDto>(response, cancellationToken);
     }
 
     public async Task<NpcFleetSummaryApiDto?> SpawnFleetAsync(Guid agentId, int ships = 4, CancellationToken cancellationToken = default)
@@ -55,12 +47,11 @@ public sealed class NpcApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Spawn NPC fleet failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Spawn NPC fleet failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<NpcFleetSummaryApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<NpcFleetSummaryApiDto>(response, cancellationToken);
     }
 }
+
+
+

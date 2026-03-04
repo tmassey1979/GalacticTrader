@@ -14,7 +14,7 @@ public sealed class LeaderboardApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<IReadOnlyList<LeaderboardEntryApiDto>> GetLeaderboardAsync(
@@ -24,13 +24,9 @@ public sealed class LeaderboardApiClient
     {
         var normalizedType = string.IsNullOrWhiteSpace(leaderboardType) ? "reputation" : leaderboardType.Trim();
         var response = await _httpClient.GetAsync($"/api/leaderboards/{normalizedType}?limit={Math.Clamp(limit, 1, 200)}", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load leaderboard failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load leaderboard failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<LeaderboardEntryApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
@@ -42,13 +38,12 @@ public sealed class LeaderboardApiClient
             return [];
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Recalculate leaderboard failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Recalculate leaderboard failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<LeaderboardEntryApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<LeaderboardEntryApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 }
+
+
+

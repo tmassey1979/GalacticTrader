@@ -14,7 +14,7 @@ public sealed class EconomyApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<PricePreviewApiResultDto> PreviewPriceAsync(
@@ -22,13 +22,12 @@ public sealed class EconomyApiClient
         CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("/api/economy/price-preview", request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Price preview failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Price preview failed", cancellationToken);
 
-        var result = await response.Content.ReadFromJsonAsync<PricePreviewApiResultDto>(cancellationToken);
+        var result = await ApiClientRuntime.ReadAsync<PricePreviewApiResultDto>(response, cancellationToken);
         return result ?? throw new InvalidOperationException("Price preview response was empty.");
     }
 }
+
+
+

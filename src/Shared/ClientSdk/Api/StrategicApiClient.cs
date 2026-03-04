@@ -14,7 +14,7 @@ public sealed class StrategicApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<IReadOnlyList<IntelligenceReportApiDto>> GetIntelligenceReportsAsync(
@@ -22,26 +22,18 @@ public sealed class StrategicApiClient
         CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/strategic/intelligence/reports/{playerId}", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load intelligence reports failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load intelligence reports failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<IntelligenceReportApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<IntelligenceReportApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
     public async Task<IReadOnlyList<TerritoryDominanceApiDto>> GetTerritoryDominanceAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync("/api/strategic/territory-dominance", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load territory dominance failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load territory dominance failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<TerritoryDominanceApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<TerritoryDominanceApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
@@ -55,13 +47,9 @@ public sealed class StrategicApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Recalculate territory dominance failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Recalculate territory dominance failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<TerritoryDominanceApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<TerritoryDominanceApiDto>(response, cancellationToken);
     }
 
     public async Task<IReadOnlyList<TerritoryEconomicPolicyApiDto>> GetTerritoryEconomicPoliciesAsync(
@@ -73,13 +61,9 @@ public sealed class StrategicApiClient
             : "/api/strategic/territory-economic-policy";
 
         var response = await _httpClient.GetAsync(path, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load territory economic policy failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load territory economic policy failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<TerritoryEconomicPolicyApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<TerritoryEconomicPolicyApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
@@ -93,12 +77,11 @@ public sealed class StrategicApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Update territory economic policy failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Update territory economic policy failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<TerritoryEconomicPolicyApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<TerritoryEconomicPolicyApiDto>(response, cancellationToken);
     }
 }
+
+
+

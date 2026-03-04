@@ -14,27 +14,19 @@ public sealed class CommunicationApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task SubscribeAsync(SubscribeChannelApiRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("/api/communication/subscribe", request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Subscribe failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Subscribe failed", cancellationToken);
     }
 
     public async Task UnsubscribeAsync(SubscribeChannelApiRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("/api/communication/unsubscribe", request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Unsubscribe failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Unsubscribe failed", cancellationToken);
     }
 
     public async Task<IReadOnlyList<CommunicationChannelMessageApiDto>> GetRecentMessagesAsync(
@@ -49,13 +41,9 @@ public sealed class CommunicationApiClient
             $"/api/communication/messages/{escapedType}/{escapedKey}?limit={Math.Clamp(limit, 1, 200)}",
             cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load channel messages failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load channel messages failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<CommunicationChannelMessageApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<CommunicationChannelMessageApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
@@ -65,13 +53,9 @@ public sealed class CommunicationApiClient
     {
         var response = await _httpClient.PostAsJsonAsync("/api/communication/messages", request, cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Send message failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Send message failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<CommunicationChannelMessageApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<CommunicationChannelMessageApiDto>(response, cancellationToken);
     }
 
     public async Task<VoiceChannelApiDto> CreateVoiceChannelAsync(
@@ -79,13 +63,9 @@ public sealed class CommunicationApiClient
         CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("/api/communication/voice/channels", request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Create voice channel failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Create voice channel failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<VoiceChannelApiDto>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<VoiceChannelApiDto>(response, cancellationToken);
         return payload ?? throw new InvalidOperationException("Voice channel create response was empty.");
     }
 
@@ -100,13 +80,9 @@ public sealed class CommunicationApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Join voice channel failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Join voice channel failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<VoiceChannelApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<VoiceChannelApiDto>(response, cancellationToken);
     }
 
     public async Task<bool> LeaveVoiceChannelAsync(
@@ -120,11 +96,7 @@ public sealed class CommunicationApiClient
             return false;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Leave voice channel failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Leave voice channel failed", cancellationToken);
 
         return true;
     }
@@ -139,13 +111,9 @@ public sealed class CommunicationApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load voice QoS failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load voice QoS failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<VoiceQosSnapshotApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<VoiceQosSnapshotApiDto>(response, cancellationToken);
     }
 
     public async Task<VoiceActivityApiDto?> UpdateVoiceActivityAsync(
@@ -159,13 +127,9 @@ public sealed class CommunicationApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Update voice activity failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Update voice activity failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<VoiceActivityApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<VoiceActivityApiDto>(response, cancellationToken);
     }
 
     public async Task<VoiceSignalApiDto?> PublishVoiceSignalAsync(
@@ -179,13 +143,9 @@ public sealed class CommunicationApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Publish voice signal failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Publish voice signal failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<VoiceSignalApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<VoiceSignalApiDto>(response, cancellationToken);
     }
 
     public async Task<IReadOnlyList<VoiceSignalApiDto>> DequeueVoiceSignalsAsync(
@@ -203,13 +163,9 @@ public sealed class CommunicationApiClient
             return [];
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Poll voice signals failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Poll voice signals failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<VoiceSignalApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<VoiceSignalApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 
@@ -224,12 +180,11 @@ public sealed class CommunicationApiClient
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Calculate spatial audio failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Calculate spatial audio failed", cancellationToken);
 
-        return await response.Content.ReadFromJsonAsync<SpatialAudioResultApiDto>(cancellationToken);
+        return await ApiClientRuntime.ReadAsync<SpatialAudioResultApiDto>(response, cancellationToken);
     }
 }
+
+
+

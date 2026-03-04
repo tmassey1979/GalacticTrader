@@ -19,11 +19,7 @@ public sealed class AuthApiClient
             request,
             cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Register failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Register failed", cancellationToken);
     }
 
     public Task RegisterAsync(string username, string email, string password, CancellationToken cancellationToken = default)
@@ -42,14 +38,9 @@ public sealed class AuthApiClient
             },
             cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            
-            throw new InvalidOperationException($"Login failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Login failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<AuthLoginResultDto>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<AuthLoginResultDto>(response, cancellationToken);
         if (payload is null || payload.Player is null || string.IsNullOrWhiteSpace(payload.AccessToken))
         {
             throw new InvalidOperationException("Login response did not include player session details.");
@@ -58,3 +49,6 @@ public sealed class AuthApiClient
         return new DesktopSession(payload.Player.PlayerId, payload.Player.Username, payload.AccessToken);
     }
 }
+
+
+

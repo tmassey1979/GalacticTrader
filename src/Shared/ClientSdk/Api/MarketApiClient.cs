@@ -14,7 +14,7 @@ public sealed class MarketApiClient
 
     public void SetBearerToken(string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        ApiClientRuntime.SetBearerToken(_httpClient, accessToken);
     }
 
     public async Task<IReadOnlyList<TradeExecutionResultApiDto>> GetTransactionsAsync(
@@ -23,13 +23,12 @@ public sealed class MarketApiClient
         CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"/api/market/transactions/{playerId}?limit={limit}", cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Load transactions failed ({(int)response.StatusCode}): {detail}");
-        }
+        await ApiClientRuntime.EnsureSuccessAsync(response, "Load transactions failed", cancellationToken);
 
-        var payload = await response.Content.ReadFromJsonAsync<List<TradeExecutionResultApiDto>>(cancellationToken);
+        var payload = await ApiClientRuntime.ReadAsync<List<TradeExecutionResultApiDto>>(response, cancellationToken);
         return payload ?? [];
     }
 }
+
+
+
