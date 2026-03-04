@@ -151,6 +151,7 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<GalacticTraderDbContext>();
     await dbContext.Database.EnsureCreatedAsync();
+    await EnsureStrategicSchemaAsync(dbContext, CancellationToken.None);
 
     var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
     await EnsureBootstrapAdminPlayerAsync(dbContext, authService, builder.Configuration, CancellationToken.None);
@@ -2319,6 +2320,36 @@ static bool TryReadBearerToken(HttpContext context, out string token)
 
     token = extractedToken;
     return true;
+}
+
+static async Task EnsureStrategicSchemaAsync(
+    GalacticTraderDbContext dbContext,
+    CancellationToken cancellationToken)
+{
+    if (!dbContext.Database.IsNpgsql())
+    {
+        return;
+    }
+
+    await dbContext.Database.ExecuteSqlRawAsync(
+        """
+        CREATE TABLE IF NOT EXISTS "TerritoryDominances" (
+            "Id" uuid NOT NULL,
+            "FactionId" uuid NOT NULL,
+            "ControlledSectorCount" integer NOT NULL,
+            "InfrastructureControlScore" real NOT NULL,
+            "WarMomentumScore" real NOT NULL,
+            "DominanceScore" real NOT NULL,
+            "UpdatedAt" timestamp with time zone NOT NULL,
+            CONSTRAINT "PK_TerritoryDominances" PRIMARY KEY ("Id"),
+            CONSTRAINT "FK_TerritoryDominances_Factions_FactionId"
+                FOREIGN KEY ("FactionId") REFERENCES "Factions" ("Id")
+                ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS "IX_TerritoryDominances_FactionId"
+            ON "TerritoryDominances" ("FactionId");
+        """,
+        cancellationToken);
 }
 
 static async Task EnsureBootstrapAdminPlayerAsync(
