@@ -36,6 +36,7 @@ using System.Security.Claims;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Data;
 
 var logServerUrl = Environment.GetEnvironmentVariable("GT_LOG_SERVER_URL");
 var logServerApiKey = Environment.GetEnvironmentVariable("GT_LOG_SERVER_API_KEY");
@@ -151,8 +152,15 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<GalacticTraderDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
-    await EnsureStrategicSchemaAsync(dbContext, CancellationToken.None);
+    if (dbContext.Database.IsRelational())
+    {
+        await dbContext.Database.MigrateAsync();
+        await ValidateStrategicSchemaSmokeCheckAsync(dbContext, CancellationToken.None);
+    }
+    else
+    {
+        await dbContext.Database.EnsureCreatedAsync();
+    }
 
     var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
     await EnsureBootstrapAdminPlayerAsync(dbContext, authService, builder.Configuration, CancellationToken.None);
@@ -3108,7 +3116,7 @@ static bool TryReadBearerToken(HttpContext context, out string token)
     return true;
 }
 
-static async Task EnsureStrategicSchemaAsync(
+static async Task ValidateStrategicSchemaSmokeCheckAsync(
     GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken)
 {
@@ -3117,25 +3125,67 @@ static async Task EnsureStrategicSchemaAsync(
         return;
     }
 
-    await dbContext.Database.ExecuteSqlRawAsync(
-        """
-        CREATE TABLE IF NOT EXISTS "TerritoryDominances" (
-            "Id" uuid NOT NULL,
-            "FactionId" uuid NOT NULL,
-            "ControlledSectorCount" integer NOT NULL,
-            "InfrastructureControlScore" real NOT NULL,
-            "WarMomentumScore" real NOT NULL,
-            "DominanceScore" real NOT NULL,
-            "UpdatedAt" timestamp with time zone NOT NULL,
-            CONSTRAINT "PK_TerritoryDominances" PRIMARY KEY ("Id"),
-            CONSTRAINT "FK_TerritoryDominances_Factions_FactionId"
-                FOREIGN KEY ("FactionId") REFERENCES "Factions" ("Id")
-                ON DELETE CASCADE
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS "IX_TerritoryDominances_FactionId"
-            ON "TerritoryDominances" ("FactionId");
-        """,
-        cancellationToken);
+    var expectedStrategicTables = new[]
+    {
+        "SectorVolatilityCycles",
+        "CorporateWars",
+        "InfrastructureOwnerships",
+        "TerritoryDominances",
+        "InsurancePolicies",
+        "InsuranceClaims",
+        "IntelligenceNetworks",
+        "IntelligenceReports"
+    };
+
+    var missingTables = new List<string>();
+    await using var connection = dbContext.Database.GetDbConnection();
+    var shouldClose = connection.State != ConnectionState.Open;
+    if (shouldClose)
+    {
+        await connection.OpenAsync(cancellationToken);
+    }
+
+    try
+    {
+        foreach (var tableName in expectedStrategicTables)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                      AND table_name = @tableName
+                );
+                """;
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@tableName";
+            parameter.Value = tableName;
+            command.Parameters.Add(parameter);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            var exists = result is bool present && present;
+            if (!exists)
+            {
+                missingTables.Add(tableName);
+            }
+        }
+    }
+    finally
+    {
+        if (shouldClose)
+        {
+            await connection.CloseAsync();
+        }
+    }
+
+    if (missingTables.Count > 0)
+    {
+        throw new InvalidOperationException(
+            $"Migration smoke check failed. Missing strategic tables: {string.Join(", ", missingTables)}");
+    }
 }
 
 static async Task EnsureBootstrapAdminPlayerAsync(

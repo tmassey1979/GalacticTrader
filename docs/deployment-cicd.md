@@ -59,6 +59,54 @@ Run rollback using a previously published image tag:
 
 Use `--dry-run` on deploy and rollback scripts to validate command construction without applying changes.
 
+## Database Migrations (PostgreSQL)
+
+GalacticTrader now uses managed EF Core migrations for relational deployments.
+
+- API startup behavior:
+  - PostgreSQL/relational providers: apply pending migrations via `Database.Migrate()`.
+  - In-memory/non-relational providers (test/dev-only): use `EnsureCreated()`.
+- Startup smoke check validates required strategic tables after migration:
+  - `SectorVolatilityCycles`
+  - `CorporateWars`
+  - `InfrastructureOwnerships`
+  - `TerritoryDominances`
+  - `InsurancePolicies`
+  - `InsuranceClaims`
+  - `IntelligenceNetworks`
+  - `IntelligenceReports`
+
+### Pre-Deployment Migration Script (Recommended)
+
+Generate an idempotent SQL migration artifact from CI or a release workstation:
+
+```bash
+dotnet ef migrations script --idempotent \
+  --project src/Data/GalacticTrader.Data.csproj \
+  --startup-project src/API/GalacticTrader.API.csproj \
+  --output artifacts/migrations/latest-idempotent.sql
+```
+
+Apply with your standard PostgreSQL change-control tooling (or allow app startup to apply migrations automatically).
+
+### Rollback Procedure (Schema)
+
+1. Take a fresh PostgreSQL backup/snapshot.
+2. Identify the previous target migration:
+```bash
+dotnet ef migrations list \
+  --project src/Data/GalacticTrader.Data.csproj \
+  --startup-project src/API/GalacticTrader.API.csproj
+```
+3. Revert schema to the selected migration:
+```bash
+dotnet ef database update <PreviousMigrationName> \
+  --project src/Data/GalacticTrader.Data.csproj \
+  --startup-project src/API/GalacticTrader.API.csproj
+```
+4. Redeploy the corresponding application image tag.
+5. Re-run gateway smoke checks and strategic endpoint checks.
+
 ## Vault Secrets
 - API supports HashiCorp Vault secret bootstrap at startup.
 - See `docs/vault-secrets.md` for configuration and local seeding commands.

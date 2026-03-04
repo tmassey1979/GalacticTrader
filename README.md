@@ -169,6 +169,18 @@ dotnet ef database update --project src/Data --startup-project src/API
 dotnet ef migrations remove --project src/Data --startup-project src/API
 ```
 
+### Migration Drift Check (Required for PRs)
+
+CI enforces that model changes in `src/Data` include migration updates.
+
+```bash
+dotnet ef migrations has-pending-model-changes \
+  --project src/Data/GalacticTrader.Data.csproj \
+  --startup-project src/API/GalacticTrader.API.csproj
+```
+
+If this command reports pending model changes, generate and commit a migration before opening/updating the PR.
+
 ## API Documentation
 
 Once running, view the Swagger documentation at:

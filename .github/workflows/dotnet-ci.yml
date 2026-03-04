@@ -28,6 +28,27 @@ jobs:
       - name: Build
         run: dotnet build GalacticTrader.sln --configuration Release --no-restore
 
+      - name: Install dotnet-ef
+        shell: pwsh
+        run: |
+          dotnet tool update --global dotnet-ef --version 9.0.0
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: EF Migration Drift Guardrail
+        shell: pwsh
+        env:
+          ConnectionStrings__Default: Host=localhost;Database=galactictrader_ci_guardrail;Username=postgres;Password=postgres
+        run: |
+          dotnet ef migrations has-pending-model-changes --no-build --project src/Data/GalacticTrader.Data.csproj --startup-project src/API/GalacticTrader.API.csproj
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::EF model drift detected: update migrations for Data model changes."
+            Write-Host "Create migration:"
+            Write-Host "dotnet ef migrations add <MigrationName> --project src/Data/GalacticTrader.Data.csproj --startup-project src/API/GalacticTrader.API.csproj --output-dir Migrations"
+            Write-Host "Re-run validation:"
+            Write-Host "dotnet ef migrations has-pending-model-changes --project src/Data/GalacticTrader.Data.csproj --startup-project src/API/GalacticTrader.API.csproj"
+            exit $LASTEXITCODE
+          }
+
       - name: Unit Tests With Coverage Threshold
         run: >
           dotnet test tests/GalacticTrader.Tests/GalacticTrader.Tests.csproj
