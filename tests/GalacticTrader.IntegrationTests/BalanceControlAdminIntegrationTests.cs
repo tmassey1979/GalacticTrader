@@ -91,7 +91,7 @@ public sealed class BalanceControlAdminIntegrationTests : IClassFixture<ApiWebAp
     [Fact]
     public async Task LegacyAdminKey_WorksWhenMigrationFlagEnabled()
     {
-        using var client = CreateClientWithLegacyKeyAuth(enabled: true);
+        using var client = CreateClientWithLegacyKeyAuth(enabled: true, includeAdminKeyConfiguration: true);
         var response = await GetWithAdminKeyAsync(client, "/api/admin/balance/state");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -99,21 +99,35 @@ public sealed class BalanceControlAdminIntegrationTests : IClassFixture<ApiWebAp
     [Fact]
     public async Task LegacyAdminKey_IsRejectedWhenMigrationFlagDisabled()
     {
-        using var client = CreateClientWithLegacyKeyAuth(enabled: false);
+        using var client = CreateClientWithLegacyKeyAuth(enabled: false, includeAdminKeyConfiguration: true);
         var response = await GetWithAdminKeyAsync(client, "/api/admin/balance/state");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    private HttpClient CreateClientWithLegacyKeyAuth(bool enabled)
+    [Fact]
+    public async Task LegacyAdminKey_IsRejectedWhenAdminKeyNotConfigured()
+    {
+        using var client = CreateClientWithLegacyKeyAuth(enabled: true, includeAdminKeyConfiguration: false);
+        var response = await GetWithAdminKeyAsync(client, "/api/admin/balance/state");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    private HttpClient CreateClientWithLegacyKeyAuth(bool enabled, bool includeAdminKeyConfiguration)
     {
         var configuredFactory = _factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, configurationBuilder) =>
             {
-                configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                var values = new Dictionary<string, string?>
                 {
                     ["Admin:AllowLegacyKeyAuth"] = enabled.ToString()
-                });
+                };
+                if (includeAdminKeyConfiguration)
+                {
+                    values["Admin:Key"] = AdminKey;
+                }
+
+                configurationBuilder.AddInMemoryCollection(values);
             });
         });
 

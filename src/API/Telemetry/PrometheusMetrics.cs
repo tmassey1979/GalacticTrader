@@ -52,4 +52,24 @@ internal static class PrometheusMetrics
     public static readonly Gauge TotalCurrencyInCirculation = Metrics.CreateGauge(
         "total_currency_in_circulation",
         "Total currency currently tracked across players and faction treasuries.");
+
+    public static readonly Counter StrategicIntelligenceExpiryRuns = Metrics.CreateCounter(
+        "strategic_intelligence_expiry_runs_total",
+        "Total number of scheduled intelligence expiry job runs.",
+        new CounterConfiguration
+        {
+            LabelNames = ["status"]
+        });
+
+    public static readonly Counter StrategicIntelligenceReportsExpired = Metrics.CreateCounter(
+        "strategic_intelligence_reports_expired_total",
+        "Total number of intelligence reports expired by scheduled maintenance.");
+
+    public static readonly Histogram StrategicIntelligenceExpiryDuration = Metrics.CreateHistogram(
+        "strategic_intelligence_expiry_duration_seconds",
+        "Duration of scheduled intelligence expiry job execution.",
+        new HistogramConfiguration
+        {
+            Buckets = Histogram.ExponentialBuckets(0.001, 2, 12)
+        });
 }

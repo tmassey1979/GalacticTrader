@@ -144,6 +144,7 @@ builder.Services.AddOptions<KeycloakOptions>()
 builder.Services.AddHttpClient<ITokenValidationService, KeycloakTokenValidationService>();
 builder.Services.AddSingleton<IVoiceService, VoiceService>();
 builder.Services.AddHostedService<TelemetryGaugeRefreshService>();
+builder.Services.AddHostedService<IntelligenceReportExpiryWorker>();
 
 var app = builder.Build();
 
@@ -344,7 +345,8 @@ auth.MapPost("/login", async (
         return Results.Ok(new LoginResult(identity, keycloakSession.AccessToken, keycloakSession.ExpiresAtUtc));
     }
 
-    if (keycloakAttempt.InvalidCredentials)
+    if (keycloakAttempt.InvalidCredentials &&
+        !keycloakOptions.AllowLocalFallbackOnInvalidCredentials)
     {
         return Results.Unauthorized();
     }
@@ -1822,8 +1824,12 @@ static bool IsLegacyAdminKeyEnabled(IConfiguration configuration)
 static bool IsAdminAuthorizedByLegacyKey(HttpContext context, IConfiguration configuration)
 {
     var expectedKey = configuration["Admin:Key"]
-        ?? configuration["Admin__Key"]
-        ?? "dev-admin-key";
+        ?? configuration["Admin__Key"];
+
+    if (string.IsNullOrWhiteSpace(expectedKey))
+    {
+        return false;
+    }
 
     if (!context.Request.Headers.TryGetValue("X-Admin-Key", out var providedKey))
     {

@@ -187,8 +187,13 @@ See `.env.example` for all configurable options:
 - `ConnectionStrings__Default` - PostgreSQL connection string
 - `Redis__Connection` - Redis connection string
 - `Keycloak__ServerUrl` - Keycloak server URL
+- `Keycloak__AllowLocalFallbackOnInvalidCredentials` - allow local `/api/auth/login` fallback when Keycloak rejects credentials (default `true`)
 - `GT_LOG_SERVER_URL` - Optional central log server URL (Seq-compatible) used by API and WPF clients
 - `GT_LOG_SERVER_API_KEY` - Optional API key for the log server
+- `Admin__AllowLegacyKeyAuth` - temporary compatibility toggle for `X-Admin-Key` admin-balance path
+- `Admin__Key` - required explicit key when legacy admin-key auth is enabled
+- `Strategic__IntelligenceExpiryWorker__Enabled` - enable/disable scheduled intelligence report expiry worker
+- `Strategic__IntelligenceExpiryWorker__IntervalSeconds` - scheduled intelligence report expiry interval in seconds (default `300`)
 - `Vault__Enabled` - Enable HashiCorp Vault secret bootstrap
 - `Vault__Address` / `Vault__Token` / `Vault__Path` - Vault connection and secret path
 

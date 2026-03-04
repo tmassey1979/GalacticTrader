@@ -43,6 +43,12 @@ public class KeycloakOptions
     public bool RequireHttpsMetadata { get; set; } = true;
 
     /// <summary>
+    /// When Keycloak rejects credentials, allow fallback to local auth store.
+    /// Useful for hybrid/dev scenarios where local users coexist with federated auth.
+    /// </summary>
+    public bool AllowLocalFallbackOnInvalidCredentials { get; set; } = true;
+
+    /// <summary>
     /// JWT token validation parameters
     /// </summary>
     public JwtValidationOptions JwtValidation { get; set; } = new();
