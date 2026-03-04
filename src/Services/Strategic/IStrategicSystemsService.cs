@@ -72,4 +72,33 @@ public interface IStrategicSystemsService
 
     Task<int> ExpireIntelligenceReportsAsync(
         CancellationToken cancellationToken = default);
+
+    Task<TerraColonistStatusDto> GetTerraColonistStatusAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<TerraColonistStatusDto?> UpdateTerraColonistSourceAsync(
+        UpdateTerraColonistSourceRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ColonistShipmentDto?> CreateColonistShipmentAsync(
+        CreateColonistShipmentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ColonistShipmentDto>> GetColonistShipmentsAsync(
+        Guid playerId,
+        bool includeDelivered = true,
+        CancellationToken cancellationToken = default);
+
+    Task<int> ProcessColonistArrivalsAsync(
+        Guid? playerId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ColonistDeliveryAuditDto>> GetColonistDeliveryHistoryAsync(
+        Guid playerId,
+        int limit = 50,
+        CancellationToken cancellationToken = default);
+
+    Task<TerraColonistTelemetryDto> GetTerraColonistTelemetryAsync(
+        Guid? playerId = null,
+        CancellationToken cancellationToken = default);
 }

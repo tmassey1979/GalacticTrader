@@ -62,6 +62,11 @@ namespace GalacticTrader.Data
         public DbSet<IntelligenceNetwork> IntelligenceNetworks { get; set; }
         public DbSet<IntelligenceReport> IntelligenceReports { get; set; }
 
+        // Realtime Terra Colonist Logistics
+        public DbSet<TerraColonistSource> TerraColonistSources { get; set; }
+        public DbSet<ColonistShipment> ColonistShipments { get; set; }
+        public DbSet<ColonistDeliveryAudit> ColonistDeliveryAudits { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -372,6 +377,62 @@ namespace GalacticTrader.Data
 
             modelBuilder.Entity<MarketPriceHistory>()
                 .HasIndex(mh => new { mh.MarketListingId, mh.RecordedAt })
+                .IsUnique(false);
+
+            // Configure TerraColonistSource
+            modelBuilder.Entity<TerraColonistSource>()
+                .HasKey(source => source.Id);
+            modelBuilder.Entity<TerraColonistSource>()
+                .HasOne(source => source.Sector)
+                .WithMany()
+                .HasForeignKey(source => source.SectorId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TerraColonistSource>()
+                .HasIndex(source => source.SectorId)
+                .IsUnique();
+
+            // Configure ColonistShipment
+            modelBuilder.Entity<ColonistShipment>()
+                .HasKey(shipment => shipment.Id);
+            modelBuilder.Entity<ColonistShipment>()
+                .HasOne(shipment => shipment.Player)
+                .WithMany()
+                .HasForeignKey(shipment => shipment.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ColonistShipment>()
+                .HasOne(shipment => shipment.FromSector)
+                .WithMany()
+                .HasForeignKey(shipment => shipment.FromSectorId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<ColonistShipment>()
+                .HasOne(shipment => shipment.DestinationSector)
+                .WithMany()
+                .HasForeignKey(shipment => shipment.DestinationSectorId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<ColonistShipment>()
+                .HasIndex(shipment => new { shipment.PlayerId, shipment.Status, shipment.EstimatedArrivalAtUtc })
+                .IsUnique(false);
+
+            // Configure ColonistDeliveryAudit
+            modelBuilder.Entity<ColonistDeliveryAudit>()
+                .HasKey(audit => audit.Id);
+            modelBuilder.Entity<ColonistDeliveryAudit>()
+                .HasOne(audit => audit.Shipment)
+                .WithMany()
+                .HasForeignKey(audit => audit.ShipmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ColonistDeliveryAudit>()
+                .HasOne(audit => audit.Player)
+                .WithMany()
+                .HasForeignKey(audit => audit.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<ColonistDeliveryAudit>()
+                .HasOne(audit => audit.DestinationSector)
+                .WithMany()
+                .HasForeignKey(audit => audit.DestinationSectorId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<ColonistDeliveryAudit>()
+                .HasIndex(audit => new { audit.PlayerId, audit.DeliveredAtUtc })
                 .IsUnique(false);
         }
     }

@@ -1,5 +1,6 @@
 using GalacticTrader.Data;
 using GalacticTrader.Data.Models;
+using GalacticTrader.Services.Navigation;
 using GalacticTrader.Services.Strategic;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,7 +13,7 @@ public sealed class StrategicInsuranceAndIntelligenceTests
     {
         await using var dbContext = CreateDbContext();
         var seeded = await SeedPlayerShipAndSectorAsync(dbContext);
-        var service = new StrategicSystemsService(dbContext);
+        var service = CreateService(dbContext);
 
         var policy = await service.UpsertInsurancePolicyAsync(new UpsertInsurancePolicyRequest
         {
@@ -44,7 +45,7 @@ public sealed class StrategicInsuranceAndIntelligenceTests
     {
         await using var dbContext = CreateDbContext();
         var seeded = await SeedPlayerShipAndSectorAsync(dbContext);
-        var service = new StrategicSystemsService(dbContext);
+        var service = CreateService(dbContext);
 
         var network = await service.CreateIntelligenceNetworkAsync(new CreateIntelligenceNetworkRequest
         {
@@ -159,5 +160,31 @@ public sealed class StrategicInsuranceAndIntelligenceTests
             .Options;
 
         return new GalacticTraderDbContext(options);
+    }
+
+    private static StrategicSystemsService CreateService(GalacticTraderDbContext dbContext)
+    {
+        return new StrategicSystemsService(dbContext, new NullRoutePlanningService());
+    }
+
+    private sealed class NullRoutePlanningService : IRoutePlanningService
+    {
+        public Task<RoutePlanDto?> CalculateRouteAsync(
+            Guid fromSectorId,
+            Guid toSectorId,
+            TravelMode travelMode = TravelMode.Standard,
+            string algorithm = "dijkstra",
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<RoutePlanDto?>(null);
+        }
+
+        public Task<RouteOptimizationDto> GetOptimizedRoutesAsync(
+            Guid fromSectorId,
+            Guid toSectorId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new RouteOptimizationDto());
+        }
     }
 }

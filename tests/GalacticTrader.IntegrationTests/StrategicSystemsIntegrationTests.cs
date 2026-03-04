@@ -30,6 +30,9 @@ public sealed class StrategicSystemsIntegrationTests : IClassFixture<ApiWebAppli
 
         var listDominance = await _client.GetAsync("/api/strategic/territory-dominance");
         Assert.Equal(HttpStatusCode.OK, listDominance.StatusCode);
+
+        var terraStatus = await _client.GetAsync("/api/strategic/terra/status");
+        Assert.Equal(HttpStatusCode.OK, terraStatus.StatusCode);
     }
 
     [Fact]
@@ -89,6 +92,42 @@ public sealed class StrategicSystemsIntegrationTests : IClassFixture<ApiWebAppli
             $"/api/strategic/intelligence/reports/{owner.PlayerId:D}",
             owner.AccessToken);
         Assert.Equal(HttpStatusCode.OK, ownerReports.StatusCode);
+
+        var noTokenTerraShipments = await _client.GetAsync($"/api/strategic/terra/shipments/{owner.PlayerId:D}");
+        Assert.Equal(HttpStatusCode.Unauthorized, noTokenTerraShipments.StatusCode);
+
+        var intruderTerraShipments = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/terra/shipments/{owner.PlayerId:D}",
+            intruder.AccessToken);
+        Assert.Equal(HttpStatusCode.Forbidden, intruderTerraShipments.StatusCode);
+
+        var ownerTerraShipments = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/terra/shipments/{owner.PlayerId:D}",
+            owner.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, ownerTerraShipments.StatusCode);
+
+        var adminTerraShipments = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/terra/shipments/{owner.PlayerId:D}",
+            adminToken);
+        Assert.Equal(HttpStatusCode.OK, adminTerraShipments.StatusCode);
+
+        var noTokenTerraHistory = await _client.GetAsync($"/api/strategic/terra/history/{owner.PlayerId:D}");
+        Assert.Equal(HttpStatusCode.Unauthorized, noTokenTerraHistory.StatusCode);
+
+        var intruderTerraHistory = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/terra/history/{owner.PlayerId:D}",
+            intruder.AccessToken);
+        Assert.Equal(HttpStatusCode.Forbidden, intruderTerraHistory.StatusCode);
+
+        var ownerTerraHistory = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/terra/history/{owner.PlayerId:D}",
+            owner.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, ownerTerraHistory.StatusCode);
     }
 
     [Fact]
@@ -194,6 +233,26 @@ public sealed class StrategicSystemsIntegrationTests : IClassFixture<ApiWebAppli
 
         var expireReports = await _client.PostAsync("/api/strategic/intelligence/reports/expire", null);
         Assert.Equal(HttpStatusCode.Unauthorized, expireReports.StatusCode);
+
+        var updateTerraSource = await _client.PostAsJsonAsync("/api/strategic/terra/status", new
+        {
+            outputPerMinute = 300,
+            storageCapacity = 200000,
+            availableColonists = 5000
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, updateTerraSource.StatusCode);
+
+        var createTerraShipment = await _client.PostAsJsonAsync("/api/strategic/terra/shipments", new
+        {
+            playerId = Guid.NewGuid(),
+            destinationSectorId = Guid.NewGuid(),
+            colonistCount = 100,
+            algorithm = "dijkstra"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, createTerraShipment.StatusCode);
+
+        var processArrivals = await _client.PostAsync("/api/strategic/terra/process-arrivals", null);
+        Assert.Equal(HttpStatusCode.Unauthorized, processArrivals.StatusCode);
     }
 
     [Fact]

@@ -1200,6 +1200,215 @@ public static class ApiFeatureEndpointModules
         var strategic = app.MapGroup("/api/strategic")
             .WithTags("Strategic Systems");
 
+        strategic.MapGet("/terra/status", async (
+            IStrategicSystemsService strategicService,
+            CancellationToken cancellationToken) =>
+        {
+            var status = await strategicService.GetTerraColonistStatusAsync(cancellationToken);
+            return Results.Ok(status);
+        });
+
+        strategic.MapPost("/terra/status", async (
+            HttpContext context,
+            UpdateTerraColonistSourceApiRequest request,
+            IStrategicSystemsService strategicService,
+            IAuthService authService,
+            GalacticTraderDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            var denied = await RequireAnyRoleAsync(
+                context,
+                authService,
+                dbContext,
+                [AuthorizationPolicies.AdminRole],
+                cancellationToken);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var updated = await strategicService.UpdateTerraColonistSourceAsync(new UpdateTerraColonistSourceRequest
+            {
+                SectorId = request.SectorId,
+                OutputPerMinute = request.OutputPerMinute,
+                StorageCapacity = request.StorageCapacity,
+                AvailableColonists = request.AvailableColonists
+            }, cancellationToken);
+
+            return updated is null ? Results.NotFound() : Results.Ok(updated);
+        });
+
+        strategic.MapPost("/terra/shipments", async (
+            HttpContext context,
+            CreateColonistShipmentApiRequest request,
+            IStrategicSystemsService strategicService,
+            IAuthService authService,
+            GalacticTraderDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            var denied = await RequireOwnerOrAdminAsync(
+                context,
+                authService,
+                dbContext,
+                request.PlayerId,
+                cancellationToken);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var created = await strategicService.CreateColonistShipmentAsync(new CreateColonistShipmentRequest
+            {
+                PlayerId = request.PlayerId,
+                DestinationSectorId = request.DestinationSectorId,
+                ColonistCount = request.ColonistCount,
+                TravelMode = request.TravelMode,
+                Algorithm = request.Algorithm
+            }, cancellationToken);
+
+            return created is null
+                ? Results.BadRequest(new { error = "Unable to create colonist shipment with provided parameters." })
+                : Results.Created($"/api/strategic/terra/shipments/{created.Id:D}", created);
+        });
+
+        strategic.MapGet("/terra/shipments/{playerId:guid}", async (
+            HttpContext context,
+            Guid playerId,
+            bool? includeDelivered,
+            IStrategicSystemsService strategicService,
+            IAuthService authService,
+            GalacticTraderDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            var denied = await RequireOwnerOrAdminAsync(
+                context,
+                authService,
+                dbContext,
+                playerId,
+                cancellationToken);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var shipments = await strategicService.GetColonistShipmentsAsync(
+                playerId,
+                includeDelivered ?? true,
+                cancellationToken);
+            return Results.Ok(shipments);
+        });
+
+        strategic.MapGet("/terra/history/{playerId:guid}", async (
+            HttpContext context,
+            Guid playerId,
+            int? limit,
+            IStrategicSystemsService strategicService,
+            IAuthService authService,
+            GalacticTraderDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            var denied = await RequireOwnerOrAdminAsync(
+                context,
+                authService,
+                dbContext,
+                playerId,
+                cancellationToken);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var history = await strategicService.GetColonistDeliveryHistoryAsync(
+                playerId,
+                limit ?? 50,
+                cancellationToken);
+            return Results.Ok(history);
+        });
+
+        strategic.MapPost("/terra/process-arrivals", async (
+            HttpContext context,
+            Guid? playerId,
+            IStrategicSystemsService strategicService,
+            IAuthService authService,
+            GalacticTraderDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            if (playerId.HasValue && playerId.Value != Guid.Empty)
+            {
+                var denied = await RequireOwnerOrAdminAsync(
+                    context,
+                    authService,
+                    dbContext,
+                    playerId.Value,
+                    cancellationToken);
+                if (denied is not null)
+                {
+                    return denied;
+                }
+            }
+            else
+            {
+                var denied = await RequireAnyRoleAsync(
+                    context,
+                    authService,
+                    dbContext,
+                    [AuthorizationPolicies.AdminRole],
+                    cancellationToken);
+                if (denied is not null)
+                {
+                    return denied;
+                }
+            }
+
+            var processed = await strategicService.ProcessColonistArrivalsAsync(playerId, cancellationToken);
+            return Results.Ok(new { processed });
+        });
+
+        strategic.MapGet("/terra/telemetry", async (
+            HttpContext context,
+            IStrategicSystemsService strategicService,
+            IAuthService authService,
+            GalacticTraderDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            var denied = await RequireAnyRoleAsync(
+                context,
+                authService,
+                dbContext,
+                [AuthorizationPolicies.AdminRole],
+                cancellationToken);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var telemetry = await strategicService.GetTerraColonistTelemetryAsync(null, cancellationToken);
+            return Results.Ok(telemetry);
+        });
+
+        strategic.MapGet("/terra/telemetry/{playerId:guid}", async (
+            HttpContext context,
+            Guid playerId,
+            IStrategicSystemsService strategicService,
+            IAuthService authService,
+            GalacticTraderDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            var denied = await RequireOwnerOrAdminAsync(
+                context,
+                authService,
+                dbContext,
+                playerId,
+                cancellationToken);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var telemetry = await strategicService.GetTerraColonistTelemetryAsync(playerId, cancellationToken);
+            return Results.Ok(telemetry);
+        });
+
         strategic.MapGet("/volatility", async (
             Guid? sectorId,
             IStrategicSystemsService strategicService,

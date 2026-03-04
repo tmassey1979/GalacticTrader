@@ -6,6 +6,7 @@ using GalacticTrader.Services.Auth;
 using GalacticTrader.Services.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GalacticTrader.IntegrationTests;
 
@@ -152,7 +153,11 @@ public class EndpointAuthorizationServiceTests
 
     private static async Task<int> ExecuteStatusCodeAsync(IResult result)
     {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
         var context = new DefaultHttpContext();
+        context.RequestServices = services.BuildServiceProvider();
         await result.ExecuteAsync(context);
         return context.Response.StatusCode;
     }

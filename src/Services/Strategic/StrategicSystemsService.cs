@@ -2,15 +2,20 @@ namespace GalacticTrader.Services.Strategic;
 
 using GalacticTrader.Data;
 using GalacticTrader.Data.Models;
+using GalacticTrader.Services.Navigation;
 using Microsoft.EntityFrameworkCore;
 
 public sealed class StrategicSystemsService : IStrategicSystemsService
 {
     private readonly GalacticTraderDbContext _dbContext;
+    private readonly IRoutePlanningService _routePlanningService;
 
-    public StrategicSystemsService(GalacticTraderDbContext dbContext)
+    public StrategicSystemsService(
+        GalacticTraderDbContext dbContext,
+        IRoutePlanningService routePlanningService)
     {
         _dbContext = dbContext;
+        _routePlanningService = routePlanningService;
     }
 
     public async Task<SectorVolatilityCycleDto?> UpsertSectorVolatilityCycleAsync(
@@ -654,6 +659,366 @@ public sealed class StrategicSystemsService : IStrategicSystemsService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return stale.Count;
+    }
+
+    public async Task<TerraColonistStatusDto> GetTerraColonistStatusAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var source = await EnsureTerraColonistSourceAsync(cancellationToken);
+        await RegenerateColonistsAsync(source, DateTime.UtcNow, cancellationToken);
+
+        return MapTerraColonistSource(source);
+    }
+
+    public async Task<TerraColonistStatusDto?> UpdateTerraColonistSourceAsync(
+        UpdateTerraColonistSourceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var source = await EnsureTerraColonistSourceAsync(cancellationToken);
+        await RegenerateColonistsAsync(source, DateTime.UtcNow, cancellationToken);
+
+        if (request.SectorId.HasValue && request.SectorId.Value != Guid.Empty && request.SectorId.Value != source.SectorId)
+        {
+            var sectorExists = await _dbContext.Sectors
+                .AsNoTracking()
+                .AnyAsync(sector => sector.Id == request.SectorId.Value, cancellationToken);
+            if (!sectorExists)
+            {
+                return null;
+            }
+
+            source.SectorId = request.SectorId.Value;
+        }
+
+        source.OutputPerMinute = Math.Clamp(request.OutputPerMinute, 1, 50_000);
+        source.StorageCapacity = Math.Clamp(request.StorageCapacity, 1, 1_000_000_000);
+        source.AvailableColonists = Math.Clamp(request.AvailableColonists, 0, source.StorageCapacity);
+        source.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.Entry(source).Reference(existing => existing.Sector).LoadAsync(cancellationToken);
+
+        return MapTerraColonistSource(source);
+    }
+
+    public async Task<ColonistShipmentDto?> CreateColonistShipmentAsync(
+        CreateColonistShipmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.PlayerId == Guid.Empty || request.DestinationSectorId == Guid.Empty || request.ColonistCount <= 0)
+        {
+            return null;
+        }
+
+        var playerExists = await _dbContext.Players
+            .AsNoTracking()
+            .AnyAsync(player => player.Id == request.PlayerId, cancellationToken);
+        if (!playerExists)
+        {
+            return null;
+        }
+
+        var source = await EnsureTerraColonistSourceAsync(cancellationToken);
+        await RegenerateColonistsAsync(source, DateTime.UtcNow, cancellationToken);
+
+        if (source.SectorId == request.DestinationSectorId)
+        {
+            return null;
+        }
+
+        var destination = await _dbContext.Sectors
+            .AsNoTracking()
+            .FirstOrDefaultAsync(sector => sector.Id == request.DestinationSectorId, cancellationToken);
+        if (destination is null)
+        {
+            return null;
+        }
+
+        var requestedColonists = Math.Clamp(request.ColonistCount, 1, source.StorageCapacity);
+        if (requestedColonists > source.AvailableColonists)
+        {
+            return null;
+        }
+
+        var routePlan = await _routePlanningService.CalculateRouteAsync(
+            source.SectorId,
+            request.DestinationSectorId,
+            request.TravelMode,
+            request.Algorithm,
+            cancellationToken);
+        if (routePlan is null)
+        {
+            return null;
+        }
+
+        var now = DateTime.UtcNow;
+        source.AvailableColonists -= requestedColonists;
+        source.UpdatedAtUtc = now;
+
+        var shipment = new ColonistShipment
+        {
+            Id = Guid.NewGuid(),
+            PlayerId = request.PlayerId,
+            FromSectorId = source.SectorId,
+            DestinationSectorId = request.DestinationSectorId,
+            ColonistCount = requestedColonists,
+            RouteTravelSeconds = Math.Max(routePlan.TotalTravelTimeSeconds, 0),
+            EstimatedRiskScore = Math.Clamp((float)routePlan.TotalRiskScore, 0f, 100f),
+            TravelMode = request.TravelMode.ToString(),
+            LoadedAtUtc = now,
+            EstimatedArrivalAtUtc = now.AddSeconds(Math.Max(routePlan.TotalTravelTimeSeconds, 0)),
+            Status = "in_transit"
+        };
+
+        _dbContext.ColonistShipments.Add(shipment);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await ProcessColonistArrivalsAsync(request.PlayerId, cancellationToken);
+        await _dbContext.Entry(shipment).Reference(existing => existing.FromSector).LoadAsync(cancellationToken);
+        await _dbContext.Entry(shipment).Reference(existing => existing.DestinationSector).LoadAsync(cancellationToken);
+
+        return MapColonistShipment(shipment);
+    }
+
+    public async Task<IReadOnlyList<ColonistShipmentDto>> GetColonistShipmentsAsync(
+        Guid playerId,
+        bool includeDelivered = true,
+        CancellationToken cancellationToken = default)
+    {
+        await ProcessColonistArrivalsAsync(playerId, cancellationToken);
+
+        var query = _dbContext.ColonistShipments
+            .AsNoTracking()
+            .Include(shipment => shipment.FromSector)
+            .Include(shipment => shipment.DestinationSector)
+            .Where(shipment => shipment.PlayerId == playerId)
+            .AsQueryable();
+
+        if (!includeDelivered)
+        {
+            query = query.Where(shipment => shipment.Status == "in_transit");
+        }
+
+        var shipments = await query
+            .OrderByDescending(shipment => shipment.LoadedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        return shipments.Select(MapColonistShipment).ToList();
+    }
+
+    public async Task<int> ProcessColonistArrivalsAsync(
+        Guid? playerId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var query = _dbContext.ColonistShipments
+            .Where(shipment =>
+                shipment.Status == "in_transit" &&
+                shipment.EstimatedArrivalAtUtc <= now);
+
+        if (playerId.HasValue && playerId.Value != Guid.Empty)
+        {
+            query = query.Where(shipment => shipment.PlayerId == playerId.Value);
+        }
+
+        var dueShipments = await query.ToListAsync(cancellationToken);
+        if (dueShipments.Count == 0)
+        {
+            return 0;
+        }
+
+        foreach (var shipment in dueShipments)
+        {
+            shipment.Status = "delivered";
+            shipment.DeliveredAtUtc = now;
+
+            _dbContext.ColonistDeliveryAudits.Add(new ColonistDeliveryAudit
+            {
+                Id = Guid.NewGuid(),
+                ShipmentId = shipment.Id,
+                PlayerId = shipment.PlayerId,
+                DestinationSectorId = shipment.DestinationSectorId,
+                ColonistCount = shipment.ColonistCount,
+                EstimatedRiskScore = shipment.EstimatedRiskScore,
+                DeliveredAtUtc = now
+            });
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return dueShipments.Count;
+    }
+
+    public async Task<IReadOnlyList<ColonistDeliveryAuditDto>> GetColonistDeliveryHistoryAsync(
+        Guid playerId,
+        int limit = 50,
+        CancellationToken cancellationToken = default)
+    {
+        await ProcessColonistArrivalsAsync(playerId, cancellationToken);
+
+        var normalizedLimit = Math.Clamp(limit, 1, 500);
+        var history = await _dbContext.ColonistDeliveryAudits
+            .AsNoTracking()
+            .Include(audit => audit.DestinationSector)
+            .Where(audit => audit.PlayerId == playerId)
+            .OrderByDescending(audit => audit.DeliveredAtUtc)
+            .Take(normalizedLimit)
+            .ToListAsync(cancellationToken);
+
+        return history.Select(MapColonistDeliveryAudit).ToList();
+    }
+
+    public async Task<TerraColonistTelemetryDto> GetTerraColonistTelemetryAsync(
+        Guid? playerId = null,
+        CancellationToken cancellationToken = default)
+    {
+        await ProcessColonistArrivalsAsync(playerId, cancellationToken);
+
+        var now = DateTime.UtcNow;
+        var deliveredSince = now.AddHours(-24);
+
+        var inTransitQuery = _dbContext.ColonistShipments
+            .AsNoTracking()
+            .Where(shipment => shipment.Status == "in_transit");
+
+        var deliveredQuery = _dbContext.ColonistDeliveryAudits
+            .AsNoTracking()
+            .Where(audit => audit.DeliveredAtUtc >= deliveredSince);
+
+        if (playerId.HasValue && playerId.Value != Guid.Empty)
+        {
+            inTransitQuery = inTransitQuery.Where(shipment => shipment.PlayerId == playerId.Value);
+            deliveredQuery = deliveredQuery.Where(audit => audit.PlayerId == playerId.Value);
+        }
+
+        var inTransitShipmentCount = await inTransitQuery.CountAsync(cancellationToken);
+        var colonistsInTransit = await inTransitQuery.SumAsync(shipment => (long?)shipment.ColonistCount, cancellationToken) ?? 0L;
+        var deliveredLast24HoursCount = await deliveredQuery.CountAsync(cancellationToken);
+        var colonistsDeliveredLast24Hours = await deliveredQuery.SumAsync(audit => (long?)audit.ColonistCount, cancellationToken) ?? 0L;
+
+        return new TerraColonistTelemetryDto
+        {
+            PlayerId = playerId,
+            InTransitShipmentCount = inTransitShipmentCount,
+            ColonistsInTransit = colonistsInTransit,
+            DeliveredLast24HoursCount = deliveredLast24HoursCount,
+            ColonistsDeliveredLast24Hours = colonistsDeliveredLast24Hours,
+            ObservedAtUtc = now
+        };
+    }
+
+    private async Task<TerraColonistSource> EnsureTerraColonistSourceAsync(CancellationToken cancellationToken)
+    {
+        var source = await _dbContext.TerraColonistSources
+            .Include(existing => existing.Sector)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (source is not null)
+        {
+            return source;
+        }
+
+        var terraSector = await _dbContext.Sectors
+            .OrderByDescending(sector => sector.Name == "Terra")
+            .ThenByDescending(sector => sector.SecurityLevel)
+            .ThenByDescending(sector => sector.EconomicIndex)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (terraSector is null)
+        {
+            throw new InvalidOperationException("Unable to initialize Terra colonist source without at least one sector.");
+        }
+
+        var now = DateTime.UtcNow;
+        source = new TerraColonistSource
+        {
+            Id = Guid.NewGuid(),
+            SectorId = terraSector.Id,
+            AvailableColonists = 2_500,
+            OutputPerMinute = 250,
+            StorageCapacity = 250_000,
+            LastGeneratedAtUtc = now,
+            UpdatedAtUtc = now
+        };
+
+        _dbContext.TerraColonistSources.Add(source);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.Entry(source).Reference(existing => existing.Sector).LoadAsync(cancellationToken);
+        return source;
+    }
+
+    private async Task RegenerateColonistsAsync(
+        TerraColonistSource source,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        if (now <= source.LastGeneratedAtUtc)
+        {
+            return;
+        }
+
+        var elapsedMinutes = Math.Floor((now - source.LastGeneratedAtUtc).TotalMinutes);
+        if (elapsedMinutes <= 0)
+        {
+            return;
+        }
+
+        var generated = (long)elapsedMinutes * source.OutputPerMinute;
+        source.AvailableColonists = Math.Clamp(source.AvailableColonists + generated, 0L, source.StorageCapacity);
+        source.LastGeneratedAtUtc = now;
+        source.UpdatedAtUtc = now;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static TerraColonistStatusDto MapTerraColonistSource(TerraColonistSource source)
+    {
+        return new TerraColonistStatusDto
+        {
+            SourceId = source.Id,
+            SectorId = source.SectorId,
+            SectorName = source.Sector?.Name ?? "unknown",
+            AvailableColonists = source.AvailableColonists,
+            OutputPerMinute = source.OutputPerMinute,
+            StorageCapacity = source.StorageCapacity,
+            LastGeneratedAtUtc = source.LastGeneratedAtUtc,
+            UpdatedAtUtc = source.UpdatedAtUtc
+        };
+    }
+
+    private static ColonistShipmentDto MapColonistShipment(ColonistShipment shipment)
+    {
+        return new ColonistShipmentDto
+        {
+            Id = shipment.Id,
+            PlayerId = shipment.PlayerId,
+            FromSectorId = shipment.FromSectorId,
+            FromSectorName = shipment.FromSector?.Name ?? "unknown",
+            DestinationSectorId = shipment.DestinationSectorId,
+            DestinationSectorName = shipment.DestinationSector?.Name ?? "unknown",
+            ColonistCount = shipment.ColonistCount,
+            RouteTravelSeconds = shipment.RouteTravelSeconds,
+            EstimatedRiskScore = shipment.EstimatedRiskScore,
+            TravelMode = shipment.TravelMode,
+            LoadedAtUtc = shipment.LoadedAtUtc,
+            EstimatedArrivalAtUtc = shipment.EstimatedArrivalAtUtc,
+            DeliveredAtUtc = shipment.DeliveredAtUtc,
+            Status = shipment.Status
+        };
+    }
+
+    private static ColonistDeliveryAuditDto MapColonistDeliveryAudit(ColonistDeliveryAudit audit)
+    {
+        return new ColonistDeliveryAuditDto
+        {
+            Id = audit.Id,
+            ShipmentId = audit.ShipmentId,
+            PlayerId = audit.PlayerId,
+            DestinationSectorId = audit.DestinationSectorId,
+            DestinationSectorName = audit.DestinationSector?.Name ?? "unknown",
+            ColonistCount = audit.ColonistCount,
+            EstimatedRiskScore = audit.EstimatedRiskScore,
+            DeliveredAtUtc = audit.DeliveredAtUtc
+        };
     }
 
     private static SectorVolatilityCycleDto MapCycle(SectorVolatilityCycle cycle, string sectorName)

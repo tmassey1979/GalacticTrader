@@ -1,5 +1,6 @@
 using GalacticTrader.Data;
 using GalacticTrader.Data.Models;
+using GalacticTrader.Services.Navigation;
 using GalacticTrader.Services.Strategic;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,7 +13,7 @@ public sealed class StrategicSystemsServiceTests
     {
         await using var dbContext = CreateDbContext();
         var seeded = await SeedStrategicDataAsync(dbContext);
-        var service = new StrategicSystemsService(dbContext);
+        var service = CreateService(dbContext);
 
         var created = await service.UpsertSectorVolatilityCycleAsync(new UpdateSectorVolatilityCycleRequest
         {
@@ -42,7 +43,7 @@ public sealed class StrategicSystemsServiceTests
     {
         await using var dbContext = CreateDbContext();
         var seeded = await SeedStrategicDataAsync(dbContext);
-        var service = new StrategicSystemsService(dbContext);
+        var service = CreateService(dbContext);
 
         var war = await service.DeclareCorporateWarAsync(new DeclareCorporateWarRequest
         {
@@ -65,7 +66,7 @@ public sealed class StrategicSystemsServiceTests
     {
         await using var dbContext = CreateDbContext();
         var seeded = await SeedStrategicDataAsync(dbContext);
-        var service = new StrategicSystemsService(dbContext);
+        var service = CreateService(dbContext);
 
         await service.UpsertInfrastructureOwnershipAsync(new UpdateInfrastructureOwnershipRequest
         {
@@ -104,7 +105,7 @@ public sealed class StrategicSystemsServiceTests
     {
         await using var dbContext = CreateDbContext();
         var seeded = await SeedStrategicDataAsync(dbContext);
-        var service = new StrategicSystemsService(dbContext);
+        var service = CreateService(dbContext);
 
         var updated = await service.UpsertTerritoryEconomicPolicyAsync(new UpsertTerritoryEconomicPolicyRequest
         {
@@ -207,5 +208,31 @@ public sealed class StrategicSystemsServiceTests
             .Options;
 
         return new GalacticTraderDbContext(options);
+    }
+
+    private static StrategicSystemsService CreateService(GalacticTraderDbContext dbContext)
+    {
+        return new StrategicSystemsService(dbContext, new NullRoutePlanningService());
+    }
+
+    private sealed class NullRoutePlanningService : IRoutePlanningService
+    {
+        public Task<RoutePlanDto?> CalculateRouteAsync(
+            Guid fromSectorId,
+            Guid toSectorId,
+            TravelMode travelMode = TravelMode.Standard,
+            string algorithm = "dijkstra",
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<RoutePlanDto?>(null);
+        }
+
+        public Task<RouteOptimizationDto> GetOptimizedRoutesAsync(
+            Guid fromSectorId,
+            Guid toSectorId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new RouteOptimizationDto());
+        }
     }
 }
