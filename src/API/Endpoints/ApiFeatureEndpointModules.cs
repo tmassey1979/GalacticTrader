@@ -576,6 +576,48 @@ public static class ApiFeatureEndpointModules
         var market = app.MapGroup("/api/market")
             .WithTags("Market");
 
+        market.MapGet("/listings", async (
+            Guid? marketId,
+            int? limit,
+            GalacticTraderDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            var takeCount = Math.Clamp(limit ?? 80, 1, 300);
+            var query = dbContext.MarketListings
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (marketId.HasValue)
+            {
+                query = query.Where(listing => listing.MarketId == marketId.Value);
+            }
+
+            var listings = await query
+                .OrderByDescending(listing => listing.TotalTradeVolume24h)
+                .ThenByDescending(listing => listing.AvailableQuantity)
+                .Select(listing => new
+                {
+                    MarketListingId = listing.Id,
+                    listing.MarketId,
+                    SectorId = listing.Market.SectorId,
+                    SectorName = listing.Market.Sector != null ? listing.Market.Sector.Name : string.Empty,
+                    listing.CommodityId,
+                    CommodityName = listing.Commodity != null ? listing.Commodity.Name : string.Empty,
+                    listing.CurrentPrice,
+                    listing.BasePrice,
+                    listing.AvailableQuantity,
+                    listing.DemandMultiplier,
+                    listing.RiskPremium,
+                    listing.ScarcityModifier,
+                    PriceChangePercent24h = listing.PriceChangePercent24h,
+                    LegalityFactor = listing.Commodity != null ? listing.Commodity.LegalityFactor : 0f
+                })
+                .Take(takeCount)
+                .ToListAsync(cancellationToken);
+
+            return Results.Ok(listings);
+        });
+
         market.MapPost("/trade", async (
             ExecuteTradeRequest request,
             IMarketTransactionService tradeService,

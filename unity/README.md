@@ -30,6 +30,10 @@ This directory is the target workspace for the Unity-based game client migration
 - Dashboard module scaffolding is present under `Assets/Scripts/Modules/Dashboard`:
   - `UnityDashboardModuleController`
   - realtime strategic snapshot projection into dashboard board/feed state
+- Trading module scaffolding is present under `Assets/Scripts/Modules/Trading`:
+  - `UnityTradingModuleController`
+  - shared listings/history/preview/execute orchestration via `GalacticTrader.ClientSdk.Trading`
+  - spread + fee summary models and user-friendly trade failure states
 - Realtime scaffolding is present under `Assets/Scripts/Realtime`:
   - `UnityRealtimeController`
 

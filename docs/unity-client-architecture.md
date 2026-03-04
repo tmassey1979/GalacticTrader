@@ -57,6 +57,10 @@ This document defines the initial architecture baseline for migrating the deskto
   - `RealtimeCoordinator` for strategic + communication stream lifecycle
   - duplicate-subscription protection and safe start/stop semantics
   - diagnostics snapshots for message/fault observability
+- Trading module primitives are encapsulated in `GalacticTrader.ClientSdk.Trading`:
+  - `TradingModuleService` for listings/history load, preview, and trade execution orchestration
+  - `TradingListingSummary` and `TradingPreviewSummary` for spread/fee visualization models
+  - `TradingOperationResult`/`TradingOperationFailureState` for user-friendly failure mapping
 
 ## Action-First UX Principles
 
@@ -84,6 +88,18 @@ This document defines the initial architecture baseline for migrating the deskto
 - Unity should render from planned frame slices (`UnityStarmapStreamingController`) instead of eagerly constructing the full world.
 - Route rendering is constrained to visible/rendered sector sets to avoid hidden-route overdraw.
 - Performance budgets are tracked in `docs/unity-starmap-performance-budgets.md`.
+
+## Trading Module Baseline
+
+- Trading module state must expose:
+  - market listings
+  - transaction history
+  - derived listing spread/fee summaries
+  - last known player liquidity snapshot
+- Trade preview uses economy simulation output plus observed fee rates from recent transactions.
+- Trade execution maps backend failures to action-friendly UI states (credits/cargo/quantity/rate-limit/auth).
+- Unity controller scaffold (`UnityTradingModuleController`) loads state, previews trades, and executes buy/sell actions via shared `TradingModuleService`.
+- Parity checklist is tracked in `docs/unity-trading-parity-checklist.md`.
 
 ## Platform Targets
 
