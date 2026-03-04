@@ -2,7 +2,7 @@
 
 ## Architecture & Infrastructure Codex
 
-### Version 2.0 (Current-State Aligned)
+### Version 2.1 (Current-State + Unity Migration Aligned)
 
 ## 1. Scope
 
@@ -15,7 +15,9 @@ This codex describes the architecture as it exists today, and separately marks f
 - Backend runtime: .NET 9
 - API host: ASP.NET Core Minimal API (`src/API`)
 - Data access: EF Core 9 + Npgsql provider
-- Primary client: WPF desktop application (`src/Desktop`)
+- Legacy client: WPF desktop application (`src/Desktop`)
+- Primary target client: Unity (`unity/`)
+- Shared client integration layer: `src/Shared/GalacticTrader.ClientSdk.csproj`
 - Optional edge service: gateway (`src/Gateway`)
 
 ### Service Topology
@@ -39,6 +41,9 @@ Current topology is a modular monolith for gameplay backend logic:
   - Prometheus
   - Grafana
   - Vault (optional)
+- Unity packaging infrastructure:
+  - Installer definition: `infrastructure/unity/installer/GalacticTraderUnity.iss`
+  - CI/CD baseline docs: `docs/unity-cicd.md`
 
 ### Auth and Authorization
 
@@ -53,7 +58,29 @@ Current topology is a modular monolith for gameplay backend logic:
 - Non-relational test/dev fallback uses `EnsureCreated()`.
 - Strategic schema smoke check validates strategic tables after relational migration.
 
-## 3. Monolith vs Microservices Boundary
+## 3. Client Architecture (Current Migration State)
+
+- Unity migration is organized as an epic with issue-driven module slices.
+- Shared SDK now centralizes:
+  - API contracts/clients
+  - auth/session lifecycle
+  - shell/module-host lifecycle
+  - realtime coordination
+  - starmap streaming planner
+  - dashboard and trading module orchestration
+- Unity UI implementation status:
+  - Completed scaffolding/services: Auth, Shell, Realtime, Dashboard, Starmap, Trading
+  - In progress: Routes module migration
+  - Remaining roadmap: Fleet/Battles, Intel/Reputation/Territory, settings, visual system polish, QA cutover
+
+## 4. UI Architecture Direction
+
+- Online-only play mode; no local/offline mode target.
+- Action-first UX model replaces telemetry-heavy WPF presentation.
+- Starmap uses chunked streaming, distance + frustum culling, and LOD planning through shared SDK planners.
+- Trading exposes listings, preview, execute, and transaction history through shared service abstractions with user-friendly failure states.
+
+## 5. Monolith vs Microservices Boundary
 
 ### Current Boundary
 
@@ -70,7 +97,7 @@ The following are candidate future extraction boundaries (not current production
 
 These roadmap items require explicit issue-driven implementation and are not assumed active today.
 
-## 4. Observability
+## 6. Observability
 
 Implemented metric families include:
 
@@ -82,7 +109,7 @@ Implemented metric families include:
 
 Dashboards and operational flow are documented under `docs/deployment-cicd.md` and related runbooks.
 
-## 5. Deployment States
+## 7. Deployment States
 
 ### Current Deployable States
 
@@ -94,15 +121,19 @@ Dashboards and operational flow are documented under `docs/deployment-cicd.md` a
 
 Kubernetes deployment options and provider comparisons are tracked as roadmap issues and may be blocked depending on project state.
 
-## 6. Documentation Contracts
+## 8. Documentation Contracts
 
 When architecture changes, update these sources together:
 
 - `README.md` (runtime + topology summary)
 - `docs/architecture.md` (operational architecture diagrams)
 - `Codex/Galactic_Trader_Architecture_Infrastructure_Codex.md` (this file)
+- `docs/unity-client-architecture.md` (Unity migration architecture baseline)
+- `docs/unity-dashboard-parity-checklist.md`
+- `docs/unity-starmap-performance-budgets.md`
+- `docs/unity-trading-parity-checklist.md`
 
-## 7. References
+## 9. References
 
 - `README.md`
 - `docs/architecture.md`

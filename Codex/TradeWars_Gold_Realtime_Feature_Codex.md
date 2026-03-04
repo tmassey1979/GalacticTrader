@@ -68,6 +68,21 @@ Status legend:
 - Partial: alignment depth, ship/hardware depth, communication semantics.
 - Missing: most classic late-game socio-economic warfare loops (planets/citadels/corps/stardock/tactical devices/fighter-mine warfare).
 
+## Client architecture and UI implementation state (2026-03-04)
+
+- Client architecture is actively migrating from WPF to Unity with shared SDK-based parity services.
+- Implemented Unity slices relevant to this matrix:
+  - auth/session, shell, realtime
+  - dashboard module
+  - starmap streaming/culling/LOD subsystem
+  - trading module (listings/preview/execute/history)
+- Active migration slice:
+  - routes/navigation planning module with waypoint/risk/overlay parity
+- Remaining Unity slices in this parity program:
+  - fleet/battles
+  - intel/reputation/territory
+  - settings/hotkeys and final visual quality bar
+
 ## Source references used for this codex
 
 - Trade Wars 2002 v3 Documentation Text (TradeWars Museum): https://wiki.classictw.com/index.php/Trade_Wars_2002_v3_Documentation_Text

@@ -2,7 +2,7 @@
 
 ## Full Strategic Codex
 
-### Version 2.0 (Current-State Aligned)
+### Version 2.1 (Current-State + Unity Migration Aligned)
 
 ## 1. Core Philosophy
 
@@ -108,17 +108,43 @@ Leaderboards track wealth, reputation, combat, and trade dimensions.
 
 Roadmap items are future-state and not assumed active unless implemented in code and deployment manifests.
 
-## 11. Communication Systems
+## 11. Client Architecture State
+
+### Current State (Implemented)
+
+- Shared `ClientSdk` layer provides unified client-side orchestration for:
+  - API contracts and clients
+  - auth/session lifecycle
+  - module host/shell lifecycle
+  - realtime stream coordination
+  - starmap streaming/culling/LOD planning
+  - dashboard action board and trading workflows
+- Unity migration completed slices:
+  - auth/session
+  - shell/module host
+  - realtime integration
+  - dashboard module
+  - starmap subsystem
+  - trading module
+
+### In Progress / Remaining (Roadmap)
+
+- Routes module migration and starmap-overlay integration.
+- Fleet/Battles and Intel/Reputation/Territory Unity module migration.
+- Settings/hotkey migration and visual system polish.
+- QA rollout and WPF deprecation cutover.
+
+## 12. Communication Systems
 
 Communication stack includes persistent text channels, websocket delivery, and voice signaling/spatial mix workflows.
 
-## 12. Admin and Balance Controls
+## 13. Admin and Balance Controls
 
 Admin controls cover tax rates, pirate intensity, liquidity adjustments, and correction events.
 
 Legacy `X-Admin-Key` auth is deprecated and on a dated removal plan; bearer-role auth is the target long-term path.
 
-## 13. Strategic Systems
+## 14. Strategic Systems
 
 Implemented strategic domains include:
 
@@ -129,10 +155,16 @@ Implemented strategic domains include:
 - Insurance policies/claims
 - Intelligence networks/reports
 
-## 14. Core Loop
+## 15. Core Loop
 
 1. Analyze market and risk
 2. Select cargo and route strategy
 3. Execute movement/trade/combat decisions
 4. Respond to dynamic events
 5. Grow wealth, influence, and strategic control
+
+## 16. UI Direction
+
+- UI direction is action-first and online-only.
+- Core gameplay actions are exposed through Unity module controllers backed by shared client services.
+- Telemetry panels remain available but are secondary to direct action flows.
