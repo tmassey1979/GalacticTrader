@@ -37,6 +37,12 @@ This document defines the initial architecture baseline for migrating the deskto
 - HTTP error and JSON handling are standardized through shared runtime helpers:
   - `ApiClientException` for non-success responses
   - `ApiClientRuntime` for consistent bearer token, status handling, and JSON reads
+- Session lifecycle is encapsulated in `AuthSessionManager` with:
+  - persisted-session restore hooks
+  - JWT expiry detection
+  - optional refresh delegate for token renewal
+  - deterministic logout/clear behavior
+  - explicit `AuthFailureState` values for UI messaging
 
 ## Action-First UX Principles
 

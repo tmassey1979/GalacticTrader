@@ -13,6 +13,10 @@ This directory is the target workspace for the Unity-based game client migration
 - Migration bootstrap scaffolding is in place.
 - CI pipeline exists and is gated until a valid Unity project is committed.
 - Installer definition is versioned under `infrastructure/unity/installer`.
+- Shared auth/session lifecycle scaffolding is present under `Assets/Scripts/Auth`:
+  - `UnityAuthController`
+  - `PlayerPrefsSessionStore`
+  - `AuthFailureMessageMapper`
 
 ## Target Structure
 

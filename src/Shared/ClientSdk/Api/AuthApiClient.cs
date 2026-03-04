@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 
 namespace GalacticTrader.Desktop.Api;
 
-public sealed class AuthApiClient
+public sealed class AuthApiClient : IAuthApiClient
 {
     private readonly HttpClient _httpClient;
 
