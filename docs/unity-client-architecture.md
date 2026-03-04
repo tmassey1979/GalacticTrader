@@ -51,6 +51,10 @@ This document defines the initial architecture baseline for migrating the deskto
   - `DashboardModuleService` to aggregate gameplay-relevant dashboard signals
   - `DashboardActionPlanner` to convert signals into prioritized next actions
   - `DashboardActionBoard` as a UI-ready action-first model
+- Realtime coordination primitives are encapsulated in `GalacticTrader.ClientSdk.Realtime`:
+  - `RealtimeCoordinator` for strategic + communication stream lifecycle
+  - duplicate-subscription protection and safe start/stop semantics
+  - diagnostics snapshots for message/fault observability
 
 ## Action-First UX Principles
 

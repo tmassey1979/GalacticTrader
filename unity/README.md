@@ -27,6 +27,8 @@ This directory is the target workspace for the Unity-based game client migration
   - `StarmapDtoMapper`
 - Dashboard module scaffolding is present under `Assets/Scripts/Modules/Dashboard`:
   - `UnityDashboardModuleController`
+- Realtime scaffolding is present under `Assets/Scripts/Realtime`:
+  - `UnityRealtimeController`
 
 ## Target Platforms
 
