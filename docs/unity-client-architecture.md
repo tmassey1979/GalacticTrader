@@ -43,6 +43,10 @@ This document defines the initial architecture baseline for migrating the deskto
   - optional refresh delegate for token renewal
   - deterministic logout/clear behavior
   - explicit `AuthFailureState` values for UI messaging
+- Shell navigation lifecycle primitives are encapsulated in `GalacticTrader.ClientSdk.Shell`:
+  - `ModuleHostCoordinator` for module switching and cleanup lifecycle
+  - `ModuleHotkeyRouter` for module hotkey resolution
+  - standardized module UX state snapshots (`Loading`, `Ready`, `Offline`, `Error`)
 
 ## Action-First UX Principles
 

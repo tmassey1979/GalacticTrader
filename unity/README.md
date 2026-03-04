@@ -17,6 +17,11 @@ This directory is the target workspace for the Unity-based game client migration
   - `UnityAuthController`
   - `PlayerPrefsSessionStore`
   - `AuthFailureMessageMapper`
+- Shell/navigation scaffolding is present under `Assets/Scripts/Shell`:
+  - `UnityModuleHostController`
+  - `UnityHotkeyModuleRouter`
+  - `UnityShellModule`
+  - `ModuleUxStateOverlayController`
 
 ## Target Structure
 
