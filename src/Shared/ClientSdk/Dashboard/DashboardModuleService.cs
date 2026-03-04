@@ -11,6 +11,12 @@ public sealed class DashboardModuleService
 
     public async Task<DashboardActionBoard> LoadBoardAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
+        var state = await LoadStateAsync(playerId, cancellationToken);
+        return state.Board;
+    }
+
+    public async Task<DashboardModuleState> LoadStateAsync(Guid playerId, CancellationToken cancellationToken = default)
+    {
         var transactionsTask = _dataSource.LoadTransactionsAsync(playerId, cancellationToken);
         var shipsTask = _dataSource.LoadShipsAsync(playerId, cancellationToken);
         var escortTask = _dataSource.LoadEscortAsync(playerId, cancellationToken);
@@ -37,7 +43,10 @@ public sealed class DashboardModuleService
             await intelligenceTask,
             await globalMetricsTask);
         var actions = DashboardActionPlanner.Build(snapshot);
-        return new DashboardActionBoard(snapshot, actions);
+        var feed = BuildInitialEventFeed(await intelligenceTask, await dangerousRoutesTask);
+        return new DashboardModuleState(
+            new DashboardActionBoard(snapshot, actions),
+            feed);
     }
 
     internal static DashboardSnapshot BuildSnapshot(
@@ -69,5 +78,32 @@ public sealed class DashboardModuleService
             ReputationScore: reputationScore,
             EconomicStabilityIndex: globalMetrics?.EconomicStabilityIndex ?? 0m,
             ActivePlayers24h: globalMetrics?.ActivePlayers24h ?? 0);
+    }
+
+    internal static IReadOnlyList<DashboardEventFeedEntry> BuildInitialEventFeed(
+        IReadOnlyList<GalacticTrader.Desktop.Api.IntelligenceReportApiDto> intelligenceReports,
+        IReadOnlyList<GalacticTrader.Desktop.Api.RouteApiDto> dangerousRoutes)
+    {
+        var now = DateTime.UtcNow;
+        var intelEvents = intelligenceReports
+            .Where(static report => !report.IsExpired)
+            .Select(report => new DashboardEventFeedEntry(
+                report.DetectedAt.ToUniversalTime(),
+                "Intel",
+                $"{report.SignalType} @ {report.SectorName}",
+                $"{report.Payload} | Confidence {report.ConfidenceScore:P1}"));
+
+        var routeEvents = dangerousRoutes
+            .Take(15)
+            .Select(route => new DashboardEventFeedEntry(
+                now,
+                "Route",
+                $"{route.FromSectorName} -> {route.ToSectorName}",
+                $"Risk {route.BaseRiskScore:N1} above threshold"));
+
+        return intelEvents
+            .Concat(routeEvents)
+            .OrderByDescending(static entry => entry.OccurredAtUtc)
+            .ToArray();
     }
 }

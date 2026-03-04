@@ -1,8 +1,11 @@
 using GalacticTrader.ClientSdk.Dashboard;
 using GalacticTrader.Desktop.Api;
+using GalacticTrader.Desktop.Realtime;
 using GalacticTrader.Unity.Auth;
+using GalacticTrader.Unity.Realtime;
 using GalacticTrader.Unity.Shell;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,21 +17,34 @@ public sealed class UnityDashboardModuleController : UnityShellModule
 {
     [SerializeField] private string apiBaseUrl = "http://localhost:8080";
     [SerializeField] private UnityAuthController? authController;
+    [SerializeField] private UnityRealtimeController? realtimeController;
     [SerializeField] private int dangerousRouteRiskThreshold = 65;
+    [SerializeField] private int maxRealtimeEvents = 200;
 
     private HttpClient? _httpClient;
     private DashboardModuleService? _dashboardService;
 
     public DashboardActionBoard? LastBoard { get; private set; }
 
+    public IReadOnlyList<DashboardEventFeedEntry> LastEventFeed { get; private set; } = [];
+
     public event Action<DashboardActionBoard>? BoardUpdated;
+
+    public event Action<IReadOnlyList<DashboardEventFeedEntry>>? EventFeedUpdated;
 
     public event Action<string>? LoadFailed;
 
     public override async Task OnActivatedAsync(CancellationToken cancellationToken)
     {
         await base.OnActivatedAsync(cancellationToken);
+        SubscribeRealtime();
         await RefreshAsync(cancellationToken);
+    }
+
+    public override Task OnDeactivatedAsync(CancellationToken cancellationToken)
+    {
+        UnsubscribeRealtime();
+        return base.OnDeactivatedAsync(cancellationToken);
     }
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
@@ -49,8 +65,11 @@ public sealed class UnityDashboardModuleController : UnityShellModule
 
         try
         {
-            LastBoard = await _dashboardService.LoadBoardAsync(session.PlayerId, cancellationToken);
+            var state = await _dashboardService.LoadStateAsync(session.PlayerId, cancellationToken);
+            LastBoard = state.Board;
+            LastEventFeed = state.EventFeed;
             BoardUpdated?.Invoke(LastBoard);
+            EventFeedUpdated?.Invoke(LastEventFeed);
         }
         catch (Exception exception)
         {
@@ -60,8 +79,21 @@ public sealed class UnityDashboardModuleController : UnityShellModule
 
     private void OnDestroy()
     {
+        UnsubscribeRealtime();
         _httpClient?.Dispose();
         _httpClient = null;
+    }
+
+    public IReadOnlyList<DashboardEventFeedEntry> GetFilteredEventFeed(
+        DashboardEventFeedFilterOptions options,
+        DateTime nowUtc)
+    {
+        return DashboardEventFeedFilter.Apply(LastEventFeed, options, nowUtc);
+    }
+
+    public string ExportEventFeedCsv(IReadOnlyList<DashboardEventFeedEntry> entries)
+    {
+        return DashboardEventFeedCsvExporter.BuildCsv(entries);
     }
 
     private void EnsureService(string accessToken)
@@ -101,5 +133,45 @@ public sealed class UnityDashboardModuleController : UnityShellModule
         };
 
         _dashboardService = new DashboardModuleService(dataSource);
+    }
+
+    private void SubscribeRealtime()
+    {
+        if (realtimeController is null)
+        {
+            return;
+        }
+
+        realtimeController.StrategicSnapshotReceived -= OnStrategicSnapshotReceived;
+        realtimeController.StrategicSnapshotReceived += OnStrategicSnapshotReceived;
+    }
+
+    private void UnsubscribeRealtime()
+    {
+        if (realtimeController is null)
+        {
+            return;
+        }
+
+        realtimeController.StrategicSnapshotReceived -= OnStrategicSnapshotReceived;
+    }
+
+    private void OnStrategicSnapshotReceived(DashboardRealtimeSnapshotApiDto snapshot)
+    {
+        if (LastBoard is null)
+        {
+            return;
+        }
+
+        var state = DashboardRealtimeStateProjector.ApplySnapshot(
+            LastBoard,
+            LastEventFeed,
+            snapshot,
+            maxRealtimeEvents);
+
+        LastBoard = state.Board;
+        LastEventFeed = state.EventFeed;
+        BoardUpdated?.Invoke(LastBoard);
+        EventFeedUpdated?.Invoke(LastEventFeed);
     }
 }
