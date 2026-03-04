@@ -25,6 +25,8 @@ This directory is the target workspace for the Unity-based game client migration
 - Starmap streaming scaffolding is present under `Assets/Scripts/Starmap`:
   - `UnityStarmapStreamingController`
   - `StarmapDtoMapper`
+- Dashboard module scaffolding is present under `Assets/Scripts/Modules/Dashboard`:
+  - `UnityDashboardModuleController`
 
 ## Target Platforms
 

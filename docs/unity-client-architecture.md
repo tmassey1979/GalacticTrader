@@ -47,6 +47,10 @@ This document defines the initial architecture baseline for migrating the deskto
   - `ModuleHostCoordinator` for module switching and cleanup lifecycle
   - `ModuleHotkeyRouter` for module hotkey resolution
   - standardized module UX state snapshots (`Loading`, `Ready`, `Offline`, `Error`)
+- Dashboard action planning primitives are encapsulated in `GalacticTrader.ClientSdk.Dashboard`:
+  - `DashboardModuleService` to aggregate gameplay-relevant dashboard signals
+  - `DashboardActionPlanner` to convert signals into prioritized next actions
+  - `DashboardActionBoard` as a UI-ready action-first model
 
 ## Action-First UX Principles
 
