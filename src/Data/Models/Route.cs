@@ -18,8 +18,8 @@ namespace GalacticTrader.Data.Models
         
         // Navigation
         public float VisibilityRating { get; set; } // 0-100, higher = easier to detect
-        public string LegalStatus { get; set; } // "legal", "gray", "black"
-        public string WarpGateType { get; set; } // "standard", "unstable", etc.
+        public string LegalStatus { get; set; } = string.Empty; // "legal", "gray", "black"
+        public string WarpGateType { get; set; } = string.Empty; // "standard", "unstable", etc.
         
         // Route Properties
         public bool IsDiscovered { get; set; }
@@ -27,7 +27,7 @@ namespace GalacticTrader.Data.Models
         public int TrafficIntensity { get; set; } // 0-100
         
         // Navigation
-        public Sector FromSector { get; set; }
-        public Sector ToSector { get; set; }
+        public Sector FromSector { get; set; } = null!;
+        public Sector ToSector { get; set; } = null!;
     }
 }

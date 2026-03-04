@@ -8,8 +8,8 @@ namespace GalacticTrader.Data.Models
     public class Player
     {
         public Guid Id { get; set; }
-        public string Username { get; set; }
-        public string Email { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public Guid KeycloakUserId { get; set; }
         
         // Financial Stats
@@ -22,7 +22,7 @@ namespace GalacticTrader.Data.Models
         
         // Fleet & Assets
         public int FleetStrengthRating { get; set; }
-        public string ProtectionStatus { get; set; }
+        public string ProtectionStatus { get; set; } = string.Empty;
         
         // Game Stats
         public DateTime CreatedAt { get; set; }

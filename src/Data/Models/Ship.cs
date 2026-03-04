@@ -9,8 +9,8 @@ namespace GalacticTrader.Data.Models
     {
         public Guid Id { get; set; }
         public Guid PlayerId { get; set; }
-        public string Name { get; set; }
-        public string ShipClass { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string ShipClass { get; set; } = string.Empty;
         
         // Core Stats
         public int HullIntegrity { get; set; }
@@ -44,9 +44,9 @@ namespace GalacticTrader.Data.Models
         public decimal CurrentValue { get; set; }
         
         // Navigation
-        public Player Player { get; set; }
-        public Sector CurrentSector { get; set; }
-        public Sector TargetSector { get; set; }
+        public Player Player { get; set; } = null!;
+        public Sector? CurrentSector { get; set; }
+        public Sector? TargetSector { get; set; }
         public ICollection<Crew> Crew { get; set; } = new List<Crew>();
         public ICollection<Cargo> Cargo { get; set; } = new List<Cargo>();
         public ICollection<ShipModule> Modules { get; set; } = new List<ShipModule>();

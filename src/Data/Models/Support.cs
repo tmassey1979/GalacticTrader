@@ -9,7 +9,7 @@ namespace GalacticTrader.Data.Models
     {
         public Guid Id { get; set; }
         public Guid PlayerId { get; set; }
-        public string LeaderboardType { get; set; } // "wealth", "reputation", "combat", "trade"
+        public string LeaderboardType { get; set; } = string.Empty; // "wealth", "reputation", "combat", "trade"
         
         public long Rank { get; set; }
         public decimal Score { get; set; }
@@ -17,7 +17,7 @@ namespace GalacticTrader.Data.Models
         
         public DateTime LastUpdated { get; set; }
         
-        public Player Player { get; set; }
+        public Player Player { get; set; } = null!;
     }
 
     /// <summary>
@@ -35,8 +35,8 @@ namespace GalacticTrader.Data.Models
         
         public DateTime UpdatedAt { get; set; }
         
-        public Player Player { get; set; }
-        public Faction Faction { get; set; }
+        public Player Player { get; set; } = null!;
+        public Faction Faction { get; set; } = null!;
     }
 
     /// <summary>
@@ -52,8 +52,8 @@ namespace GalacticTrader.Data.Models
         public decimal ValuePerUnit { get; set; }
         public DateTime LoadedAt { get; set; }
         
-        public Ship Ship { get; set; }
-        public Commodity Commodity { get; set; }
+        public Ship Ship { get; set; } = null!;
+        public Commodity Commodity { get; set; } = null!;
     }
 
     /// <summary>
@@ -63,8 +63,8 @@ namespace GalacticTrader.Data.Models
     {
         public Guid Id { get; set; }
         public Guid ShipId { get; set; }
-        public string ModuleType { get; set; } // "weapon", "engine", "shield", "sensor", etc.
-        public string Name { get; set; }
+        public string ModuleType { get; set; } = string.Empty; // "weapon", "engine", "shield", "sensor", etc.
+        public string Name { get; set; } = string.Empty;
         public int Tier { get; set; } // Equipment tier level
         
         public int HealthPoints { get; set; }
@@ -73,6 +73,6 @@ namespace GalacticTrader.Data.Models
         public decimal PurchasePrice { get; set; }
         public DateTime InstalledAt { get; set; }
         
-        public Ship Ship { get; set; }
+        public Ship Ship { get; set; } = null!;
     }
 }

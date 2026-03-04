@@ -10,8 +10,8 @@ namespace GalacticTrader.Data.Models
         public Guid Id { get; set; }
         public Guid PlayerId { get; set; }
         public Guid? ShipId { get; set; }
-        public string Name { get; set; }
-        public string Role { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
         
         // Skills (0-100)
         public int CombatSkill { get; set; }
@@ -32,7 +32,7 @@ namespace GalacticTrader.Data.Models
         public bool IsActive { get; set; }
         
         // Navigation
-        public Player Player { get; set; }
-        public Ship Ship { get; set; }
+        public Player Player { get; set; } = null!;
+        public Ship? Ship { get; set; }
     }
 }

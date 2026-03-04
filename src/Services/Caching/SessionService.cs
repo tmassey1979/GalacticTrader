@@ -56,11 +56,11 @@ namespace GalacticTrader.Services.Caching
     public class PlayerSession
     {
         public Guid PlayerId { get; set; }
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
         public DateTime LoginTime { get; set; }
         public DateTime LastActivityTime { get; set; }
-        public string IpAddress { get; set; }
-        public string UserAgent { get; set; }
+        public string IpAddress { get; set; } = string.Empty;
+        public string UserAgent { get; set; } = string.Empty;
         public bool IsActive { get; set; }
     }
 
@@ -70,7 +70,7 @@ namespace GalacticTrader.Services.Caching
     public interface ISessionService
     {
         Task<PlayerSession> CreateSessionAsync(Guid playerId, string username, string ipAddress, string userAgent);
-        Task<PlayerSession> GetSessionAsync(Guid playerId);
+        Task<PlayerSession?> GetSessionAsync(Guid playerId);
         Task UpdateSessionActivityAsync(Guid playerId);
         Task InvalidateSessionAsync(Guid playerId);
         Task<int> GetActiveSessions();
@@ -105,7 +105,7 @@ namespace GalacticTrader.Services.Caching
             return session;
         }
 
-        public async Task<PlayerSession> GetSessionAsync(Guid playerId)
+        public async Task<PlayerSession?> GetSessionAsync(Guid playerId)
         {
             var key = string.Format(CacheKeys.PLAYER_SESSION, playerId);
             var session = await _cache.GetAsync<PlayerSession>(key);

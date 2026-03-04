@@ -29,7 +29,7 @@ namespace GalacticTrader.Data.Models
         public decimal NetProfit { get; set; }
         
         // Status
-        public string Status { get; set; } // "pending", "completed", "failed"
+        public string Status { get; set; } = string.Empty; // "pending", "completed", "failed"
         public bool UsedSmugglingRoute { get; set; }
         
         // Timestamps
@@ -37,9 +37,9 @@ namespace GalacticTrader.Data.Models
         public DateTime CompletedAt { get; set; }
         
         // Navigation
-        public Player Buyer { get; set; }
-        public Commodity Commodity { get; set; }
-        public Market FromMarket { get; set; }
-        public Market ToMarket { get; set; }
+        public Player Buyer { get; set; } = null!;
+        public Commodity Commodity { get; set; } = null!;
+        public Market FromMarket { get; set; } = null!;
+        public Market ToMarket { get; set; } = null!;
     }
 }

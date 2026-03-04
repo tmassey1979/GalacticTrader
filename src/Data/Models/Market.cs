@@ -13,7 +13,7 @@ namespace GalacticTrader.Data.Models
         public DateTime LastUpdated { get; set; }
         
         // Navigation
-        public Sector Sector { get; set; }
+        public Sector Sector { get; set; } = null!;
         public ICollection<MarketListing> Listings { get; set; } = new List<MarketListing>();
     }
 
@@ -44,8 +44,8 @@ namespace GalacticTrader.Data.Models
         public DateTime PriceLastChanged { get; set; }
         
         // Navigation
-        public Market Market { get; set; }
-        public Commodity Commodity { get; set; }
+        public Market Market { get; set; } = null!;
+        public Commodity Commodity { get; set; } = null!;
         public ICollection<MarketPriceHistory> PriceHistory { get; set; } = new List<MarketPriceHistory>();
     }
 
@@ -55,9 +55,9 @@ namespace GalacticTrader.Data.Models
     public class Commodity
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Category { get; set; }
-        public string Description { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         
         // Properties
         public float Volume { get; set; } // Volume per unit
@@ -83,6 +83,6 @@ namespace GalacticTrader.Data.Models
         public long Quantity { get; set; }
         public long VolumeTraded { get; set; }
         
-        public MarketListing MarketListing { get; set; }
+        public MarketListing MarketListing { get; set; } = null!;
     }
 }

@@ -9,8 +9,8 @@ namespace GalacticTrader.Data.Models
     public class Faction
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         
         // Alignment
         public int AlignmentBias { get; set; } // -100 (criminal) to 100 (lawful)

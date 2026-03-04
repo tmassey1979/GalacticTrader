@@ -9,7 +9,7 @@ namespace GalacticTrader.Data.Models
     public class Sector
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         
         // Coordinates for rendering
         public float X { get; set; }
@@ -35,6 +35,6 @@ namespace GalacticTrader.Data.Models
         public ICollection<Route> InboundRoutes { get; set; } = new List<Route>();
         public ICollection<Market> Markets { get; set; } = new List<Market>();
         public ICollection<Ship> DockedShips { get; set; } = new List<Ship>();
-        public Faction ControlledByFaction { get; set; }
+        public Faction? ControlledByFaction { get; set; }
     }
 }

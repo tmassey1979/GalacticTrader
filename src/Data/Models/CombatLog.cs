@@ -19,7 +19,7 @@ namespace GalacticTrader.Data.Models
         // Battle Statistics
         public int AttackerInitialRating { get; set; }
         public int DefenderInitialRating { get; set; }
-        public string BattleOutcome { get; set; } // "victory", "defeat", "draw"
+        public string BattleOutcome { get; set; } = string.Empty; // "victory", "defeat", "draw"
         
         // Damage Report
         public int AttackerDamageDealt { get; set; }
@@ -43,10 +43,10 @@ namespace GalacticTrader.Data.Models
         public int TotalTicks { get; set; }
         
         // Navigation
-        public Player Attacker { get; set; }
-        public Player Defender { get; set; }
-        public Sector Location { get; set; }
-        public Ship AttackerShip { get; set; }
-        public Ship DefenderShip { get; set; }
+        public Player Attacker { get; set; } = null!;
+        public Player? Defender { get; set; }
+        public Sector Location { get; set; } = null!;
+        public Ship AttackerShip { get; set; } = null!;
+        public Ship? DefenderShip { get; set; }
     }
 }
