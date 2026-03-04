@@ -902,11 +902,25 @@ market.MapPost("/trade/reverse", async (
 });
 
 market.MapGet("/transactions/{playerId:guid}", async (
+    HttpContext context,
     Guid playerId,
     int? limit,
     IMarketTransactionService tradeService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var result = await tradeService.GetPlayerTransactionsAsync(playerId, limit ?? 50, cancellationToken);
     return Results.Ok(result);
 });
@@ -1124,10 +1138,24 @@ fleet.MapPost("/ships/purchase", async (
 });
 
 fleet.MapGet("/players/{playerId:guid}/ships", async (
+    HttpContext context,
     Guid playerId,
     IFleetService fleetService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var ships = await fleetService.GetPlayerShipsAsync(playerId, cancellationToken);
     return Results.Ok(ships);
 });
@@ -1193,11 +1221,25 @@ fleet.MapDelete("/crew/{crewId:guid}", async (
 });
 
 fleet.MapGet("/players/{playerId:guid}/escort", async (
+    HttpContext context,
     Guid playerId,
     FleetFormation? formation,
     IFleetService fleetService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var summary = await fleetService.GetEscortSummaryAsync(playerId, formation ?? FleetFormation.Defensive, cancellationToken);
     return summary is null ? Results.NotFound() : Results.Ok(summary);
 });
@@ -1224,10 +1266,24 @@ reputation.MapPost("/factions/adjust", async (
 });
 
 reputation.MapGet("/factions/{playerId:guid}", async (
+    HttpContext context,
     Guid playerId,
     IReputationService reputationService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var standings = await reputationService.GetFactionStandingsAsync(playerId, cancellationToken);
     return Results.Ok(standings);
 });
@@ -1242,10 +1298,24 @@ reputation.MapPost("/factions/decay", async (
 });
 
 reputation.MapGet("/factions/{playerId:guid}/benefits", async (
+    HttpContext context,
     Guid playerId,
     IReputationService reputationService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var benefits = await reputationService.GetFactionBenefitsAsync(playerId, cancellationToken);
     return Results.Ok(benefits);
 });
@@ -1260,10 +1330,24 @@ reputation.MapPost("/alignment/action", async (
 });
 
 reputation.MapGet("/alignment/{playerId:guid}", async (
+    HttpContext context,
     Guid playerId,
     IReputationService reputationService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var access = await reputationService.GetAlignmentAccessAsync(playerId, cancellationToken);
     return access is null ? Results.NotFound() : Results.Ok(access);
 });
@@ -1565,10 +1649,24 @@ strategic.MapPost("/territory-economic-policy", async (
 });
 
 strategic.MapGet("/insurance/policies/{playerId:guid}", async (
+    HttpContext context,
     Guid playerId,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var policies = await strategicService.GetInsurancePoliciesAsync(playerId, cancellationToken);
     return Results.Ok(policies);
 });
@@ -1606,10 +1704,24 @@ strategic.MapPost("/insurance/policies", async (
 });
 
 strategic.MapGet("/insurance/claims/{playerId:guid}", async (
+    HttpContext context,
     Guid playerId,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var claims = await strategicService.GetInsuranceClaimsAsync(playerId, cancellationToken);
     return Results.Ok(claims);
 });
@@ -1736,11 +1848,25 @@ strategic.MapPost("/intelligence/reports", async (
 });
 
 strategic.MapGet("/intelligence/reports/{playerId:guid}", async (
+    HttpContext context,
     Guid playerId,
     Guid? sectorId,
     IStrategicSystemsService strategicService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var reports = await strategicService.GetIntelligenceReportsAsync(playerId, sectorId, cancellationToken);
     return Results.Ok(reports);
 });
@@ -1772,8 +1898,22 @@ strategic.Map("/ws/dashboard/{playerId:guid}", async (
     Guid playerId,
     int? intervalSeconds,
     IDashboardRealtimeSnapshotService dashboardRealtimeSnapshotService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        await denied.ExecuteAsync(context);
+        return;
+    }
+
     if (!context.WebSockets.IsWebSocketRequest)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -2015,31 +2155,89 @@ var communication = app.MapGroup("/api/communication")
     .WithTags("Communication");
 
 communication.MapPost("/subscribe", async (
+    HttpContext context,
     SubscribeChannelRequest request,
     ICommunicationService communicationService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
-    var result = await communicationService.SubscribeAsync(request, cancellationToken);
+    var (effectivePlayerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        request.PlayerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var result = await communicationService.SubscribeAsync(new SubscribeChannelRequest
+    {
+        PlayerId = effectivePlayerId,
+        ChannelType = request.ChannelType,
+        ChannelKey = request.ChannelKey
+    }, cancellationToken);
     return Results.Ok(result);
 });
 
 communication.MapPost("/unsubscribe", async (
+    HttpContext context,
     SubscribeChannelRequest request,
     ICommunicationService communicationService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
-    var result = await communicationService.UnsubscribeAsync(request, cancellationToken);
+    var (effectivePlayerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        request.PlayerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var result = await communicationService.UnsubscribeAsync(new SubscribeChannelRequest
+    {
+        PlayerId = effectivePlayerId,
+        ChannelType = request.ChannelType,
+        ChannelKey = request.ChannelKey
+    }, cancellationToken);
     return Results.Ok(result);
 });
 
 communication.MapPost("/messages", async (
+    HttpContext context,
     SendChannelMessageRequest request,
     ICommunicationService communicationService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var (effectivePlayerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        request.PlayerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     try
     {
-        var message = await communicationService.SendMessageAsync(request, cancellationToken);
+        var message = await communicationService.SendMessageAsync(new SendChannelMessageRequest
+        {
+            PlayerId = effectivePlayerId,
+            ChannelType = request.ChannelType,
+            ChannelKey = request.ChannelKey,
+            Content = request.Content
+        }, cancellationToken);
         return message is null ? Results.BadRequest() : Results.Ok(message);
     }
     catch (InvalidOperationException exception)
@@ -2067,11 +2265,30 @@ communication.MapGet("/messages/{channelType}/{channelKey}", async (
 var voice = communication.MapGroup("/voice");
 
 voice.MapPost("/channels", async (
+    HttpContext context,
     CreateVoiceChannelRequest request,
     IVoiceService voiceService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
-    var channel = await voiceService.CreateChannelAsync(request, cancellationToken);
+    var (effectivePlayerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        request.CreatorPlayerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var channel = await voiceService.CreateChannelAsync(new CreateVoiceChannelRequest
+    {
+        CreatorPlayerId = effectivePlayerId,
+        Mode = request.Mode,
+        ScopeKey = request.ScopeKey
+    }, cancellationToken);
     return Results.Created($"/api/communication/voice/channels/{channel.ChannelId}", channel);
 });
 
@@ -2085,63 +2302,171 @@ voice.MapGet("/channels/{channelId:guid}", async (
 });
 
 voice.MapPost("/channels/{channelId:guid}/join", async (
+    HttpContext context,
     Guid channelId,
     JoinVoiceChannelRequest request,
     IVoiceService voiceService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
-    var joined = await voiceService.JoinChannelAsync(channelId, request, cancellationToken);
+    var (effectivePlayerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        request.PlayerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var joined = await voiceService.JoinChannelAsync(channelId, new JoinVoiceChannelRequest
+    {
+        PlayerId = effectivePlayerId
+    }, cancellationToken);
     return joined is null ? Results.NotFound() : Results.Ok(joined);
 });
 
 voice.MapPost("/channels/{channelId:guid}/leave/{playerId:guid}", async (
+    HttpContext context,
     Guid channelId,
     Guid playerId,
     IVoiceService voiceService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
-    var left = await voiceService.LeaveChannelAsync(channelId, playerId, cancellationToken);
+    var (effectivePlayerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var left = await voiceService.LeaveChannelAsync(channelId, effectivePlayerId, cancellationToken);
     return left ? Results.NoContent() : Results.NotFound();
 });
 
 voice.MapPost("/channels/{channelId:guid}/signal", async (
+    HttpContext context,
     Guid channelId,
     VoiceSignalRequest request,
     IVoiceService voiceService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
-    var signal = await voiceService.PublishSignalAsync(channelId, request, cancellationToken);
+    var (effectiveSenderId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        request.SenderId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var signal = await voiceService.PublishSignalAsync(channelId, new VoiceSignalRequest
+    {
+        SenderId = effectiveSenderId,
+        TargetPlayerId = request.TargetPlayerId,
+        SignalType = request.SignalType,
+        Payload = request.Payload
+    }, cancellationToken);
     return signal is null ? Results.NotFound() : Results.Ok(signal);
 });
 
 voice.MapGet("/channels/{channelId:guid}/signals/{playerId:guid}", async (
+    HttpContext context,
     Guid channelId,
     Guid playerId,
     int? limit,
     IVoiceService voiceService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    var denied = await RequireOwnerOrAdminAsync(
+        context,
+        authService,
+        dbContext,
+        playerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
     var signals = await voiceService.DequeueSignalsAsync(channelId, playerId, limit ?? 50, cancellationToken);
     return Results.Ok(signals);
 });
 
 voice.MapPost("/channels/{channelId:guid}/activity", async (
+    HttpContext context,
     Guid channelId,
     VoiceActivityRequest request,
     IVoiceService voiceService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
-    var activity = await voiceService.UpdateActivityAsync(channelId, request, cancellationToken);
+    var (effectivePlayerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        request.PlayerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var activity = await voiceService.UpdateActivityAsync(channelId, new VoiceActivityRequest
+    {
+        PlayerId = effectivePlayerId,
+        RmsLevel = request.RmsLevel,
+        PacketLossPercent = request.PacketLossPercent,
+        LatencyMs = request.LatencyMs,
+        JitterMs = request.JitterMs
+    }, cancellationToken);
     return activity is null ? Results.NotFound() : Results.Ok(activity);
 });
 
 voice.MapPost("/channels/{channelId:guid}/spatial-audio", async (
+    HttpContext context,
     Guid channelId,
     SpatialAudioRequest request,
     IVoiceService voiceService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
-    var mix = await voiceService.CalculateSpatialMixAsync(channelId, request, cancellationToken);
+    var (effectiveListenerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        request.ListenerId,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return denied;
+    }
+
+    var mix = await voiceService.CalculateSpatialMixAsync(channelId, new SpatialAudioRequest
+    {
+        ListenerId = effectiveListenerId,
+        ListenerX = request.ListenerX,
+        ListenerY = request.ListenerY,
+        ListenerZ = request.ListenerZ,
+        FalloffDistance = request.FalloffDistance,
+        Speakers = request.Speakers
+    }, cancellationToken);
     return mix is null ? Results.NotFound() : Results.Ok(mix);
 });
 
@@ -2159,8 +2484,28 @@ communication.Map("/ws/{channelType}/{channelKey}", async (
     string channelType,
     string channelKey,
     ICommunicationService communicationService,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
     CancellationToken cancellationToken) =>
 {
+    Guid? requestedPlayerId = null;
+    if (Guid.TryParse(context.Request.Query["playerId"], out var parsedPlayerId))
+    {
+        requestedPlayerId = parsedPlayerId;
+    }
+
+    var (effectivePlayerId, _, denied) = await ResolveEffectivePlayerIdAsync(
+        context,
+        authService,
+        dbContext,
+        requestedPlayerId ?? Guid.Empty,
+        cancellationToken);
+    if (denied is not null)
+    {
+        await denied.ExecuteAsync(context);
+        return;
+    }
+
     if (!context.WebSockets.IsWebSocketRequest)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -2175,16 +2520,9 @@ communication.Map("/ws/{channelType}/{channelKey}", async (
         return;
     }
 
-    if (!Guid.TryParse(context.Request.Query["playerId"], out var playerId))
-    {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await context.Response.WriteAsJsonAsync(new { error = "Query string playerId is required." }, cancellationToken);
-        return;
-    }
-
     await communicationService.SubscribeAsync(new SubscribeChannelRequest
     {
-        PlayerId = playerId,
+        PlayerId = effectivePlayerId,
         ChannelType = parsedChannelType,
         ChannelKey = channelKey
     }, cancellationToken);
@@ -2225,7 +2563,7 @@ communication.Map("/ws/{channelType}/{channelKey}", async (
             {
                 created = await communicationService.SendMessageAsync(new SendChannelMessageRequest
                 {
-                    PlayerId = playerId,
+                    PlayerId = effectivePlayerId,
                     ChannelType = parsedChannelType,
                     ChannelKey = normalizedKey,
                     Content = content
@@ -2270,7 +2608,7 @@ communication.Map("/ws/{channelType}/{channelKey}", async (
 
         await communicationService.UnsubscribeAsync(new SubscribeChannelRequest
         {
-            PlayerId = playerId,
+            PlayerId = effectivePlayerId,
             ChannelType = parsedChannelType,
             ChannelKey = normalizedKey
         }, cancellationToken);
@@ -2668,6 +3006,50 @@ static async Task<(Guid? PlayerId, bool IsAdmin, IResult? Denied)> ResolveAuthen
         ?? await ResolvePlayerIdFromPrincipalAsync(dbContext, principal, cancellationToken);
 
     return (playerId, isJwtAdmin, null);
+}
+
+static async Task<(Guid EffectivePlayerId, bool IsAdmin, IResult? Denied)> ResolveEffectivePlayerIdAsync(
+    HttpContext context,
+    IAuthService authService,
+    GalacticTraderDbContext dbContext,
+    Guid requestedPlayerId,
+    CancellationToken cancellationToken)
+{
+    var (callerPlayerId, isAdmin, denied) = await ResolveAuthenticatedActorAsync(
+        context,
+        authService,
+        dbContext,
+        cancellationToken);
+    if (denied is not null)
+    {
+        return (Guid.Empty, isAdmin, denied);
+    }
+
+    if (!isAdmin)
+    {
+        if (!callerPlayerId.HasValue)
+        {
+            return (Guid.Empty, false, Results.StatusCode(StatusCodes.Status403Forbidden));
+        }
+
+        if (requestedPlayerId != Guid.Empty && requestedPlayerId != callerPlayerId.Value)
+        {
+            return (Guid.Empty, false, Results.StatusCode(StatusCodes.Status403Forbidden));
+        }
+
+        return (callerPlayerId.Value, false, null);
+    }
+
+    var effectivePlayerId = requestedPlayerId != Guid.Empty
+        ? requestedPlayerId
+        : callerPlayerId ?? Guid.Empty;
+
+    if (effectivePlayerId == Guid.Empty)
+    {
+        return (Guid.Empty, true, Results.StatusCode(StatusCodes.Status403Forbidden));
+    }
+
+    return (effectivePlayerId, true, null);
 }
 
 static async Task<Guid?> ResolvePlayerIdFromPrincipalAsync(

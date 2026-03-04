@@ -17,7 +17,7 @@ public sealed class StrategicSystemsIntegrationTests : IClassFixture<ApiWebAppli
     }
 
     [Fact]
-    public async Task StrategicReadEndpoints_AreWired()
+    public async Task StrategicPublicReadEndpoints_AreWired()
     {
         var listVolatility = await _client.GetAsync("/api/strategic/volatility");
         Assert.Equal(HttpStatusCode.OK, listVolatility.StatusCode);
@@ -30,15 +30,94 @@ public sealed class StrategicSystemsIntegrationTests : IClassFixture<ApiWebAppli
 
         var listDominance = await _client.GetAsync("/api/strategic/territory-dominance");
         Assert.Equal(HttpStatusCode.OK, listDominance.StatusCode);
+    }
 
-        var listPolicies = await _client.GetAsync($"/api/strategic/insurance/policies/{Guid.NewGuid()}");
-        Assert.Equal(HttpStatusCode.OK, listPolicies.StatusCode);
+    [Fact]
+    public async Task StrategicPlayerScopedReadEndpoints_RequireOwnerOrAdmin()
+    {
+        var owner = await RegisterAndLoginAsync("strategic-owner");
+        var intruder = await RegisterAndLoginAsync("strategic-intruder");
+        var adminToken = await LoginAndGetTokenAsync("viper", "ViperDev123!");
 
-        var listClaims = await _client.GetAsync($"/api/strategic/insurance/claims/{Guid.NewGuid()}");
-        Assert.Equal(HttpStatusCode.OK, listClaims.StatusCode);
+        var noTokenPolicies = await _client.GetAsync($"/api/strategic/insurance/policies/{owner.PlayerId:D}");
+        Assert.Equal(HttpStatusCode.Unauthorized, noTokenPolicies.StatusCode);
 
-        var listReports = await _client.GetAsync($"/api/strategic/intelligence/reports/{Guid.NewGuid()}");
-        Assert.Equal(HttpStatusCode.OK, listReports.StatusCode);
+        var intruderPolicies = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/insurance/policies/{owner.PlayerId:D}",
+            intruder.AccessToken);
+        Assert.Equal(HttpStatusCode.Forbidden, intruderPolicies.StatusCode);
+
+        var ownerPolicies = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/insurance/policies/{owner.PlayerId:D}",
+            owner.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, ownerPolicies.StatusCode);
+
+        var adminPolicies = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/insurance/policies/{owner.PlayerId:D}",
+            adminToken);
+        Assert.Equal(HttpStatusCode.OK, adminPolicies.StatusCode);
+
+        var noTokenClaims = await _client.GetAsync($"/api/strategic/insurance/claims/{owner.PlayerId:D}");
+        Assert.Equal(HttpStatusCode.Unauthorized, noTokenClaims.StatusCode);
+
+        var intruderClaims = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/insurance/claims/{owner.PlayerId:D}",
+            intruder.AccessToken);
+        Assert.Equal(HttpStatusCode.Forbidden, intruderClaims.StatusCode);
+
+        var ownerClaims = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/insurance/claims/{owner.PlayerId:D}",
+            owner.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, ownerClaims.StatusCode);
+
+        var noTokenReports = await _client.GetAsync($"/api/strategic/intelligence/reports/{owner.PlayerId:D}");
+        Assert.Equal(HttpStatusCode.Unauthorized, noTokenReports.StatusCode);
+
+        var intruderReports = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/intelligence/reports/{owner.PlayerId:D}",
+            intruder.AccessToken);
+        Assert.Equal(HttpStatusCode.Forbidden, intruderReports.StatusCode);
+
+        var ownerReports = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/intelligence/reports/{owner.PlayerId:D}",
+            owner.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, ownerReports.StatusCode);
+    }
+
+    [Fact]
+    public async Task StrategicDashboardWebsocketRoute_RequiresOwnerOrAdminBeforeUpgrade()
+    {
+        var owner = await RegisterAndLoginAsync("dashboard-owner");
+        var intruder = await RegisterAndLoginAsync("dashboard-intruder");
+        var adminToken = await LoginAndGetTokenAsync("viper", "ViperDev123!");
+
+        var noToken = await _client.GetAsync($"/api/strategic/ws/dashboard/{owner.PlayerId:D}");
+        Assert.Equal(HttpStatusCode.Unauthorized, noToken.StatusCode);
+
+        var intruderAttempt = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/ws/dashboard/{owner.PlayerId:D}",
+            intruder.AccessToken);
+        Assert.Equal(HttpStatusCode.Forbidden, intruderAttempt.StatusCode);
+
+        var ownerAttempt = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/ws/dashboard/{owner.PlayerId:D}",
+            owner.AccessToken);
+        Assert.Equal(HttpStatusCode.BadRequest, ownerAttempt.StatusCode);
+
+        var adminAttempt = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/strategic/ws/dashboard/{owner.PlayerId:D}",
+            adminToken);
+        Assert.Equal(HttpStatusCode.BadRequest, adminAttempt.StatusCode);
     }
 
     [Fact]

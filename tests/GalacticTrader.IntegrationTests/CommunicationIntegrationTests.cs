@@ -1,19 +1,15 @@
 namespace GalacticTrader.IntegrationTests;
 
-using GalacticTrader.Data;
-using GalacticTrader.Data.Models;
-using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http.Headers;
 using System.Net;
 using System.Net.Http.Json;
 
 public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicationFactory>
 {
-    private readonly ApiWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public CommunicationIntegrationTests(ApiWebApplicationFactory factory)
     {
-        _factory = factory;
         _client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("http://localhost")
@@ -23,20 +19,20 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
     [Fact]
     public async Task CommunicationMessageFlow_SubscribeSendAndList_Works()
     {
-        var playerId = await SeedPlayerAsync("comms-msg");
+        var player = await RegisterAndLoginAsync("comms-msg");
         var channelKey = $"integration-{Guid.NewGuid():N}"[..20];
 
-        var subscribe = await _client.PostAsJsonAsync("/api/communication/subscribe", new
+        var subscribe = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/communication/subscribe", player.AccessToken, new
         {
-            playerId,
+            playerId = player.PlayerId,
             channelType = 0,
             channelKey
         });
         Assert.Equal(HttpStatusCode.OK, subscribe.StatusCode);
 
-        var send = await _client.PostAsJsonAsync("/api/communication/messages", new
+        var send = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/communication/messages", player.AccessToken, new
         {
-            playerId,
+            playerId = player.PlayerId,
             channelType = 0,
             channelKey,
             content = "ship ping with spamlink marker"
@@ -59,12 +55,12 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
     [Fact]
     public async Task VoiceChannelFlow_CreateJoinQosLeave_Works()
     {
-        var creatorId = await SeedPlayerAsync("comms-voice-a");
-        var participantId = await SeedPlayerAsync("comms-voice-b");
+        var creator = await RegisterAndLoginAsync("comms-voice-a");
+        var participant = await RegisterAndLoginAsync("comms-voice-b");
 
-        var create = await _client.PostAsJsonAsync("/api/communication/voice/channels", new
+        var create = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/communication/voice/channels", creator.AccessToken, new
         {
-            creatorPlayerId = creatorId,
+            creatorPlayerId = creator.PlayerId,
             mode = 1,
             scopeKey = "integration-voice"
         });
@@ -73,9 +69,9 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
         var createdChannel = await create.Content.ReadFromJsonAsync<VoiceChannelResponse>();
         Assert.NotNull(createdChannel);
 
-        var join = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{createdChannel!.ChannelId:D}/join", new
+        var join = await SendWithBearerTokenAsync(HttpMethod.Post, $"/api/communication/voice/channels/{createdChannel!.ChannelId:D}/join", participant.AccessToken, new
         {
-            playerId = participantId
+            playerId = participant.PlayerId
         });
         Assert.Equal(HttpStatusCode.OK, join.StatusCode);
 
@@ -90,10 +86,16 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
         Assert.NotNull(qosSnapshot);
         Assert.True(qosSnapshot!.ParticipantCount >= 2);
 
-        var leaveParticipant = await _client.PostAsync($"/api/communication/voice/channels/{createdChannel.ChannelId:D}/leave/{participantId:D}", content: null);
+        var leaveParticipant = await SendWithBearerTokenAsync(
+            HttpMethod.Post,
+            $"/api/communication/voice/channels/{createdChannel.ChannelId:D}/leave/{participant.PlayerId:D}",
+            participant.AccessToken);
         Assert.Equal(HttpStatusCode.NoContent, leaveParticipant.StatusCode);
 
-        var leaveCreator = await _client.PostAsync($"/api/communication/voice/channels/{createdChannel.ChannelId:D}/leave/{creatorId:D}", content: null);
+        var leaveCreator = await SendWithBearerTokenAsync(
+            HttpMethod.Post,
+            $"/api/communication/voice/channels/{createdChannel.ChannelId:D}/leave/{creator.PlayerId:D}",
+            creator.AccessToken);
         Assert.Equal(HttpStatusCode.NoContent, leaveCreator.StatusCode);
 
         var qosAfterLeave = await _client.GetAsync($"/api/communication/voice/channels/{createdChannel.ChannelId:D}/qos");
@@ -103,12 +105,12 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
     [Fact]
     public async Task VoiceRealtimeFlow_ActivitySignalAndSpatialMix_Works()
     {
-        var creatorId = await SeedPlayerAsync("comms-real-a");
-        var listenerId = await SeedPlayerAsync("comms-real-b");
+        var creator = await RegisterAndLoginAsync("comms-real-a");
+        var listener = await RegisterAndLoginAsync("comms-real-b");
 
-        var create = await _client.PostAsJsonAsync("/api/communication/voice/channels", new
+        var create = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/communication/voice/channels", creator.AccessToken, new
         {
-            creatorPlayerId = creatorId,
+            creatorPlayerId = creator.PlayerId,
             mode = 0,
             scopeKey = "integration-realtime"
         });
@@ -117,15 +119,15 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
         var channel = await create.Content.ReadFromJsonAsync<VoiceChannelResponse>();
         Assert.NotNull(channel);
 
-        var join = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{channel!.ChannelId:D}/join", new
+        var join = await SendWithBearerTokenAsync(HttpMethod.Post, $"/api/communication/voice/channels/{channel!.ChannelId:D}/join", listener.AccessToken, new
         {
-            playerId = listenerId
+            playerId = listener.PlayerId
         });
         Assert.Equal(HttpStatusCode.OK, join.StatusCode);
 
-        var updateActivity = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{channel.ChannelId:D}/activity", new
+        var updateActivity = await SendWithBearerTokenAsync(HttpMethod.Post, $"/api/communication/voice/channels/{channel.ChannelId:D}/activity", creator.AccessToken, new
         {
-            playerId = creatorId,
+            playerId = creator.PlayerId,
             rmsLevel = 0.61f,
             packetLossPercent = 0.2f,
             latencyMs = 31f,
@@ -137,10 +139,10 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
         Assert.NotNull(activity);
         Assert.True(activity!.VoiceActivityScore > 0f);
 
-        var publishSignal = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{channel.ChannelId:D}/signal", new
+        var publishSignal = await SendWithBearerTokenAsync(HttpMethod.Post, $"/api/communication/voice/channels/{channel.ChannelId:D}/signal", creator.AccessToken, new
         {
-            senderId = creatorId,
-            targetPlayerId = listenerId,
+            senderId = creator.PlayerId,
+            targetPlayerId = listener.PlayerId,
             signalType = "offer",
             payload = "sdp-offer"
         });
@@ -150,16 +152,19 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
         Assert.NotNull(signal);
         Assert.Equal("offer", signal!.SignalType);
 
-        var dequeue = await _client.GetAsync($"/api/communication/voice/channels/{channel.ChannelId:D}/signals/{listenerId:D}?limit=10");
+        var dequeue = await SendWithBearerTokenAsync(
+            HttpMethod.Get,
+            $"/api/communication/voice/channels/{channel.ChannelId:D}/signals/{listener.PlayerId:D}?limit=10",
+            listener.AccessToken);
         Assert.Equal(HttpStatusCode.OK, dequeue.StatusCode);
 
         var signals = await dequeue.Content.ReadFromJsonAsync<List<VoiceSignalResponse>>();
         Assert.NotNull(signals);
         Assert.Contains(signals!, entry => entry.Payload == "sdp-offer" && entry.SignalType == "offer");
 
-        var spatial = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{channel.ChannelId:D}/spatial-audio", new
+        var spatial = await SendWithBearerTokenAsync(HttpMethod.Post, $"/api/communication/voice/channels/{channel.ChannelId:D}/spatial-audio", listener.AccessToken, new
         {
-            listenerId,
+            listenerId = listener.PlayerId,
             listenerX = 0f,
             listenerY = 0f,
             listenerZ = 0f,
@@ -168,7 +173,7 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
             {
                 new
                 {
-                    playerId = creatorId,
+                    playerId = creator.PlayerId,
                     x = 20f,
                     y = 0f,
                     z = 0f,
@@ -181,36 +186,182 @@ public sealed class CommunicationIntegrationTests : IClassFixture<ApiWebApplicat
         var mix = await spatial.Content.ReadFromJsonAsync<SpatialAudioResponse>();
         Assert.NotNull(mix);
         Assert.NotEmpty(mix!.Mix);
-        Assert.Equal(creatorId, mix.Mix[0].PlayerId);
+        Assert.Equal(creator.PlayerId, mix.Mix[0].PlayerId);
     }
 
-    private async Task<Guid> SeedPlayerAsync(string usernamePrefix)
+    [Fact]
+    public async Task CommunicationAndVoiceMutations_RequireAuthentication()
     {
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<GalacticTraderDbContext>();
+        var randomPlayer = Guid.NewGuid();
+        var randomChannel = Guid.NewGuid();
 
-        var now = DateTime.UtcNow;
-        var playerId = Guid.NewGuid();
-        dbContext.Players.Add(new Player
+        var subscribe = await _client.PostAsJsonAsync("/api/communication/subscribe", new
         {
-            Id = playerId,
-            Username = $"{usernamePrefix}-{playerId:N}"[..24],
-            Email = $"{usernamePrefix}-{playerId:N}@gt.test",
-            KeycloakUserId = Guid.NewGuid(),
-            NetWorth = 100000m,
-            LiquidCredits = 25000m,
-            ReputationScore = 50,
-            AlignmentLevel = 10,
-            FleetStrengthRating = 120,
-            ProtectionStatus = "Guarded",
-            CreatedAt = now,
-            LastActiveAt = now,
-            IsActive = true
+            playerId = randomPlayer,
+            channelType = 0,
+            channelKey = "global"
         });
+        Assert.Equal(HttpStatusCode.Unauthorized, subscribe.StatusCode);
 
-        await dbContext.SaveChangesAsync();
-        return playerId;
+        var send = await _client.PostAsJsonAsync("/api/communication/messages", new
+        {
+            playerId = randomPlayer,
+            channelType = 0,
+            channelKey = "global",
+            content = "hello"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, send.StatusCode);
+
+        var createChannel = await _client.PostAsJsonAsync("/api/communication/voice/channels", new
+        {
+            creatorPlayerId = randomPlayer,
+            mode = 0,
+            scopeKey = "auth-required"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, createChannel.StatusCode);
+
+        var join = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{randomChannel:D}/join", new
+        {
+            playerId = randomPlayer
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, join.StatusCode);
+
+        var leave = await _client.PostAsync($"/api/communication/voice/channels/{randomChannel:D}/leave/{randomPlayer:D}", content: null);
+        Assert.Equal(HttpStatusCode.Unauthorized, leave.StatusCode);
+
+        var signal = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{randomChannel:D}/signal", new
+        {
+            senderId = randomPlayer,
+            signalType = "offer",
+            payload = "sdp"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, signal.StatusCode);
+
+        var activity = await _client.PostAsJsonAsync($"/api/communication/voice/channels/{randomChannel:D}/activity", new
+        {
+            playerId = randomPlayer,
+            rmsLevel = 0.1f,
+            packetLossPercent = 0f,
+            latencyMs = 20f,
+            jitterMs = 2f
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, activity.StatusCode);
     }
+
+    [Fact]
+    public async Task CommunicationAndVoiceMutations_RejectSpoofedPlayerIdentity()
+    {
+        var owner = await RegisterAndLoginAsync("comms-owner");
+        var intruder = await RegisterAndLoginAsync("comms-intr");
+
+        var subscribeSpoof = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/communication/subscribe", intruder.AccessToken, new
+        {
+            playerId = owner.PlayerId,
+            channelType = 0,
+            channelKey = "global"
+        });
+        Assert.Equal(HttpStatusCode.Forbidden, subscribeSpoof.StatusCode);
+
+        var messageSpoof = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/communication/messages", intruder.AccessToken, new
+        {
+            playerId = owner.PlayerId,
+            channelType = 0,
+            channelKey = "global",
+            content = "spoof"
+        });
+        Assert.Equal(HttpStatusCode.Forbidden, messageSpoof.StatusCode);
+
+        var createChannel = await SendWithBearerTokenAsync(HttpMethod.Post, "/api/communication/voice/channels", owner.AccessToken, new
+        {
+            creatorPlayerId = owner.PlayerId,
+            mode = 0,
+            scopeKey = "spoof-check"
+        });
+        Assert.Equal(HttpStatusCode.Created, createChannel.StatusCode);
+        var channel = await createChannel.Content.ReadFromJsonAsync<VoiceChannelResponse>();
+        Assert.NotNull(channel);
+
+        var joinSpoof = await SendWithBearerTokenAsync(
+            HttpMethod.Post,
+            $"/api/communication/voice/channels/{channel!.ChannelId:D}/join",
+            intruder.AccessToken,
+            new { playerId = owner.PlayerId });
+        Assert.Equal(HttpStatusCode.Forbidden, joinSpoof.StatusCode);
+
+        var leaveSpoof = await SendWithBearerTokenAsync(
+            HttpMethod.Post,
+            $"/api/communication/voice/channels/{channel.ChannelId:D}/leave/{owner.PlayerId:D}",
+            intruder.AccessToken);
+        Assert.Equal(HttpStatusCode.Forbidden, leaveSpoof.StatusCode);
+
+        var signalSpoof = await SendWithBearerTokenAsync(
+            HttpMethod.Post,
+            $"/api/communication/voice/channels/{channel.ChannelId:D}/signal",
+            intruder.AccessToken,
+            new
+            {
+                senderId = owner.PlayerId,
+                signalType = "offer",
+                payload = "spoof"
+            });
+        Assert.Equal(HttpStatusCode.Forbidden, signalSpoof.StatusCode);
+
+        var activitySpoof = await SendWithBearerTokenAsync(
+            HttpMethod.Post,
+            $"/api/communication/voice/channels/{channel.ChannelId:D}/activity",
+            intruder.AccessToken,
+            new
+            {
+                playerId = owner.PlayerId,
+                rmsLevel = 0.2f,
+                packetLossPercent = 0.1f,
+                latencyMs = 22f,
+                jitterMs = 3f
+            });
+        Assert.Equal(HttpStatusCode.Forbidden, activitySpoof.StatusCode);
+    }
+
+    private async Task<(Guid PlayerId, string AccessToken)> RegisterAndLoginAsync(string usernamePrefix)
+    {
+        var username = $"{usernamePrefix}_{Guid.NewGuid():N}"[..20];
+        var register = await _client.PostAsJsonAsync("/api/auth/register", new
+        {
+            username,
+            email = $"{username}@gt.test",
+            password = "WarpDrive123!"
+        });
+        Assert.Equal(HttpStatusCode.Created, register.StatusCode);
+
+        var login = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            username,
+            password = "WarpDrive123!"
+        });
+        login.EnsureSuccessStatusCode();
+        var payload = await login.Content.ReadFromJsonAsync<LoginResponse>();
+        Assert.NotNull(payload);
+        Assert.False(string.IsNullOrWhiteSpace(payload!.AccessToken));
+        return (payload.Player.PlayerId, payload.AccessToken);
+    }
+
+    private Task<HttpResponseMessage> SendWithBearerTokenAsync(
+        HttpMethod method,
+        string path,
+        string accessToken,
+        object? payload = null)
+    {
+        var request = new HttpRequestMessage(method, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload);
+        }
+
+        return _client.SendAsync(request);
+    }
+
+    private sealed record LoginResponse(LoginPlayer Player, string AccessToken);
+    private sealed record LoginPlayer(Guid PlayerId, string Username, string Email);
 
     private sealed record ChannelMessageResponse(
         Guid Id,
